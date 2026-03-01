@@ -44,6 +44,14 @@ export const requireSuperAdmin = (req: Request, res: Response, next: NextFunctio
   next();
 };
 
+/** Platform panel: super_admin OR master_admin (shared API, separate login URLs) */
+export const requirePlatformAdmin = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user || !['super_admin', 'master_admin'].includes(req.user.role)) {
+    return res.status(403).json({ error: 'Platform admin access required' });
+  }
+  next();
+};
+
 /** Restaurant admin (role === 'admin') only */
 export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
   if (!req.user || req.user.role !== 'admin') {
@@ -52,10 +60,18 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction) =>
   next();
 };
 
-/** Admin or super_admin */
+/** Rental admin (restaurant-level) or platform admins */
 export const requireAdminOrSuperAdmin = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.user || !['admin', 'super_admin'].includes(req.user.role)) {
-    return res.status(403).json({ error: 'Admin or Super Admin access required' });
+  if (!req.user || !['admin', 'manager', 'super_admin', 'master_admin'].includes(req.user.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  next();
+};
+
+/** Any restaurant staff (admin, manager, staff, cashier) or platform admins – then use requirePermission for resource-level access */
+export const requireStaffOrAdmin = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user || !['admin', 'manager', 'staff', 'cashier', 'super_admin', 'master_admin'].includes(req.user.role)) {
+    return res.status(403).json({ error: 'Staff or admin access required' });
   }
   next();
 };
@@ -77,8 +93,8 @@ export const requireTenantAccess = (req: Request, res: Response, next: NextFunct
   if (!req.user) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
-  // super_admin can access any tenant
-  if (req.user.role === 'super_admin') return next();
+  // super_admin and master_admin can access any tenant (platform level)
+  if (['super_admin', 'master_admin'].includes(req.user.role)) return next();
 
   const tenantId = req.restaurantId;
   if (!tenantId) {

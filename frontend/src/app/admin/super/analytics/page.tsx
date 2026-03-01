@@ -43,6 +43,9 @@ interface Analytics {
   period: number;
   totals: Totals;
   totalRestaurants: number;
+  totalMRR?: number;
+  activeRestaurants?: number;
+  expiredSubscriptions?: number;
   perRestaurant: RestaurantStat[];
   dailyTrend: DayTrend[];
 }
@@ -186,10 +189,13 @@ export default function SuperAnalyticsPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
         <StatCard icon={IndianRupee} label="Total Revenue" delay={0}
           value={`₹${(totals?.totalRevenue || 0).toLocaleString('en-IN')}`}
           sub={`Last ${period} days`} color="bg-purple-600" />
+        <StatCard icon={IndianRupee} label="Total MRR" delay={0.02}
+          value={`₹${(data?.totalMRR ?? 0).toLocaleString('en-IN')}`}
+          sub="Monthly recurring" color="bg-indigo-600" />
         <StatCard icon={Wifi} label="Online Revenue" delay={0.05}
           value={`₹${(totals?.onlineRevenue || 0).toLocaleString('en-IN')}`}
           sub={`${onlinePct}% of total`} color="bg-blue-600" />
@@ -197,8 +203,11 @@ export default function SuperAnalyticsPage() {
           value={(totals?.totalOrders || 0).toLocaleString('en-IN')}
           sub={`${totals?.onlineOrders || 0} online`} color="bg-orange-600" />
         <StatCard icon={Store} label="Active Restaurants" delay={0.15}
-          value={data?.totalRestaurants || 0}
+          value={data?.activeRestaurants ?? data?.totalRestaurants ?? 0}
           sub="on platform" color="bg-green-600" />
+        <StatCard icon={BarChart3} label="Expired Subs" delay={0.18}
+          value={data?.expiredSubscriptions ?? 0}
+          sub="need renewal" color="bg-amber-600" />
       </div>
 
       {/* Revenue Trend Area Chart */}

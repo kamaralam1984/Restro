@@ -24,6 +24,9 @@ export const env = {
   ADMIN_TOKEN: process.env.ADMIN_TOKEN || '',
   JWT_SECRET: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
+
+  // CORS (comma-separated in production; empty = allow all in dev)
+  CORS_ORIGIN: process.env.CORS_ORIGIN || process.env.FRONTEND_URL || '',
 };
 
 // Validate required environment variables
@@ -43,13 +46,21 @@ export const validateEnv = (): void => {
     process.exit(1);
   }
 
-  // Warn about optional but recommended variables
+  // Production: stricter validation
   if (env.NODE_ENV === 'production') {
+    if (!env.JWT_SECRET || env.JWT_SECRET === 'your-secret-key-change-in-production') {
+      console.error('❌ JWT_SECRET must be set to a secure value in production.');
+      process.exit(1);
+    }
+    if (!env.CORS_ORIGIN || !env.CORS_ORIGIN.trim()) {
+      console.error('❌ CORS_ORIGIN must be set in production (e.g. https://yourdomain.com).');
+      process.exit(1);
+    }
     if (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET) {
       console.warn('⚠️  Razorpay credentials not configured. Payment features will not work.');
     }
     if (!env.ADMIN_TOKEN) {
-      console.warn('⚠️  ADMIN_TOKEN not configured. Authentication is disabled.');
+      console.warn('⚠️  ADMIN_TOKEN not configured. Super admin auth may be affected.');
     }
   }
 };

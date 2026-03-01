@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { Restaurant } from '../models/Restaurant.model';
 import { User } from '../models/User.model';
-import { RentalPlan } from '../models/RentalPlan.model';
+import { RentalPlan, IRentalPlan } from '../models/RentalPlan.model';
 import { Subscription } from '../models/Subscription.model';
 import { Menu } from '../models/Menu.model';
 import { Order } from '../models/Order.model';
@@ -156,12 +156,24 @@ export const getPlatformAnalytics = async (req: Request, res: Response) => {
       },
     ]);
 
-    const totalRestaurants = await Restaurant.countDocuments({ status: 'active' });
+    const [activeRestaurants, expiredSubscriptions, mrrResult] = await Promise.all([
+      Restaurant.countDocuments({ status: 'active' }),
+      Subscription.countDocuments({ status: 'expired' }),
+      Subscription.aggregate([
+        { $match: { status: 'active' } },
+        { $group: { _id: null, totalMRR: { $sum: '$amount' } } },
+      ]),
+    ]);
+
+    const totalMRR = mrrResult[0]?.totalMRR ?? 0;
 
     res.json({
       period: days,
       totals: totals || { totalOrders: 0, totalRevenue: 0, onlineRevenue: 0, onlineOrders: 0 },
-      totalRestaurants,
+      totalRestaurants: activeRestaurants,
+      totalMRR,
+      activeRestaurants,
+      expiredSubscriptions,
       perRestaurant: perRestaurantRaw,
       dailyTrend,
     });
@@ -293,9 +305,16 @@ export const createRestaurant = async (req: Request, res: Response) => {
     await session.commitTransaction();
     session.endSession();
 
+    const baseUrl = (process.env.PUBLIC_APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+    const storeLink = `${baseUrl}/r/${restaurant.slug}`;
+
+    const restaurantObj = restaurant.toObject() as unknown as Record<string, unknown>;
+    delete restaurantObj.razorpayKeySecret;
+
     res.status(201).json({
       message: 'Restaurant created successfully',
-      restaurant: { ...restaurant.toObject(), razorpayKeySecret: undefined },
+      restaurant: { ...restaurantObj, storeLink },
+      storeLink,
       adminUser: {
         _id: adminUser._id,
         name: adminUser.name,
@@ -466,15 +485,163 @@ export const updateMyRestaurant = async (req: Request, res: Response) => {
 };
 
 // ─── Public: Get restaurant info by slug (for frontend) ──────────────────────
-
+// Returns restaurant even when inactive/suspended so frontend can show "Service Temporarily Suspended"
 export const getRestaurantBySlug = async (req: Request, res: Response) => {
   try {
-    const restaurant = await Restaurant.findOne({ slug: req.params.slug, status: 'active' })
+    const restaurant = await Restaurant.findOne({ slug: req.params.slug })
       .select('-razorpayKeySecret -emailConfig.password -whatsappApiKey')
       .lean();
     if (!restaurant) return res.status(404).json({ error: 'Restaurant not found' });
     res.json(restaurant);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+// Map plan features to restaurant features (for SaaS feature flags per plan)
+function planToRestaurantFeatures(plan: IRentalPlan | null) {
+  const p = plan?.features;
+  return {
+    onlineOrdering: p?.onlineOrdering ?? true,
+    tableBooking: p?.tableBooking ?? false,
+    billing: p?.billing ?? false,
+    onlinePayments: p?.razorpayIntegration ?? true,
+    reviews: true,
+    heroImages: true,
+    whatsappNotifications: p?.whatsappIntegration ?? false,
+    analytics: p?.analytics ?? false,
+    staffControl: p?.staffControl ?? false,
+    menuManagement: true,
+  };
+}
+
+// ─── Public: Restaurant onboarding signup (no auth) ───────────────────────────
+export const restaurantSignup = async (req: Request, res: Response) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const { name, slug, email, planId, adminName, adminPassword, adminPhone } = req.body;
+
+    if (!name || !slug || !email) {
+      await session.abortTransaction();
+      return res.status(400).json({ error: 'Restaurant name, slug, and admin email are required' });
+    }
+    if (!adminPassword || String(adminPassword).length < 8) {
+      await session.abortTransaction();
+      return res.status(400).json({ error: 'Password is required and must be at least 8 characters' });
+    }
+
+    const trimmedSlug = String(slug).toLowerCase().trim().replace(/\s+/g, '-');
+    if (!/^[a-z0-9-]+$/.test(trimmedSlug)) {
+      await session.abortTransaction();
+      return res.status(400).json({ error: 'Slug can only contain lowercase letters, numbers, and hyphens' });
+    }
+
+    const existing = await Restaurant.findOne({ slug: trimmedSlug }).session(session);
+    if (existing) {
+      await session.abortTransaction();
+      return res.status(409).json({ error: 'This restaurant URL is already taken. Please choose another slug.' });
+    }
+
+    // Plan required for subscription; default to first active plan if not provided
+    let plan = null;
+    if (planId) {
+      plan = await RentalPlan.findById(planId).session(session);
+    }
+    if (!plan) {
+      plan = await RentalPlan.findOne({ isActive: true }).sort({ sortOrder: 1 }).session(session);
+    }
+    if (!plan) {
+      await session.abortTransaction();
+      return res.status(400).json({ error: 'No plan available. Please contact support.' });
+    }
+
+    const trialDays = plan.trialDays ?? 14;
+    const startDate = new Date();
+    const trialEnd = new Date();
+    trialEnd.setDate(trialEnd.getDate() + trialDays);
+
+    const password = await bcrypt.hash(String(adminPassword), 12);
+    const features = planToRestaurantFeatures(plan);
+
+    const [restaurant] = await Restaurant.create(
+      [
+        {
+          name: String(name).trim(),
+          slug: trimmedSlug,
+          phone: (adminPhone && String(adminPhone).trim()) || '0000000000',
+          address: 'To be updated',
+          country: 'India',
+          subscriptionStatus: 'trial',
+          trialEndsAt: trialEnd,
+          currentPlanId: plan._id,
+          status: 'active',
+          features,
+        },
+      ],
+      { session }
+    );
+
+    // Subscription record: trial period (start date + end date = trial expiry)
+    await Subscription.create(
+      [
+        {
+          restaurantId: restaurant._id,
+          planId: plan._id,
+          billingCycle: 'monthly',
+          status: 'active',
+          amount: 0,
+          currency: 'INR',
+          startDate,
+          endDate: trialEnd,
+          paymentMethod: 'cash',
+          autoRenew: false,
+        },
+      ],
+      { session }
+    );
+
+    const [adminUser] = await User.create(
+      [
+        {
+          name: (adminName && String(adminName).trim()) || String(name).trim(),
+          email: String(email).toLowerCase().trim(),
+          phone: (adminPhone && String(adminPhone).trim()) || '0000000000',
+          role: 'admin',
+          password,
+          restaurantId: restaurant._id,
+          isActive: true,
+        },
+      ],
+      { session }
+    );
+
+    restaurant.ownerId = adminUser._id as any;
+    await restaurant.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const baseUrl = (process.env.PUBLIC_APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+    const storeLink = `${baseUrl}/r/${restaurant.slug}`;
+    const loginUrl = `${baseUrl}/admin/login`;
+
+    res.status(201).json({
+      message: 'Restaurant created successfully. You can now log in.',
+      restaurant: {
+        _id: restaurant._id,
+        name: restaurant.name,
+        slug: restaurant.slug,
+        storeLink,
+      },
+      adminUser: {
+        email: adminUser.email,
+        loginUrl,
+      },
+    });
+  } catch (error: any) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(500).json({ error: error.message || 'Signup failed' });
   }
 };

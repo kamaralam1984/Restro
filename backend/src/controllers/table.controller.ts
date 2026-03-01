@@ -70,16 +70,16 @@ export const getTables = async (req: Request, res: Response) => {
         }
       }
 
-      tables = tables.map((table) => {
+      const tablesWithStatus = tables.map((table) => {
         const tableObj = table.toObject();
         if (bookedTableNumbers.has(table.tableNumber)) {
           tableObj.status = 'booked';
         } else if (tableObj.status === 'booked' && !bookedTableNumbers.has(table.tableNumber)) {
-          // Reset to available if not actually booked
           tableObj.status = 'available';
         }
         return tableObj;
       });
+      return res.json(tablesWithStatus);
     }
 
     res.json(tables);

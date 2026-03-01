@@ -6,9 +6,10 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, ShoppingBag, UtensilsCrossed, Calendar, Users, UserCog,
   Star, BarChart3, Settings, Power, ReceiptIndianRupee, TrendingUp, Image,
-  Store, Package, CreditCard, Building2, PieChart,
+  Store, Package, CreditCard, Building2, PieChart, Wallet,
 } from 'lucide-react';
 import api from '@/services/api';
+import type { AdminUser } from './AdminLayout';
 
 interface NavItem {
   name: string;
@@ -17,19 +18,20 @@ interface NavItem {
   badge?: number;
 }
 
-interface AdminUser {
-  name?: string;
-  email?: string;
-  role?: string;
-  restaurantId?: string;
-}
-
 const SUPER_ADMIN_NAV: NavItem[] = [
-  { name: 'Dashboard',      href: '/admin/dashboard',            icon: LayoutDashboard },
   { name: 'Restaurants',    href: '/admin/super/restaurants',    icon: Store },
+  { name: 'Users',          href: '/admin/super/users',           icon: Users },
   { name: 'Analytics',      href: '/admin/super/analytics',      icon: PieChart },
   { name: 'Plans',          href: '/admin/super/plans',          icon: Package },
   { name: 'Subscriptions',  href: '/admin/super/subscriptions',  icon: CreditCard },
+];
+
+const MASTER_ADMIN_NAV: NavItem[] = [
+  { name: 'Restaurants',    href: '/admin/master/restaurants',   icon: Store },
+  { name: 'Users',          href: '/admin/master/users',         icon: Users },
+  { name: 'Analytics',      href: '/admin/master/analytics',     icon: PieChart },
+  { name: 'Plans',          href: '/admin/master/plans',        icon: Package },
+  { name: 'Subscriptions',  href: '/admin/master/subscriptions', icon: CreditCard },
 ];
 
 const ADMIN_NAV: NavItem[] = [
@@ -39,26 +41,41 @@ const ADMIN_NAV: NavItem[] = [
   { name: 'Bookings',     href: '/admin/bookings',     icon: Calendar },
   { name: 'Hero Images',  href: '/admin/hero-images',  icon: Image },
   { name: 'Billing',      href: '/admin/billing',      icon: ReceiptIndianRupee },
+  { name: 'Payments',     href: '/admin/payments',     icon: Wallet },
   { name: 'Revenue',      href: '/admin/revenue',      icon: TrendingUp },
   { name: 'Customers',    href: '/admin/customers',    icon: Users },
-  { name: 'Users',        href: '/admin/users',        icon: UserCog },
+  { name: 'Staff & Users', href: '/admin/users',       icon: UserCog },
   { name: 'Reviews',      href: '/admin/reviews',      icon: Star },
   { name: 'Analytics',    href: '/admin/analytics',    icon: BarChart3 },
   { name: 'Settings',     href: '/admin/settings',     icon: Settings },
 ];
 
-export default function Sidebar() {
+export type PanelType = 'super' | 'master' | 'rental';
+
+interface SidebarProps {
+  adminUser?: AdminUser | null;
+  /** When set, overrides role-based nav (for separate panel URLs) */
+  panelType?: PanelType;
+}
+
+export default function Sidebar({ adminUser: adminUserProp, panelType: panelTypeProp }: SidebarProps) {
   const pathname = usePathname();
   const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
-  const [adminUser, setAdminUser] = useState<AdminUser>({});
+  const [localAdmin, setLocalAdmin] = useState<AdminUser | null>(null);
+
+  const adminUser = adminUserProp ?? localAdmin ?? {};
 
   useEffect(() => {
+    if (adminUserProp) return;
     const stored = localStorage.getItem('admin');
     if (stored) {
-      try { setAdminUser(JSON.parse(stored)); } catch {}
+      try { setLocalAdmin(JSON.parse(stored)); } catch {}
     }
-    if (adminUser.role !== 'super_admin') loadPendingOrders();
-  }, []);
+  }, [adminUserProp]);
+
+  useEffect(() => {
+    if (adminUser.role !== 'super_admin' && adminUser.role !== 'master_admin') loadPendingOrders();
+  }, [adminUser.role]);
 
   const loadPendingOrders = async () => {
     try {
@@ -75,16 +92,20 @@ export default function Sidebar() {
     } catch {}
   };
 
-  const isSuperAdmin = adminUser.role === 'super_admin';
-  const navItems = isSuperAdmin
+  const panelType: PanelType = panelTypeProp ?? (adminUser.role === 'super_admin' ? 'super' : adminUser.role === 'master_admin' ? 'master' : 'rental');
+  const isPlatform = panelType === 'super' || panelType === 'master';
+  const navItems = panelType === 'super'
     ? SUPER_ADMIN_NAV
-    : ADMIN_NAV.map((item) =>
-        item.name === 'Orders' ? { ...item, badge: pendingOrdersCount } : item
-      );
+    : panelType === 'master'
+      ? MASTER_ADMIN_NAV
+      : ADMIN_NAV.map((item) =>
+          item.name === 'Orders' ? { ...item, badge: pendingOrdersCount } : item
+        );
 
   const initials = (adminUser.name || 'A').slice(0, 1).toUpperCase();
-  const roleLabel = isSuperAdmin ? 'Super Admin' : 'Restaurant Admin';
-  const roleBg = isSuperAdmin ? 'bg-purple-600' : 'bg-orange-600';
+  const roleLabel = panelType === 'super' ? 'Super Admin' : panelType === 'master' ? 'Master Admin' : 'Rental Admin';
+  const roleBg = panelType === 'super' ? 'bg-purple-600' : panelType === 'master' ? 'bg-amber-600' : 'bg-orange-600';
+  const logoutHref = panelType === 'super' ? '/admin/super/login' : panelType === 'master' ? '/admin/master/login' : '/admin/login';
 
   return (
     <div className="w-64 bg-slate-900 min-h-screen flex flex-col">
@@ -92,16 +113,16 @@ export default function Sidebar() {
       <div className="p-6 border-b border-slate-800">
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 ${roleBg} rounded-lg flex items-center justify-center`}>
-            {isSuperAdmin
+            {isPlatform
               ? <Building2 className="w-6 h-6 text-white" />
               : <span className="text-xl">👨‍🍳</span>}
           </div>
           <div>
             <div className="text-white font-semibold text-sm">
-              {isSuperAdmin ? 'Restro OS' : 'Restaurant'}
+              {isPlatform ? 'Restro OS' : 'My Restaurant'}
             </div>
             <div className={`text-xs font-medium px-2 py-0.5 rounded-full inline-block mt-0.5 ${
-              isSuperAdmin ? 'bg-purple-600/30 text-purple-300' : 'bg-orange-600/30 text-orange-300'
+              panelType === 'super' ? 'bg-purple-600/30 text-purple-300' : panelType === 'master' ? 'bg-amber-600/30 text-amber-300' : 'bg-orange-600/30 text-orange-300'
             }`}>
               {roleLabel}
             </div>
@@ -119,9 +140,11 @@ export default function Sidebar() {
               href={item.href}
               className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors ${
                 isActive
-                  ? isSuperAdmin
+                  ? panelType === 'super'
                     ? 'bg-purple-600 text-white'
-                    : 'bg-orange-600 text-white'
+                    : panelType === 'master'
+                      ? 'bg-amber-600 text-white'
+                      : 'bg-orange-600 text-white'
                   : 'text-slate-300 hover:bg-slate-800'
               }`}
             >
@@ -156,7 +179,7 @@ export default function Sidebar() {
           onClick={() => {
             localStorage.removeItem('token');
             localStorage.removeItem('admin');
-            window.location.href = '/admin/login';
+            window.location.href = logoutHref;
           }}
           className="w-full flex items-center gap-3 px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors text-sm"
         >

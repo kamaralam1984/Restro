@@ -34,6 +34,8 @@ export interface MenuFilters {
   sortOrder?: 'asc' | 'desc';
   page?: number;
   limit?: number;
+  /** Restaurant slug for /r/[slug] storefront — filters menu by that restaurant */
+  restaurant?: string;
 }
 
 export interface MenuResponse {
@@ -107,6 +109,10 @@ export const menuService = {
       params.limit = filters.limit.toString();
     }
 
+    if (filters?.restaurant) {
+      params.restaurant = filters.restaurant;
+    }
+
     return api.get<MenuResponse>('/menu', { params });
   },
 
@@ -118,12 +124,14 @@ export const menuService = {
     return this.getMenuItems({ ...filters, category });
   },
 
-  async getCategories(): Promise<MenuCategory[]> {
-    return api.get<MenuCategory[]>('/menu/categories');
+  async getCategories(restaurantSlug?: string): Promise<MenuCategory[]> {
+    const params = restaurantSlug ? { restaurant: restaurantSlug } : undefined;
+    return api.get<MenuCategory[]>('/menu/categories', params ? { params } : undefined);
   },
 
-  async getPriceRange(): Promise<PriceRange> {
-    return api.get<PriceRange>('/menu/price-range');
+  async getPriceRange(restaurantSlug?: string): Promise<PriceRange> {
+    const params = restaurantSlug ? { restaurant: restaurantSlug } : undefined;
+    return api.get<PriceRange>('/menu/price-range', params ? { params } : undefined);
   },
 
   // Advanced search with multiple criteria

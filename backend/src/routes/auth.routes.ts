@@ -2,20 +2,28 @@ import { Router } from 'express';
 import { authenticate, requireAdminOrSuperAdmin } from '../middleware/auth.middleware';
 import {
   superAdminLogin,
+  masterAdminLogin,
   adminLogin,
   createAdmin,
+  changeOwnPassword,
   customerRegister,
   customerLogin,
 } from '../controllers/auth.controller';
 
 const router = Router();
 
-// Super Admin login (platform level)
+// Super Admin login (platform panel — separate link)
 router.post('/super-admin/login', superAdminLogin);
 
-// Restaurant admin / staff login
+// Master Admin login (platform panel — separate link)
+router.post('/master-admin/login', masterAdminLogin);
+
+// Rental admin / staff login (restaurant panel only)
 router.post('/admin/login', adminLogin);
 router.post('/admin/create', authenticate, requireAdminOrSuperAdmin, createAdmin);
+
+// Logged-in user: change own password (rental admin / super admin)
+router.put('/me/password', authenticate, changeOwnPassword);
 
 // Customer auth
 router.post('/register', customerRegister);

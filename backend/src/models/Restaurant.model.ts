@@ -13,11 +13,13 @@ export interface IEmailConfig {
 export interface IRestaurantFeatures {
   onlineOrdering: boolean;
   tableBooking: boolean;
+  billing: boolean;
   onlinePayments: boolean;
   reviews: boolean;
   heroImages: boolean;
   whatsappNotifications: boolean;
   analytics: boolean;
+  staffControl: boolean;
   menuManagement: boolean;
 }
 
@@ -33,8 +35,15 @@ export interface IRestaurant extends Document {
   country: string;
   pincode?: string;
 
+  // Region / locale (e.g. IN, AE for UAE mode: AED, 5% VAT)
+  region?: string;
+
+  // Multi-branch: optional parent restaurant ID (this outlet is a branch)
+  parentRestaurantId?: mongoose.Types.ObjectId;
+
   // Branding
   primaryColor: string;
+  theme?: string; // theme id for website design (e.g. default, ocean, sunset)
   currency: string;
 
   // Per-restaurant email SMTP config
@@ -119,10 +128,17 @@ const RestaurantSchema = new Schema<IRestaurant>(
     state: { type: String, trim: true },
     country: { type: String, trim: true, default: 'India' },
     pincode: { type: String, trim: true },
+    region: { type: String, trim: true },
+    parentRestaurantId: { type: Schema.Types.ObjectId, ref: 'Restaurant', default: null },
 
     primaryColor: {
       type: String,
-      default: '#ea580c', // orange-600
+      default: '#ea580c',
+    },
+    theme: {
+      type: String,
+      trim: true,
+      default: 'default',
     },
     currency: {
       type: String,
@@ -180,11 +196,13 @@ const RestaurantSchema = new Schema<IRestaurant>(
       type: new Schema({
         onlineOrdering:          { type: Boolean, default: true },
         tableBooking:            { type: Boolean, default: true },
+        billing:                 { type: Boolean, default: true },
         onlinePayments:          { type: Boolean, default: true },
         reviews:                 { type: Boolean, default: true },
         heroImages:              { type: Boolean, default: true },
         whatsappNotifications:   { type: Boolean, default: false },
         analytics:               { type: Boolean, default: true },
+        staffControl:            { type: Boolean, default: false },
         menuManagement:          { type: Boolean, default: true },
       }, { _id: false }),
       default: () => ({}),

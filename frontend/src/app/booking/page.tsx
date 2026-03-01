@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
@@ -19,15 +20,20 @@ import {
 } from '@/utils/booking.utils';
 import api from '@/services/api';
 import { CreditCard, Info, AlertCircle, CheckCircle } from 'lucide-react';
+import ServiceSuspendedMessage from '@/components/ServiceSuspendedMessage';
 
 interface Table {
   tableNumber: string;
   capacity: number;
 }
 
-export default function BookingPage() {
+function BookingPageContent() {
   const { t } = useLanguage();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const restaurantSlug = searchParams.get('restaurant') || undefined;
+  const [restaurantSuspended, setRestaurantSuspended] = useState<boolean | null>(null);
+  const [restaurantName, setRestaurantName] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -115,6 +121,24 @@ export default function BookingPage() {
   useEffect(() => {
     setRazorpayKey(process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '');
   }, []);
+
+  useEffect(() => {
+    if (!restaurantSlug) {
+      setRestaurantSuspended(null);
+      return;
+    }
+    api
+      .get<{ status?: string; subscriptionStatus?: string; name?: string }>(`/restaurants/by-slug/${restaurantSlug}`)
+      .then((r) => {
+        const suspended =
+          r.status === 'inactive' ||
+          r.subscriptionStatus === 'suspended' ||
+          r.subscriptionStatus === 'cancelled';
+        setRestaurantSuspended(suspended);
+        setRestaurantName(r.name || '');
+      })
+      .catch(() => setRestaurantSuspended(false));
+  }, [restaurantSlug]);
 
   useEffect(() => {
     if (selectedTable && selectedTableInfo) {
@@ -284,6 +308,14 @@ export default function BookingPage() {
       setLoading(false);
     }
   };
+
+  if (restaurantSlug && restaurantSuspended === true) {
+    return (
+      <div className="min-h-screen bg-slate-950">
+        <ServiceSuspendedMessage restaurantName={restaurantName} subscriptionExpired />
+      </div>
+    );
+  }
 
   if (success) {
     return (
@@ -590,5 +622,13 @@ export default function BookingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function BookingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-950 flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-2 border-orange-500 border-t-transparent" /></div>}>
+      <BookingPageContent />
+    </Suspense>
   );
 }

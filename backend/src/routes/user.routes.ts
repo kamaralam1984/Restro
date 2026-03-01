@@ -7,11 +7,13 @@ import {
   deleteUser,
 } from '../controllers/user.controller';
 import { authenticate, requireAdminOrSuperAdmin } from '../middleware/auth.middleware';
+import { requireFeature } from '../middleware/featureFlag.middleware';
 
 const router = Router();
 
 router.use(authenticate);
 router.use(requireAdminOrSuperAdmin);
+router.use(requireFeature('staffControl'));
 
 // Get all users
 router.get('/', getAllUsers);

@@ -5,15 +5,20 @@ import { LanguageProvider } from "@/context/LanguageContext";
 import { UserProvider } from "@/context/UserContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import WhatsAppButton from "@/components/WhatsAppButton";
+import WhatsAppButtonWrapper from "@/components/WhatsAppButtonWrapper";
+import PWAProvider from "@/components/PWAProvider";
 import { generateMetadata as generateSEOMetadata } from "@/utils/seo";
 import { generateRestaurantSchema } from "@/utils/schema";
 
-export const metadata: Metadata = generateSEOMetadata({
-  title: "Restro OS - Fine Dining Restaurant",
-  description: "Experience fine dining with exceptional service at Restro OS. Book a table, order online, and enjoy our exquisite menu.",
-  keywords: ["restaurant", "fine dining", "restro os", "food", "dining", "reservation", "online ordering"],
-});
+export const metadata: Metadata = {
+  ...generateSEOMetadata({
+    title: "Restro OS - Restaurant Management Platform",
+    description: "Run your restaurant like a pro. Orders, billing, bookings, analytics & staff management — all in one platform. Start your free trial.",
+    keywords: ["restaurant management", "restro os", "pos", "restaurant software", "orders", "billing", "table booking", "analytics"],
+  }),
+  manifest: "/manifest.json",
+  themeColor: "#ea580c",
+};
 
 export default function RootLayout({
   children,
@@ -25,6 +30,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#ea580c" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -43,7 +51,8 @@ export default function RootLayout({
               <Navbar />
               <main className="flex-grow">{children}</main>
               <Footer />
-              <WhatsAppButton />
+              <WhatsAppButtonWrapper />
+              <PWAProvider />
             </CartProvider>
           </LanguageProvider>
         </UserProvider>

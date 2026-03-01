@@ -116,7 +116,7 @@ export const createBooking = async (req: Request, res: Response) => {
     }
 
     // Handle table selection if provided
-    let selectedTableNumber = null;
+    let selectedTableNumber: string | null = null;
     let tableCapacity = null;
     let advancePaymentAmount = 0;
     let totalBookingAmount = 0;
@@ -147,7 +147,7 @@ export const createBooking = async (req: Request, res: Response) => {
       advancePaymentAmount = bookingConfig.hourlyRate; // Advance payment is 1 hour rate
 
       // Check if table is already booked for overlapping time slots
-      const tableBookings = existingBookings.filter(b => b.tableNumber === selectedTableNumber);
+      const tableBookings = existingBookings.filter(b => b.tableNumber === selectedTableNumber!);
       for (const existingBooking of tableBookings) {
         const existingTimeParts = existingBooking.time.split(':');
         const existingStartMinutes = parseInt(existingTimeParts[0], 10) * 60 + parseInt(existingTimeParts[1], 10);

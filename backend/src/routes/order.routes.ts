@@ -6,18 +6,19 @@ import {
   updateOrderStatus,
   updatePaymentStatus,
 } from '../controllers/order.controller';
-import { authenticate, requireAdminOrSuperAdmin } from '../middleware/auth.middleware';
+import { authenticate, requireStaffOrAdmin } from '../middleware/auth.middleware';
+import { requirePermission } from '../middleware/permission.middleware';
 
 const router = Router();
 
 // Public route (for customers to create orders)
 router.post('/', createOrder);
 
-// Protected admin routes
-router.get('/', authenticate, requireAdminOrSuperAdmin, getOrders);
-router.get('/:id', authenticate, requireAdminOrSuperAdmin, getOrder);
-router.put('/:id/status', authenticate, requireAdminOrSuperAdmin, updateOrderStatus);
-router.put('/:id/payment', authenticate, requireAdminOrSuperAdmin, updatePaymentStatus);
+// Protected: manager/staff/admin – staff can only read + update status; manager/admin can update payment
+router.get('/', authenticate, requireStaffOrAdmin, requirePermission('orders:read'), getOrders);
+router.get('/:id', authenticate, requireStaffOrAdmin, requirePermission('orders:read'), getOrder);
+router.put('/:id/status', authenticate, requireStaffOrAdmin, requirePermission('orders:update'), updateOrderStatus);
+router.put('/:id/payment', authenticate, requireStaffOrAdmin, requirePermission('orders:manage'), updatePaymentStatus);
 
 export default router;
 

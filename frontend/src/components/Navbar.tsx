@@ -51,12 +51,19 @@ export default function Navbar() {
     router.push('/');
   };
 
-  const navLinks = [
-    { href: '/', label: 'Home' },
-    { href: '/menu', label: 'Menu' },
-    { href: '/about', label: 'About' },
-    { href: '/contact', label: 'Contact' },
-  ];
+  const isLandingPage = pathname === '/';
+  const navLinks = isLandingPage
+    ? [
+        { href: '/#features', label: 'Features' },
+        { href: '/#pricing', label: 'Pricing' },
+        { href: '/contact', label: 'Contact' },
+      ]
+    : [
+        { href: '/', label: 'Home' },
+        { href: '/menu', label: 'Menu' },
+        { href: '/about', label: 'About' },
+        { href: '/contact', label: 'Contact' },
+      ];
 
   return (
     <motion.nav
@@ -79,7 +86,7 @@ export default function Navbar() {
               </div>
               <div>
                 <div className="text-2xl font-bold text-white">Restro OS</div>
-                <div className="text-xs text-slate-400">Pure & Delicious</div>
+                <div className="text-xs text-slate-400">{isLandingPage ? 'Restaurant Management' : 'Pure & Delicious'}</div>
               </div>
             </Link>
           </motion.div>
@@ -118,49 +125,51 @@ export default function Navbar() {
 
           {/* Right Side Actions */}
           <div className="flex items-center gap-4">
-            {/* Database Status Indicator */}
-            <div className="flex items-center gap-2" title={dbConnected ? 'Database Connected' : 'Database Disconnected'}>
-              <div className="relative">
-                <div
-                  className={`w-3 h-3 rounded-full ${
-                    dbConnected ? 'bg-green-500' : 'bg-red-500'
-                  } ${dbConnected ? 'animate-pulse' : ''}`}
-                />
-                {dbConnected && (
-                  <div className="absolute inset-0 w-3 h-3 rounded-full bg-green-500 animate-ping opacity-75" />
-                )}
-              </div>
-              <span className="hidden md:block text-xs text-slate-400">
-                {checkingStatus ? 'Checking...' : dbConnected ? 'DB Online' : 'DB Offline'}
-              </span>
-            </div>
-            
-            <LanguageSwitcher />
-            <Link href="/cart">
-              <motion.div
-                className="relative"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <span className="text-white hover:text-orange-600 transition-colors">
-                  Cart
-                </span>
-                <AnimatePresence>
-                  {itemCount > 0 && (
-                    <motion.span
-                      className="absolute -top-2 -right-2 bg-orange-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      exit={{ scale: 0 }}
-                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                    >
-                      {itemCount}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            </Link>
-            
+            {!isLandingPage && (
+              <>
+                {/* Database Status Indicator */}
+                <div className="flex items-center gap-2" title={dbConnected ? 'Database Connected' : 'Database Disconnected'}>
+                  <div className="relative">
+                    <div
+                      className={`w-3 h-3 rounded-full ${
+                        dbConnected ? 'bg-green-500' : 'bg-red-500'
+                      } ${dbConnected ? 'animate-pulse' : ''}`}
+                    />
+                    {dbConnected && (
+                      <div className="absolute inset-0 w-3 h-3 rounded-full bg-green-500 animate-ping opacity-75" />
+                    )}
+                  </div>
+                  <span className="hidden md:block text-xs text-slate-400">
+                    {checkingStatus ? 'Checking...' : dbConnected ? 'DB Online' : 'DB Offline'}
+                  </span>
+                </div>
+                <LanguageSwitcher />
+                <Link href="/cart">
+                  <motion.div
+                    className="relative"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <span className="text-white hover:text-orange-600 transition-colors">
+                      Cart
+                    </span>
+                    <AnimatePresence>
+                      {itemCount > 0 && (
+                        <motion.span
+                          className="absolute -top-2 -right-2 bg-orange-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          exit={{ scale: 0 }}
+                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                        >
+                          {itemCount}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                </Link>
+              </>
+            )}
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 text-white">
@@ -181,7 +190,7 @@ export default function Navbar() {
               </div>
             ) : (
               <>
-                <Link href="/login">
+                <Link href="/admin/login">
                   <motion.button
                     className="text-white hover:text-orange-600 transition-colors"
                     whileHover={{ scale: 1.05 }}
@@ -190,13 +199,13 @@ export default function Navbar() {
                     Login
                   </motion.button>
                 </Link>
-                <Link href="/signup">
+                <Link href={isLandingPage ? '/restaurant/signup' : '/signup'}>
                   <motion.button
                     className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    Sign Up
+                    {isLandingPage ? 'Start Free Trial' : 'Sign Up'}
                   </motion.button>
                 </Link>
               </>

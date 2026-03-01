@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Store, Search, X, Power, Settings2 } from 'lucide-react';
+import { Plus, Store, Search, X, Power, Settings2, Copy, ExternalLink, Check } from 'lucide-react';
 import Link from 'next/link';
 import api from '@/services/api';
+import { getRestaurantPublicLink } from '@/utils/restaurantLink';
 
 interface Plan { _id: string; name: string; price: number; }
 interface Restaurant {
@@ -28,6 +29,8 @@ export default function SuperAdminRestaurantsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [createdLink, setCreatedLink] = useState<{ name: string; slug: string; storeLink?: string; rentalAdminEmail?: string } | null>(null);
+  const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
 
   useEffect(() => { loadData(); }, []);
 
@@ -51,13 +54,36 @@ export default function SuperAdminRestaurantsPage() {
   const handleSlugify = (name: string) =>
     name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
+  const copyLink = (slug: string) => {
+    const url = getRestaurantPublicLink(slug);
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedSlug(slug);
+      setTimeout(() => setCopiedSlug(null), 2000);
+    });
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setError('');
     try {
-      await api.post('/super-admin/restaurants', form, { headers: headers() });
+      const res = await api.post<{
+        restaurant: { name: string; slug: string; storeLink?: string };
+        storeLink?: string;
+        adminUser?: { email: string; name: string };
+      }>('/super-admin/restaurants', form, { headers: headers() });
       setShowModal(false);
+      const link = res?.storeLink ?? res?.restaurant?.storeLink ?? (res?.restaurant ? getRestaurantPublicLink(res.restaurant.slug) : null);
+      setCreatedLink(
+        res?.restaurant
+          ? {
+              name: res.restaurant.name,
+              slug: res.restaurant.slug,
+              storeLink: link || undefined,
+              rentalAdminEmail: res.adminUser?.email,
+            }
+          : null
+      );
       setForm(EMPTY_FORM);
       await loadData();
     } catch (err: any) {
@@ -82,6 +108,64 @@ export default function SuperAdminRestaurantsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Success: new restaurant + rental admin credentials */}
+      <AnimatePresence>
+        {createdLink && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-green-900/30 border border-green-600/50 rounded-xl p-5 space-y-4"
+          >
+            <div>
+              <p className="text-green-300 font-semibold">Restaurant created — separate Rental Admin panel &amp; login</p>
+              <p className="text-slate-400 text-sm mt-0.5">{createdLink.name}</p>
+            </div>
+            {createdLink.rentalAdminEmail && (
+              <div className="bg-slate-800/60 rounded-lg px-4 py-3 text-sm">
+                <p className="text-slate-300 font-medium mb-1">Rental Admin Login (only for this restaurant)</p>
+                <p className="text-white">ID: <code className="bg-slate-700 px-2 py-0.5 rounded">{createdLink.rentalAdminEmail}</code></p>
+                <p className="text-slate-400 text-xs mt-1">Password: the one you set above. Share securely with the restaurant. This login opens only this restaurant&apos;s panel.</p>
+              </div>
+            )}
+            <div className="flex items-center flex-wrap gap-3">
+              <code className="text-sm text-white bg-slate-800 px-3 py-2 rounded-lg truncate max-w-[280px]" title={createdLink.storeLink || getRestaurantPublicLink(createdLink.slug)}>
+                {createdLink.storeLink || getRestaurantPublicLink(createdLink.slug)}
+              </code>
+              <button
+                type="button"
+                onClick={() => {
+                  const url = createdLink.storeLink || getRestaurantPublicLink(createdLink.slug);
+                  navigator.clipboard.writeText(url).then(() => {
+                    setCopiedSlug(createdLink.slug);
+                    setTimeout(() => setCopiedSlug(null), 2000);
+                  });
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition-colors"
+              >
+                {copiedSlug === createdLink.slug ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copiedSlug === createdLink.slug ? 'Copied' : 'Copy link'}
+              </button>
+              <a
+                href={createdLink.storeLink || getRestaurantPublicLink(createdLink.slug)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-semibold transition-colors"
+              >
+                <ExternalLink className="w-4 h-4" /> Open
+              </a>
+              <button
+                type="button"
+                onClick={() => setCreatedLink(null)}
+                className="text-slate-400 hover:text-white text-sm font-medium"
+              >
+                Dismiss
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -120,6 +204,7 @@ export default function SuperAdminRestaurantsPage() {
             <thead>
               <tr className="text-slate-400 border-b border-slate-800 text-left">
                 <th className="py-4 px-5">Restaurant</th>
+                <th className="py-4 px-5">Store link</th>
                 <th className="py-4 px-5">Owner</th>
                 <th className="py-4 px-5">Location</th>
                 <th className="py-4 px-5">Status</th>
@@ -131,7 +216,7 @@ export default function SuperAdminRestaurantsPage() {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-slate-400">
+                  <td colSpan={8} className="text-center py-12 text-slate-400">
                     No restaurants found
                   </td>
                 </tr>
@@ -146,6 +231,30 @@ export default function SuperAdminRestaurantsPage() {
                         <div className="text-white font-medium">{r.name}</div>
                         <div className="text-slate-500 text-xs">/{r.slug}</div>
                       </div>
+                    </div>
+                  </td>
+                  <td className="py-4 px-5">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => copyLink(r.slug)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                        title="Copy store link"
+                      >
+                        {copiedSlug === r.slug ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                      </button>
+                      <a
+                        href={getRestaurantPublicLink(r.slug)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                        title="Open store"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                      <span className="text-slate-500 text-xs truncate max-w-[120px] block" title={getRestaurantPublicLink(r.slug)}>
+                        /r/{r.slug}
+                      </span>
                     </div>
                   </td>
                   <td className="py-4 px-5">
@@ -295,28 +404,30 @@ export default function SuperAdminRestaurantsPage() {
                 </div>
 
                 <div className="border-t border-slate-800 pt-5">
-                  <p className="text-sm font-semibold text-slate-300 mb-4">Admin Account</p>
+                  <p className="text-sm font-semibold text-slate-300 mb-1">Rental Admin — ID &amp; Password (created from Super Admin)</p>
+                  <p className="text-slate-500 text-xs mb-4">Har restaurant ka alag login. Yeh ID/password sirf is restaurant ke Rental Admin panel ke liye use hoga.</p>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1.5">Admin Name *</label>
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">Rental Admin Name *</label>
                       <input required value={form.adminName}
                         onChange={(e) => setForm({ ...form, adminName: e.target.value })}
                         className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                         placeholder="John Doe" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1.5">Admin Email *</label>
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">Rental Admin ID (Email) *</label>
                       <input required type="email" value={form.adminEmail}
                         onChange={(e) => setForm({ ...form, adminEmail: e.target.value })}
                         className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="admin@restaurant.com" />
+                        placeholder="admin@this-restaurant.com" />
                     </div>
                     <div className="col-span-2">
-                      <label className="block text-sm font-medium text-slate-300 mb-1.5">Admin Password</label>
-                      <input value={form.adminPassword}
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">Rental Admin Password *</label>
+                      <input type="password" value={form.adminPassword}
                         onChange={(e) => setForm({ ...form, adminPassword: e.target.value })}
                         className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="Admin@123" />
+                        placeholder="Min 8 characters" />
+                      <p className="text-slate-500 text-xs mt-1">Yeh password is restaurant ke panel ke liye. Create ke baad restaurant owner ko securely share karein.</p>
                     </div>
                   </div>
                 </div>

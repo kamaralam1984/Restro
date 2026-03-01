@@ -1,5 +1,8 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import { Menu } from '../models/Menu.model';
+import { Restaurant } from '../models/Restaurant.model';
+import { createAuditLog } from '../utils/auditLog';
 
 export const getMenuItems = async (req: Request, res: Response) => {
   try {
@@ -14,10 +17,17 @@ export const getMenuItems = async (req: Request, res: Response) => {
       sortOrder = 'desc',
       page = '1',
       limit = '50',
+      restaurant: restaurantSlug,
     } = req.query;
 
-    // Build filter object
-    const filter: any = {};
+    // Build filter object (soft delete: exclude deleted items)
+    const filter: any = { isDeleted: { $ne: true } };
+
+    // Filter by restaurant when slug is provided (for /r/[slug] storefront)
+    if (restaurantSlug && typeof restaurantSlug === 'string') {
+      const rest = await Restaurant.findOne({ slug: restaurantSlug.trim(), status: 'active' }).select('_id').lean();
+      if (rest) filter.restaurantId = new mongoose.Types.ObjectId(rest._id);
+    }
 
     // Category filter
     if (category && category !== 'all') {
@@ -55,18 +65,20 @@ export const getMenuItems = async (req: Request, res: Response) => {
     }
 
     // Search filter (name or description)
-    if (search) {
+    const searchStr = typeof search === 'string' ? search : (Array.isArray(search) ? search[0] : '');
+    if (searchStr) {
+      const searchRegex = new RegExp(String(searchStr), 'i');
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { ingredients: { $in: [new RegExp(search, 'i')] } },
+        { name: { $regex: searchRegex } },
+        { description: { $regex: searchRegex } },
+        { ingredients: { $in: [searchRegex] } },
       ];
     }
 
     // Sorting
-    const sortOptions: any = {};
+    const sortOptions: Record<string, 1 | -1> = {};
     const validSortFields = ['name', 'price', 'createdAt', 'category', 'preparationTime'];
-    const sortField = validSortFields.includes(sortBy as string) ? sortBy : 'createdAt';
+    const sortField = validSortFields.includes(String(sortBy)) ? String(sortBy) : 'createdAt';
     sortOptions[sortField] = sortOrder === 'asc' ? 1 : -1;
 
     // Pagination
@@ -119,7 +131,7 @@ export const getMenuItems = async (req: Request, res: Response) => {
 export const getMenuItem = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const menuItem = await Menu.findById(id);
+    const menuItem = await Menu.findOne({ _id: id, isDeleted: { $ne: true } });
 
     if (!menuItem) {
       return res.status(404).json({ error: 'Menu item not found' });
@@ -144,13 +156,30 @@ export const createMenuItem = async (req: Request, res: Response) => {
 export const updateMenuItem = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const menuItem = await Menu.findByIdAndUpdate(id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const oldItem = await Menu.findOne({ _id: id, isDeleted: { $ne: true } }).lean();
+    const menuItem = await Menu.findOneAndUpdate(
+      { _id: id, isDeleted: { $ne: true } },
+      req.body,
+      { new: true, runValidators: true }
+    );
 
     if (!menuItem) {
       return res.status(404).json({ error: 'Menu item not found' });
+    }
+
+    const user = (req as any).user;
+    if (user?.userId) {
+      await createAuditLog({
+        userId: new mongoose.Types.ObjectId(user.userId),
+        userEmail: user.email || 'unknown',
+        userRole: user.role || 'admin',
+        restaurantId: user.restaurantId ? new mongoose.Types.ObjectId(user.restaurantId) : undefined,
+        action: 'menu.edit',
+        entityType: 'Menu',
+        entityId: menuItem._id,
+        oldValue: oldItem ? { name: oldItem.name, price: oldItem.price } : undefined,
+        newValue: { name: menuItem.name, price: menuItem.price },
+      });
     }
 
     res.json(menuItem);
@@ -162,10 +191,28 @@ export const updateMenuItem = async (req: Request, res: Response) => {
 export const deleteMenuItem = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const menuItem = await Menu.findByIdAndDelete(id);
+    const menuItem = await Menu.findOneAndUpdate(
+      { _id: id, isDeleted: { $ne: true } },
+      { $set: { isDeleted: true } },
+      { new: true }
+    );
 
     if (!menuItem) {
       return res.status(404).json({ error: 'Menu item not found' });
+    }
+
+    const user = (req as any).user;
+    if (user?.userId) {
+      await createAuditLog({
+        userId: new mongoose.Types.ObjectId(user.userId),
+        userEmail: user.email || 'unknown',
+        userRole: user.role || 'admin',
+        restaurantId: user.restaurantId ? new mongoose.Types.ObjectId(user.restaurantId) : undefined,
+        action: 'menu.delete',
+        entityType: 'Menu',
+        entityId: menuItem._id,
+        oldValue: { name: menuItem.name },
+      });
     }
 
     res.json({ message: 'Menu item deleted successfully' });
@@ -176,14 +223,17 @@ export const deleteMenuItem = async (req: Request, res: Response) => {
 
 export const getCategories = async (req: Request, res: Response) => {
   try {
-    const categories = await Menu.distinct('category');
+    const filter: any = { available: true };
+    const restaurantSlug = req.query.restaurant;
+    if (restaurantSlug && typeof restaurantSlug === 'string') {
+      const rest = await Restaurant.findOne({ slug: restaurantSlug.trim(), status: 'active' }).select('_id').lean();
+      if (rest) filter.restaurantId = new mongoose.Types.ObjectId(rest._id);
+    }
+    const categories = await Menu.distinct('category', filter);
     const categoriesWithCount = await Promise.all(
       categories.map(async (category) => {
-        const count = await Menu.countDocuments({ category, available: true });
-        return {
-          name: category,
-          count,
-        };
+        const count = await Menu.countDocuments({ ...filter, category });
+        return { name: category, count };
       })
     );
     res.json(categoriesWithCount);
@@ -195,11 +245,16 @@ export const getCategories = async (req: Request, res: Response) => {
 // Get price range for filtering
 export const getPriceRange = async (req: Request, res: Response) => {
   try {
+    const filter: any = { available: true };
+    const restaurantSlug = req.query.restaurant;
+    if (restaurantSlug && typeof restaurantSlug === 'string') {
+      const rest = await Restaurant.findOne({ slug: restaurantSlug.trim(), status: 'active' }).select('_id').lean();
+      if (rest) filter.restaurantId = new mongoose.Types.ObjectId(rest._id);
+    }
     const [minPriceResult, maxPriceResult] = await Promise.all([
-      Menu.findOne({ available: true }).sort({ price: 1 }).select('price').lean(),
-      Menu.findOne({ available: true }).sort({ price: -1 }).select('price').lean(),
+      Menu.findOne(filter).sort({ price: 1 }).select('price').lean(),
+      Menu.findOne(filter).sort({ price: -1 }).select('price').lean(),
     ]);
-
     res.json({
       min: minPriceResult?.price || 0,
       max: maxPriceResult?.price || 0,

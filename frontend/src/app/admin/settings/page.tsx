@@ -1,40 +1,183 @@
 'use client';
 
-import { useState } from 'react';
-import { Save, Bell, CreditCard, Globe, Shield, Database } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Save, Bell, CreditCard, Globe, Shield, Palette, Check, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast, { Toaster } from 'react-hot-toast';
+import api from '@/services/api';
+import { WEBSITE_THEMES, DEFAULT_THEME_ID, getThemeById } from '@/config/websiteThemes';
+
+interface RestaurantSettings {
+  name: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  currency: string;
+  taxRate: number;
+  serviceCharge: number;
+  primaryColor: string;
+  theme: string;
+  logo: string;
+  description: string;
+  razorpayKeyId: string;
+  razorpayKeySecret: string;
+  whatsappNumber: string;
+  enableNotifications?: boolean;
+  enableWhatsApp?: boolean;
+}
+
+const DEFAULT_SETTINGS: RestaurantSettings = {
+  name: '',
+  phone: '',
+  address: '',
+  city: '',
+  state: '',
+  pincode: '',
+  currency: 'INR',
+  taxRate: 18,
+  serviceCharge: 0,
+  primaryColor: '#ea580c',
+  theme: DEFAULT_THEME_ID,
+  logo: '',
+  description: '',
+  razorpayKeyId: '',
+  razorpayKeySecret: '',
+  whatsappNumber: '',
+  enableNotifications: true,
+  enableWhatsApp: false,
+};
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState({
-    restaurantName: 'Restro OS',
-    email: 'admin@restroos.com',
-    phone: '+1234567890',
-    address: '123 Main Street, City, State 12345',
-    currency: 'INR',
-    taxRate: 18,
-    serviceCharge: 10,
-    enableNotifications: true,
-    enableWhatsApp: true,
-    whatsappNumber: '+1234567890',
-    razorpayKeyId: '',
-    razorpayKeySecret: '',
-    mongodbUri: '',
-  });
+  const [settings, setSettings] = useState<RestaurantSettings>(DEFAULT_SETTINGS);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<'general' | 'website' | 'payment' | 'notifications' | 'security'>('general');
+  // Rental admin: change own password
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPw, setShowCurrentPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'general' | 'payment' | 'notifications' | 'security'>('general');
+  useEffect(() => {
+    loadRestaurant();
+  }, []);
 
-  const handleSave = () => {
-    // In production, save to backend
-    toast.success('Settings saved successfully');
+  const loadRestaurant = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const data = await api.get<any>('/restaurants/me', { headers: { Authorization: `Bearer ${token}` } });
+      const themeId = data.theme && WEBSITE_THEMES.some((t) => t.id === data.theme) ? data.theme : DEFAULT_THEME_ID;
+      const theme = getThemeById(themeId);
+      setSettings({
+        name: data.name ?? '',
+        phone: data.phone ?? '',
+        address: data.address ?? '',
+        city: data.city ?? '',
+        state: data.state ?? '',
+        pincode: data.pincode ?? '',
+        currency: data.currency ?? 'INR',
+        taxRate: data.taxRate ?? 18,
+        serviceCharge: data.serviceCharge ?? 0,
+        primaryColor: data.primaryColor ?? theme?.primary ?? '#ea580c',
+        theme: themeId,
+        logo: data.logo ?? '',
+        description: data.description ?? '',
+        razorpayKeyId: data.razorpayKeyId ?? '',
+        razorpayKeySecret: data.razorpayKeySecret ?? '',
+        whatsappNumber: data.whatsappNumber ?? '',
+        enableNotifications: true,
+        enableWhatsApp: !!data.whatsappNumber,
+      });
+    } catch {
+      toast.error('Failed to load restaurant settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const token = localStorage.getItem('token');
+      const themeObj = getThemeById(settings.theme);
+      const payload: Record<string, unknown> = {
+        name: settings.name,
+        phone: settings.phone,
+        address: settings.address,
+        city: settings.city,
+        state: settings.state,
+        pincode: settings.pincode,
+        currency: settings.currency,
+        taxRate: settings.taxRate,
+        serviceCharge: settings.serviceCharge,
+        theme: settings.theme,
+        primaryColor: themeObj?.primary ?? settings.primaryColor,
+        logo: settings.logo || undefined,
+        description: settings.description || undefined,
+        razorpayKeyId: settings.razorpayKeyId || undefined,
+        razorpayKeySecret: settings.razorpayKeySecret || undefined,
+        whatsappNumber: settings.whatsappNumber || undefined,
+      };
+      await api.put('/restaurants/me', payload, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success('Settings saved successfully');
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to save');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || newPassword.length < 8) {
+      toast.error('New password must be at least 8 characters');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('New password and confirm password do not match');
+      return;
+    }
+    if (!currentPassword) {
+      toast.error('Enter your current password');
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      const token = localStorage.getItem('token');
+      await api.put(
+        '/auth/me/password',
+        { currentPassword, newPassword },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('Password updated successfully. Use the new password for next login.');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || e?.message || 'Failed to update password');
+    } finally {
+      setChangingPassword(false);
+    }
   };
 
   const tabs = [
     { id: 'general', label: 'General', icon: Globe },
+    { id: 'website', label: 'Website / Front page', icon: Palette },
     { id: 'payment', label: 'Payment', icon: CreditCard },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'security', label: 'Security', icon: Shield },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[300px]">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-orange-500 border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -45,10 +188,11 @@ export default function SettingsPage() {
         <h1 className="text-2xl font-bold text-white">Settings</h1>
         <button
           onClick={handleSave}
-          className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition-colors"
+          disabled={saving}
+          className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
         >
           <Save className="w-5 h-5" />
-          Save Changes
+          {saving ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
 
@@ -89,20 +233,8 @@ export default function SettingsPage() {
               </label>
               <input
                 type="text"
-                value={settings.restaurantName}
-                onChange={(e) => setSettings({ ...settings, restaurantName: e.target.value })}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                value={settings.email}
-                onChange={(e) => setSettings({ ...settings, email: e.target.value })}
+                value={settings.name}
+                onChange={(e) => setSettings({ ...settings, name: e.target.value })}
                 className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
@@ -161,18 +293,129 @@ export default function SettingsPage() {
                 className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Address
+              </label>
+              <textarea
+                value={settings.address}
+                onChange={(e) => setSettings({ ...settings, address: e.target.value })}
+                rows={3}
+                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">City</label>
+              <input type="text" value={settings.city} onChange={(e) => setSettings({ ...settings, city: e.target.value })}
+                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">State</label>
+              <input type="text" value={settings.state} onChange={(e) => setSettings({ ...settings, state: e.target.value })}
+                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Pincode</label>
+              <input type="text" value={settings.pincode} onChange={(e) => setSettings({ ...settings, pincode: e.target.value })}
+                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500" />
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Website / Front page design */}
+      {activeTab === 'website' && (
+        <motion.div
+          className="bg-slate-900 rounded-xl p-6 space-y-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+            <Palette className="w-5 h-5 text-orange-400" />
+            Website &amp; Front Page Design
+          </h2>
+          <p className="text-slate-400 text-sm">Customize how your storefront and homepage look to customers.</p>
+
+          {/* 15 Theme selection */}
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-3">Choose a theme (15 options)</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+              {WEBSITE_THEMES.map((theme) => {
+                const isSelected = settings.theme === theme.id;
+                return (
+                  <button
+                    key={theme.id}
+                    type="button"
+                    onClick={() => setSettings({ ...settings, theme: theme.id, primaryColor: theme.primary })}
+                    className={`relative rounded-xl border-2 p-3 text-left transition-all hover:scale-[1.02] ${
+                      isSelected
+                        ? 'border-orange-500 bg-slate-800 ring-2 ring-orange-500/50'
+                        : 'border-slate-700 bg-slate-800/60 hover:border-slate-600'
+                    }`}
+                  >
+                    {isSelected && (
+                      <span className="absolute top-2 right-2 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
+                        <Check className="w-3 h-3 text-white" />
+                      </span>
+                    )}
+                    <div className="flex gap-1 mb-2">
+                      {theme.preview.map((color, i) => (
+                        <div
+                          key={i}
+                          className="flex-1 h-6 rounded-md border border-slate-600"
+                          style={{ backgroundColor: color }}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-white text-xs font-medium truncate">{theme.name}</p>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-slate-500 text-xs mt-2">Selected: {getThemeById(settings.theme)?.name ?? 'Classic Orange'}</p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Address
-            </label>
-            <textarea
-              value={settings.address}
-              onChange={(e) => setSettings({ ...settings, address: e.target.value })}
-              rows={3}
-              className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Primary / Brand Color</label>
+              <div className="flex gap-3 items-center">
+                <input
+                  type="color"
+                  value={settings.primaryColor}
+                  onChange={(e) => setSettings({ ...settings, primaryColor: e.target.value })}
+                  className="w-12 h-12 rounded-lg cursor-pointer border border-slate-600 bg-slate-800"
+                />
+                <input
+                  type="text"
+                  value={settings.primaryColor}
+                  onChange={(e) => setSettings({ ...settings, primaryColor: e.target.value })}
+                  className="flex-1 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <p className="text-slate-500 text-xs mt-1">Overrides theme color if you need a custom shade</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Logo URL</label>
+              <input
+                type="url"
+                value={settings.logo}
+                onChange={(e) => setSettings({ ...settings, logo: e.target.value })}
+                placeholder="https://..."
+                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+              <p className="text-slate-500 text-xs mt-1">Image URL for your restaurant logo</p>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">Description / Tagline</label>
+              <textarea
+                value={settings.description}
+                onChange={(e) => setSettings({ ...settings, description: e.target.value })}
+                rows={3}
+                placeholder="Short description or tagline for your homepage / hero section"
+                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+            </div>
           </div>
         </motion.div>
       )}
@@ -239,37 +482,24 @@ export default function SettingsPage() {
               />
             </label>
 
-            <label className="flex items-center justify-between p-4 bg-slate-800 rounded-lg cursor-pointer">
-              <div>
-                <p className="text-white font-medium">WhatsApp Notifications</p>
-                <p className="text-sm text-slate-400">Send order notifications via WhatsApp</p>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                WhatsApp Number
+              </label>
               <input
-                type="checkbox"
-                checked={settings.enableWhatsApp}
-                onChange={(e) => setSettings({ ...settings, enableWhatsApp: e.target.checked })}
-                className="w-5 h-5 rounded"
+                type="tel"
+                value={settings.whatsappNumber}
+                onChange={(e) => setSettings({ ...settings, whatsappNumber: e.target.value })}
+                placeholder="+919876543210"
+                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
-            </label>
-
-            {settings.enableWhatsApp && (
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  WhatsApp Number
-                </label>
-                <input
-                  type="tel"
-                  value={settings.whatsappNumber}
-                  onChange={(e) => setSettings({ ...settings, whatsappNumber: e.target.value })}
-                  className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
-            )}
+              <p className="text-slate-500 text-xs mt-1">For order/booking notifications</p>
+            </div>
           </div>
         </motion.div>
       )}
 
-      {/* Security Settings */}
+      {/* Security Settings — Rental Admin: change own login password */}
       {activeTab === 'security' && (
         <motion.div
           className="bg-slate-900 rounded-xl p-6 space-y-6"
@@ -277,35 +507,74 @@ export default function SettingsPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <h2 className="text-xl font-semibold text-white mb-4">Security Settings</h2>
-          
-          <div className="space-y-4">
+          <p className="text-slate-400 text-sm mb-4">
+            Change your rental admin panel login password here. Your login ID (email) is set by the platform; only the password can be updated from this panel.
+          </p>
+
+          <div className="space-y-4 max-w-md">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Change Password
-              </label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Current password</label>
+              <div className="relative">
+                <input
+                  type={showCurrentPw ? 'text' : 'password'}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Enter current password"
+                  className="w-full px-4 py-2 pr-10 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPw(!showCurrentPw)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                >
+                  {showCurrentPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">New password</label>
+              <div className="relative">
+                <input
+                  type={showNewPw ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="At least 8 characters"
+                  className="w-full px-4 py-2 pr-10 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPw(!showNewPw)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                >
+                  {showNewPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Confirm new password</label>
               <input
                 type="password"
-                placeholder="Enter new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Re-enter new password"
                 className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Confirm Password
-              </label>
-              <input
-                type="password"
-                placeholder="Confirm new password"
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
-
-            <div className="p-4 bg-yellow-900/20 border border-yellow-600 rounded-lg">
-              <p className="text-yellow-400 text-sm">
-                ⚠️ Security Warning: Database credentials should be managed through environment variables only.
-              </p>
-            </div>
+            <button
+              type="button"
+              onClick={handleChangePassword}
+              disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
+              className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+            >
+              {changingPassword ? (
+                <span className="animate-pulse">Updating…</span>
+              ) : (
+                <>
+                  <Shield size={18} />
+                  Update password
+                </>
+              )}
+            </button>
           </div>
         </motion.div>
       )}

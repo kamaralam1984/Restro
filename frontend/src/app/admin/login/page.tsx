@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import api from '@/services/api';
+import Link from 'next/link';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -45,6 +45,12 @@ export default function AdminLoginPage() {
 
       if (response.ok) {
         if (data.token && data.admin) {
+          // Rental panel only: reject platform roles so they use their own links
+          if (data.admin.role === 'super_admin' || data.admin.role === 'master_admin') {
+            setError('Use Super Admin or Master Admin login for platform panel.');
+            setLoading(false);
+            return;
+          }
           localStorage.setItem('token', data.token);
           localStorage.setItem('admin', JSON.stringify(data.admin));
           router.push('/admin/dashboard');
@@ -131,7 +137,9 @@ export default function AdminLoginPage() {
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-500">
-          Email: admin@demorestaurant.com &nbsp;|&nbsp; Password: Admin@123
+          <Link href="/admin/super/login" className="text-slate-400 hover:text-white">Super Admin</Link>
+          {' · '}
+          <Link href="/admin/master/login" className="text-slate-400 hover:text-white">Master Admin</Link>
         </p>
       </motion.div>
     </div>

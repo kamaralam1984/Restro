@@ -10,7 +10,9 @@ import {
   createBookingPaymentOrder,
   verifyBookingPayment,
 } from '../controllers/bookingPayment.controller';
-import { authenticate, requireAdminOrSuperAdmin } from '../middleware/auth.middleware';
+import { authenticate, requireStaffOrAdmin } from '../middleware/auth.middleware';
+import { requireFeature } from '../middleware/featureFlag.middleware';
+import { requirePermission } from '../middleware/permission.middleware';
 import { validateBookingCreate } from '../middleware/validation.middleware';
 
 const router = Router();
@@ -22,11 +24,11 @@ router.post('/', validateBookingCreate, createBooking);
 router.post('/payment/create', createBookingPaymentOrder);
 router.post('/payment/verify', verifyBookingPayment);
 
-// Protected admin routes
-router.get('/', authenticate, requireAdminOrSuperAdmin, getBookings);
-router.get('/:id', authenticate, requireAdminOrSuperAdmin, getBooking);
-router.put('/:id/status', authenticate, requireAdminOrSuperAdmin, updateBookingStatus);
-router.put('/:id/cancel', authenticate, requireAdminOrSuperAdmin, cancelBooking);
+// Protected: manager/admin (booking:manage) + tableBooking feature
+router.get('/', authenticate, requireStaffOrAdmin, requirePermission('booking:manage'), requireFeature('tableBooking'), getBookings);
+router.get('/:id', authenticate, requireStaffOrAdmin, requirePermission('booking:manage'), requireFeature('tableBooking'), getBooking);
+router.put('/:id/status', authenticate, requireStaffOrAdmin, requirePermission('booking:manage'), requireFeature('tableBooking'), updateBookingStatus);
+router.put('/:id/cancel', authenticate, requireStaffOrAdmin, requirePermission('booking:manage'), requireFeature('tableBooking'), cancelBooking);
 
 export default router;
 

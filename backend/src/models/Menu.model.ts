@@ -19,6 +19,7 @@ export interface IMenu extends Document {
   allergens?: string[];
   preparationTime?: number; // in minutes
   addOns?: IAddOn[];
+  isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -83,14 +84,19 @@ const MenuSchema = new Schema<IMenu>(
       ],
       default: [],
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-// All queries are tenant-scoped
+// All queries are tenant-scoped; soft delete filter applied in controllers
 MenuSchema.index({ restaurantId: 1, category: 1, available: 1 });
+MenuSchema.index({ restaurantId: 1, isDeleted: 1 });
 MenuSchema.index({ restaurantId: 1, isVeg: 1, available: 1 });
 MenuSchema.index({ restaurantId: 1, available: 1 });
 

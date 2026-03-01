@@ -1,0 +1,452 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Store, Search, X, Power, Settings2, Copy, ExternalLink, Check } from 'lucide-react';
+import Link from 'next/link';
+import api from '@/services/api';
+import { getRestaurantPublicLink } from '@/utils/restaurantLink';
+
+interface Plan { _id: string; name: string; price: number; }
+interface Restaurant {
+  _id: string; name: string; slug: string; city: string; state: string;
+  status: string; subscriptionStatus: string; trialEndsAt?: string;
+  createdAt: string; phone: string;
+  ownerId?: { name: string; email: string };
+}
+
+const EMPTY_FORM = {
+  name: '', slug: '', phone: '', address: '', city: '', state: '', pincode: '',
+  adminName: '', adminEmail: '', adminPassword: 'Admin@123', planId: '',
+};
+
+export default function SuperAdminRestaurantsPage() {
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+  const [createdLink, setCreatedLink] = useState<{ name: string; slug: string; storeLink?: string; rentalAdminEmail?: string } | null>(null);
+  const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
+
+  useEffect(() => { loadData(); }, []);
+
+  const headers = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
+
+  const loadData = async () => {
+    try {
+      const [restData, plansData] = await Promise.all([
+        api.get('/super-admin/restaurants?limit=100', { headers: headers() }),
+        api.get('/super-admin/plans', { headers: headers() }),
+      ]);
+      setRestaurants(restData.restaurants || []);
+      setPlans(Array.isArray(plansData) ? plansData : []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSlugify = (name: string) =>
+    name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+  const copyLink = (slug: string) => {
+    const url = getRestaurantPublicLink(slug);
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedSlug(slug);
+      setTimeout(() => setCopiedSlug(null), 2000);
+    });
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      const res = await api.post<{
+        restaurant: { name: string; slug: string; storeLink?: string };
+        storeLink?: string;
+        adminUser?: { email: string; name: string };
+      }>('/super-admin/restaurants', form, { headers: headers() });
+      setShowModal(false);
+      const link = res?.storeLink ?? res?.restaurant?.storeLink ?? (res?.restaurant ? getRestaurantPublicLink(res.restaurant.slug) : null);
+      setCreatedLink(
+        res?.restaurant
+          ? {
+              name: res.restaurant.name,
+              slug: res.restaurant.slug,
+              storeLink: link || undefined,
+              rentalAdminEmail: res.adminUser?.email,
+            }
+          : null
+      );
+      setForm(EMPTY_FORM);
+      await loadData();
+    } catch (err: any) {
+      setError(err?.message || 'Failed to create restaurant');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleStatus = async (id: string, current: string) => {
+    const next = current === 'active' ? 'suspended' : 'active';
+    try {
+      await api.patch(`/super-admin/restaurants/${id}/status`, { status: next }, { headers: headers() });
+      setRestaurants((prev) => prev.map((r) => r._id === id ? { ...r, status: next } : r));
+    } catch {}
+  };
+
+  const filtered = restaurants.filter((r) =>
+    r.name.toLowerCase().includes(search.toLowerCase()) ||
+    r.city.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Success: new restaurant + rental admin credentials */}
+      <AnimatePresence>
+        {createdLink && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-green-900/30 border border-green-600/50 rounded-xl p-5 space-y-4"
+          >
+            <div>
+              <p className="text-green-300 font-semibold">Restaurant created — separate Rental Admin panel &amp; login</p>
+              <p className="text-slate-400 text-sm mt-0.5">{createdLink.name}</p>
+            </div>
+            {createdLink.rentalAdminEmail && (
+              <div className="bg-slate-800/60 rounded-lg px-4 py-3 text-sm">
+                <p className="text-slate-300 font-medium mb-1">Rental Admin Login (only for this restaurant)</p>
+                <p className="text-white">ID: <code className="bg-slate-700 px-2 py-0.5 rounded">{createdLink.rentalAdminEmail}</code></p>
+                <p className="text-slate-400 text-xs mt-1">Password: the one you set above. Share securely with the restaurant. This login opens only this restaurant&apos;s panel.</p>
+              </div>
+            )}
+            <div className="flex items-center flex-wrap gap-3">
+              <code className="text-sm text-white bg-slate-800 px-3 py-2 rounded-lg truncate max-w-[280px]" title={createdLink.storeLink || getRestaurantPublicLink(createdLink.slug)}>
+                {createdLink.storeLink || getRestaurantPublicLink(createdLink.slug)}
+              </code>
+              <button
+                type="button"
+                onClick={() => {
+                  const url = createdLink.storeLink || getRestaurantPublicLink(createdLink.slug);
+                  navigator.clipboard.writeText(url).then(() => {
+                    setCopiedSlug(createdLink.slug);
+                    setTimeout(() => setCopiedSlug(null), 2000);
+                  });
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition-colors"
+              >
+                {copiedSlug === createdLink.slug ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copiedSlug === createdLink.slug ? 'Copied' : 'Copy link'}
+              </button>
+              <a
+                href={createdLink.storeLink || getRestaurantPublicLink(createdLink.slug)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-semibold transition-colors"
+              >
+                <ExternalLink className="w-4 h-4" /> Open
+              </a>
+              <button
+                type="button"
+                onClick={() => setCreatedLink(null)}
+                className="text-slate-400 hover:text-white text-sm font-medium"
+              >
+                Dismiss
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Restaurants</h1>
+          <p className="text-slate-400 text-sm mt-1">{restaurants.length} restaurant(s) on platform</p>
+        </div>
+        <button
+          onClick={() => { setShowModal(true); setError(''); }}
+          className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Add Restaurant
+        </button>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <input
+          type="text"
+          placeholder="Search by name or city..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+        />
+      </div>
+
+      {/* Table */}
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-600" />
+        </div>
+      ) : (
+        <div className="bg-slate-900 rounded-xl overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-slate-400 border-b border-slate-800 text-left">
+                <th className="py-4 px-5">Restaurant</th>
+                <th className="py-4 px-5">Store link</th>
+                <th className="py-4 px-5">Owner</th>
+                <th className="py-4 px-5">Location</th>
+                <th className="py-4 px-5">Status</th>
+                <th className="py-4 px-5">Subscription</th>
+                <th className="py-4 px-5">Joined</th>
+                <th className="py-4 px-5">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-12 text-slate-400">
+                    No restaurants found
+                  </td>
+                </tr>
+              ) : filtered.map((r) => (
+                <tr key={r._id} className="border-b border-slate-800 hover:bg-slate-800/40 transition-colors">
+                  <td className="py-4 px-5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-amber-600/20 rounded-lg flex items-center justify-center">
+                        <Store className="w-4 h-4 text-amber-400" />
+                      </div>
+                      <div>
+                        <div className="text-white font-medium">{r.name}</div>
+                        <div className="text-slate-500 text-xs">/{r.slug}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-4 px-5">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => copyLink(r.slug)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                        title="Copy store link"
+                      >
+                        {copiedSlug === r.slug ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                      </button>
+                      <a
+                        href={getRestaurantPublicLink(r.slug)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                        title="Open store"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                      <span className="text-slate-500 text-xs truncate max-w-[120px] block" title={getRestaurantPublicLink(r.slug)}>
+                        /r/{r.slug}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="py-4 px-5">
+                    <div className="text-white text-sm">{r.ownerId?.name || '—'}</div>
+                    <div className="text-slate-500 text-xs">{r.ownerId?.email || ''}</div>
+                  </td>
+                  <td className="py-4 px-5 text-slate-300">{r.city}, {r.state}</td>
+                  <td className="py-4 px-5">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                      r.status === 'active'
+                        ? 'bg-green-600/20 text-green-400'
+                        : r.status === 'suspended'
+                        ? 'bg-yellow-600/20 text-yellow-400'
+                        : 'bg-red-600/20 text-red-400'
+                    }`}>{r.status}</span>
+                  </td>
+                  <td className="py-4 px-5">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                      r.subscriptionStatus === 'active' ? 'bg-blue-600/20 text-blue-400' :
+                      r.subscriptionStatus === 'trial' ? 'bg-orange-600/20 text-orange-400' :
+                      'bg-red-600/20 text-red-400'
+                    }`}>{r.subscriptionStatus}</span>
+                  </td>
+                  <td className="py-4 px-5 text-slate-400">
+                    {new Date(r.createdAt).toLocaleDateString('en-IN')}
+                  </td>
+                  <td className="py-4 px-5">
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/admin/master/restaurants/${r._id}`}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600/20 text-amber-400 hover:bg-amber-600 hover:text-white rounded-lg text-xs font-semibold transition-colors"
+                      >
+                        <Settings2 className="w-3.5 h-3.5" /> Manage
+                      </Link>
+                      <button
+                        onClick={() => toggleStatus(r._id, r.status)}
+                        title={r.status === 'active' ? 'Suspend' : 'Activate'}
+                        className={`p-1.5 rounded-lg transition-colors ${
+                          r.status === 'active'
+                            ? 'text-yellow-400 hover:bg-yellow-600/20'
+                            : 'text-green-400 hover:bg-green-600/20'
+                        }`}
+                      >
+                        <Power className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Create Restaurant Modal */}
+      <AnimatePresence>
+        {showModal && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+            <motion.div
+              className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+            >
+              <div className="flex items-center justify-between p-6 border-b border-slate-800">
+                <h2 className="text-xl font-bold text-white">Add New Restaurant</h2>
+                <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreate} className="p-6 space-y-5">
+                {error && (
+                  <div className="bg-red-900/40 border border-red-700 text-red-300 px-4 py-3 rounded-lg text-sm">
+                    {error}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Restaurant Name *</label>
+                    <input required value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value, slug: handleSlugify(e.target.value) })}
+                      className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      placeholder="The Grand Kitchen" />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Slug (URL) *</label>
+                    <input required value={form.slug}
+                      onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      placeholder="the-grand-kitchen" />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Phone *</label>
+                    <input required value={form.phone}
+                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      placeholder="+919876543210" />
+                  </div>
+
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Address</label>
+                    <input value={form.address}
+                      onChange={(e) => setForm({ ...form, address: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      placeholder="123 Main Street" />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">City *</label>
+                    <input required value={form.city}
+                      onChange={(e) => setForm({ ...form, city: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      placeholder="Mumbai" />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">State *</label>
+                    <input required value={form.state}
+                      onChange={(e) => setForm({ ...form, state: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      placeholder="Maharashtra" />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Pincode</label>
+                    <input value={form.pincode}
+                      onChange={(e) => setForm({ ...form, pincode: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      placeholder="400001" />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Plan</label>
+                    <select value={form.planId}
+                      onChange={(e) => setForm({ ...form, planId: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                      <option value="">No Plan (Trial)</option>
+                      {plans.map((p) => (
+                        <option key={p._id} value={p._id}>{p.name} — ₹{p.price}/mo</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-800 pt-5">
+                  <p className="text-sm font-semibold text-slate-300 mb-1">Rental Admin — ID &amp; Password (created from Super Admin)</p>
+                  <p className="text-slate-500 text-xs mb-4">Har restaurant ka alag login. Yeh ID/password sirf is restaurant ke Rental Admin panel ke liye use hoga.</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">Rental Admin Name *</label>
+                      <input required value={form.adminName}
+                        onChange={(e) => setForm({ ...form, adminName: e.target.value })}
+                        className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        placeholder="John Doe" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">Rental Admin ID (Email) *</label>
+                      <input required type="email" value={form.adminEmail}
+                        onChange={(e) => setForm({ ...form, adminEmail: e.target.value })}
+                        className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        placeholder="admin@this-restaurant.com" />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">Rental Admin Password *</label>
+                      <input type="password" value={form.adminPassword}
+                        onChange={(e) => setForm({ ...form, adminPassword: e.target.value })}
+                        className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        placeholder="Min 8 characters" />
+                      <p className="text-slate-500 text-xs mt-1">Yeh password is restaurant ke panel ke liye. Create ke baad restaurant owner ko securely share karein.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={() => setShowModal(false)}
+                    className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-semibold transition-colors">
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={saving}
+                    className="flex-1 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-semibold transition-colors disabled:opacity-50">
+                    {saving ? 'Creating...' : 'Create Restaurant'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

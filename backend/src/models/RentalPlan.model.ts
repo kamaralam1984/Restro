@@ -5,7 +5,10 @@ export interface IPlanFeatures {
   maxStaff: number;           // -1 = unlimited
   maxTables: number;          // -1 = unlimited
   onlineOrdering: boolean;
-  analytics: boolean;
+  tableBooking: boolean;     // Pro+
+  billing: boolean;           // Pro+
+  analytics: boolean;        // Premium
+  staffControl: boolean;     // Premium: manage staff
   customDomain: boolean;
   whatsappIntegration: boolean;
   razorpayIntegration: boolean;
@@ -33,7 +36,10 @@ const PlanFeaturesSchema = new Schema<IPlanFeatures>(
     maxStaff: { type: Number, default: 3 },
     maxTables: { type: Number, default: 10 },
     onlineOrdering: { type: Boolean, default: true },
+    tableBooking: { type: Boolean, default: false },
+    billing: { type: Boolean, default: false },
     analytics: { type: Boolean, default: false },
+    staffControl: { type: Boolean, default: false },
     customDomain: { type: Boolean, default: false },
     whatsappIntegration: { type: Boolean, default: false },
     razorpayIntegration: { type: Boolean, default: false },

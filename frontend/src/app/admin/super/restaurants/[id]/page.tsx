@@ -6,20 +6,24 @@ import { motion } from 'framer-motion';
 import {
   ArrowLeft, Store, ShoppingBag, IndianRupee, UtensilsCrossed, Users,
   Calendar, Power, CheckCircle, XCircle, AlertTriangle, RefreshCw, KeyRound, Eye, EyeOff,
+  Copy, ExternalLink,
 } from 'lucide-react';
 import Link from 'next/link';
 import api from '@/services/api';
+import { getRestaurantPublicLink } from '@/utils/restaurantLink';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Features {
   onlineOrdering: boolean;
   tableBooking: boolean;
+  billing: boolean;
   onlinePayments: boolean;
   reviews: boolean;
   heroImages: boolean;
   whatsappNotifications: boolean;
   analytics: boolean;
+  staffControl?: boolean;
   menuManagement: boolean;
 }
 
@@ -42,20 +46,22 @@ interface Stats {
 }
 
 const DEFAULT_FEATURES: Features = {
-  onlineOrdering: true, tableBooking: true, onlinePayments: true,
+  onlineOrdering: true, tableBooking: true, billing: true, onlinePayments: true,
   reviews: true, heroImages: true, whatsappNotifications: false,
-  analytics: true, menuManagement: true,
+  analytics: true, staffControl: false, menuManagement: true,
 };
 
 const FEATURE_META: { key: keyof Features; label: string; desc: string; icon: string }[] = [
   { key: 'onlineOrdering',        label: 'Online Ordering',        desc: 'Customers can place online food orders',          icon: '🛒' },
   { key: 'tableBooking',          label: 'Table Booking',          desc: 'Customers can book tables in advance',            icon: '📅' },
+  { key: 'billing',               label: 'Billing',               desc: 'Admin can create bills (from order / offline)',   icon: '🧾' },
   { key: 'onlinePayments',        label: 'Online Payments',        desc: 'Accept Razorpay / online payments',              icon: '💳' },
   { key: 'menuManagement',        label: 'Menu Management',        desc: 'Admin can add / edit / delete menu items',       icon: '🍽️' },
   { key: 'reviews',               label: 'Customer Reviews',       desc: 'Customers can leave reviews and ratings',        icon: '⭐' },
   { key: 'heroImages',            label: 'Hero Carousel',          desc: 'Show hero images on the restaurant home page',   icon: '🖼️' },
   { key: 'whatsappNotifications', label: 'WhatsApp Notifications', desc: 'Send order / booking alerts via WhatsApp',       icon: '💬' },
   { key: 'analytics',             label: 'Analytics',              desc: 'Admin can view analytics and revenue reports',   icon: '📊' },
+  { key: 'staffControl',          label: 'Staff Control',          desc: 'Manage staff and roles (Premium)',              icon: '👥' },
 ];
 
 // ── FeatureToggle component ───────────────────────────────────────────────────
@@ -296,6 +302,34 @@ export default function RestaurantManagePage() {
                 <div className="text-white mt-0.5 truncate">{row.value}</div>
               </div>
             ))}
+            <div className="col-span-2">
+              <div className="text-slate-500 text-xs mb-1">Store link</div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <code className="text-sm text-slate-300 bg-slate-800 px-2 py-1 rounded truncate max-w-[200px]">
+                  {getRestaurantPublicLink(restaurant.slug)}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(getRestaurantPublicLink(restaurant.slug));
+                    showToast('Link copied');
+                  }}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700"
+                  title="Copy"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+                <a
+                  href={getRestaurantPublicLink(restaurant.slug)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700"
+                  title="Open store"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -332,7 +366,13 @@ export default function RestaurantManagePage() {
             </button>
           </div>
 
-          <div className="mt-4 pt-4 border-t border-slate-800">
+          <div className="mt-4 pt-4 border-t border-slate-800 space-y-2">
+            <Link
+              href={`/admin/super/subscriptions?restaurantId=${id}`}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors bg-orange-600/20 text-orange-400 hover:bg-orange-600 hover:text-white"
+            >
+              <RefreshCw className="w-4 h-4" /> Renew subscription
+            </Link>
             <button
               onClick={() => setShowResetModal(true)}
               className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white">

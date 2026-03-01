@@ -269,11 +269,33 @@ function RestaurantAdminDashboard() {
     { title: 'Online vs COD', value: `${stats.onlineVsCOD?.onlinePercentage ?? 0}%`, icon: CreditCard, color: 'bg-slate-800' },
   ] : [];
 
+  const userName = typeof window !== 'undefined' ? (() => { try { return JSON.parse(localStorage.getItem('admin') || '{}').name; } catch { return 'Admin'; } })() : 'Admin';
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-        Welcome, Admin <span className="text-orange-600">🔥</span>
-      </h1>
+      <div>
+        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          Welcome, {userName} <span className="text-orange-600">🔥</span>
+        </h1>
+        <p className="text-slate-400 text-sm mt-1">Your restaurant dashboard — orders, revenue & recent activity</p>
+      </div>
+
+      {/* Rental Admin: quick links to control website, business, staff, customers, payments, design */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Rental Admin Panel — You can</h2>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/admin/orders" className="px-3 py-1.5 bg-orange-600/20 text-orange-400 rounded-lg text-sm font-medium hover:bg-orange-600/30">Orders</Link>
+          <Link href="/admin/menu" className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-600">Menu</Link>
+          <Link href="/admin/bookings" className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-600">Bookings</Link>
+          <Link href="/admin/hero-images" className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-600">Hero / Front page</Link>
+          <Link href="/admin/revenue" className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-600">Revenue & business</Link>
+          <Link href="/admin/payments" className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-600">Payment details</Link>
+          <Link href="/admin/customers" className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-600">Customers</Link>
+          <Link href="/admin/users" className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-600">Staff & users</Link>
+          <Link href="/admin/analytics" className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-600">Analytics</Link>
+          <Link href="/admin/settings" className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-600">Settings & design</Link>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((card, i) => (

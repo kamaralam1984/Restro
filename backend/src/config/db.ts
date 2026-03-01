@@ -14,11 +14,11 @@ if (!MONGODB_URI) {
 const connectionURI = MONGODB_URI;
 
 // Connection options
-const mongooseOptions = {
-  serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
-  socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+const mongooseOptions: mongoose.ConnectOptions = {
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
   retryWrites: true,
-  w: 'majority',
+  w: 'majority' as const,
 };
 
 // Track connection status

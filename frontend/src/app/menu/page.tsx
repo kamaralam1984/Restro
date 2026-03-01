@@ -1,15 +1,22 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Search, ChefHat, Filter, Sparkles, ArrowUpDown, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import EnhancedMenuCard from '@/components/EnhancedMenuCard';
 import { menuService, MenuItem, MenuCategory, MenuFilters } from '@/services/menu.service';
 import { useLanguage } from '@/context/LanguageContext';
 import { useDebounce } from '@/hooks/useDebounce';
+import api from '@/services/api';
+import ServiceSuspendedMessage from '@/components/ServiceSuspendedMessage';
 
-export default function MenuPage() {
+function MenuPageContent() {
+  const searchParams = useSearchParams();
+  const restaurantSlug = searchParams.get('restaurant') || undefined;
   const { t } = useLanguage();
+  const [restaurantSuspended, setRestaurantSuspended] = useState<boolean | null>(null);
+  const [restaurantName, setRestaurantName] = useState<string>('');
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 1000 });
@@ -24,6 +31,7 @@ export default function MenuPage() {
     sortOrder: 'desc',
     page: 1,
     limit: 12,
+    restaurant: restaurantSlug,
   });
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -39,15 +47,41 @@ export default function MenuPage() {
   // Debounce search term
   const debouncedSearch = useDebounce(searchTerm, 500);
 
+  // When viewing a specific restaurant, check if suspended
+  useEffect(() => {
+    if (!restaurantSlug) {
+      setRestaurantSuspended(null);
+      return;
+    }
+    api
+      .get<{ status?: string; subscriptionStatus?: string; name?: string }>(`/restaurants/by-slug/${restaurantSlug}`)
+      .then((r) => {
+        const suspended =
+          r.status === 'inactive' ||
+          r.subscriptionStatus === 'suspended' ||
+          r.subscriptionStatus === 'cancelled';
+        setRestaurantSuspended(suspended);
+        setRestaurantName(r.name || '');
+      })
+      .catch(() => setRestaurantSuspended(false));
+  }, [restaurantSlug]);
+
   // Load initial data
   useEffect(() => {
     loadInitialData();
   }, []);
 
+  // Sync restaurant slug from URL into filters
+  useEffect(() => {
+    if (restaurantSlug !== undefined) {
+      setFilters((prev) => (prev.restaurant === restaurantSlug ? prev : { ...prev, restaurant: restaurantSlug, page: 1 }));
+    }
+  }, [restaurantSlug]);
+
   // Load menu when filters change
   useEffect(() => {
     loadMenu();
-  }, [filters.category, filters.isVeg, filters.minPrice, filters.maxPrice, filters.sortBy, filters.sortOrder, filters.page, debouncedSearch]);
+  }, [filters.category, filters.isVeg, filters.minPrice, filters.maxPrice, filters.sortBy, filters.sortOrder, filters.page, filters.restaurant, debouncedSearch]);
 
   // Update search filter when debounced search changes
   useEffect(() => {
@@ -57,8 +91,8 @@ export default function MenuPage() {
   const loadInitialData = async () => {
     try {
       const [cats, priceRangeData] = await Promise.all([
-        menuService.getCategories(),
-        menuService.getPriceRange(),
+        menuService.getCategories(restaurantSlug || undefined),
+        menuService.getPriceRange(restaurantSlug || undefined),
       ]);
       setCategories(cats);
       setPriceRange(priceRangeData);
@@ -126,6 +160,14 @@ export default function MenuPage() {
     setFilters((prev) => ({ ...prev, page }));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  if (restaurantSlug && restaurantSuspended === true) {
+    return (
+      <div className="min-h-screen bg-slate-950">
+        <ServiceSuspendedMessage restaurantName={restaurantName} subscriptionExpired />
+      </div>
+    );
+  }
 
   if (loading && menuItems.length === 0) {
     return (
@@ -504,5 +546,17 @@ export default function MenuPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function MenuPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-orange-500 border-t-transparent" />
+      </div>
+    }>
+      <MenuPageContent />
+    </Suspense>
   );
 }

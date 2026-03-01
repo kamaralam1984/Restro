@@ -39,7 +39,43 @@ export const superAdminLogin = async (req: Request, res: Response) => {
   }
 };
 
-// ─── Restaurant Admin / Staff Login ──────────────────────────────────────────
+// ─── Master Admin Login (platform panel, separate link) ────────────────────────
+
+export const masterAdminLogin = async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    const admin = await User.findOne({
+      email: email.toLowerCase().trim(),
+      role: 'master_admin',
+    }).select('+password');
+
+    if (!admin || !admin.password) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const valid = await bcrypt.compare(password.trim(), admin.password);
+    if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
+
+    const token = generateToken({
+      userId: admin._id.toString(),
+      email: admin.email,
+      role: admin.role,
+    });
+
+    res.json({
+      token,
+      admin: { id: admin._id, name: admin.name, email: admin.email, role: admin.role },
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Login failed' });
+  }
+};
+
+// ─── Rental Admin / Staff Login (restaurant panel only; super_admin/master_admin use their own links) ─
 
 export const adminLogin = async (req: Request, res: Response) => {
   try {
@@ -49,11 +85,11 @@ export const adminLogin = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
+    // Only restaurant-level roles: admin, manager, staff, cashier (not super_admin or master_admin)
     const query: Record<string, any> = {
       email: email.toLowerCase().trim(),
-      role: { $in: ['super_admin', 'admin', 'manager', 'staff', 'cashier'] },
+      role: { $in: ['admin', 'manager', 'staff', 'cashier'] },
     };
-    // Only filter by restaurantId for non-super-admin roles
     if (restaurantId) query.restaurantId = restaurantId;
 
     const admin = await User.findOne(query).select('+password');
@@ -89,6 +125,36 @@ export const adminLogin = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Login failed' });
+  }
+};
+
+// ─── Change own password (logged-in admin / rental admin) ─────────────────────
+
+export const changeOwnPassword = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId;
+    if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current password and new password are required' });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'New password must be at least 8 characters' });
+    }
+
+    const user = await User.findById(userId).select('+password');
+    if (!user || !user.password) return res.status(404).json({ error: 'User not found' });
+
+    const valid = await bcrypt.compare(currentPassword.trim(), user.password);
+    if (!valid) return res.status(401).json({ error: 'Current password is incorrect' });
+
+    user.password = await bcrypt.hash(newPassword.trim(), 10);
+    await user.save();
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to update password' });
   }
 };
 

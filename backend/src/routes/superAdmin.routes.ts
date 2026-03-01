@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate, requireSuperAdmin } from '../middleware/auth.middleware';
+import { authenticate, requirePlatformAdmin } from '../middleware/auth.middleware';
 import {
   getAllRestaurants,
   getRestaurantById,
@@ -23,11 +23,12 @@ import {
   cancelSubscription,
   getSubscriptionStats,
 } from '../controllers/subscription.controller';
+import { getAuditLogs } from '../controllers/auditLog.controller';
 
 const router = Router();
 
-// All super-admin routes require authentication + super_admin role
-router.use(authenticate, requireSuperAdmin);
+// Platform panel: super_admin and master_admin (same API, separate login links)
+router.use(authenticate, requirePlatformAdmin);
 
 // ── Restaurants ───────────────────────────────────────────────────────────────
 router.get('/restaurants', getAllRestaurants);
@@ -40,6 +41,7 @@ router.patch('/restaurants/:id/features', updateRestaurantFeatures);
 router.post('/restaurants/:id/reset-password', resetRestaurantAdminPassword);
 
 router.get('/analytics', getPlatformAnalytics);
+router.get('/audit-logs', getAuditLogs);
 
 // ── Rental Plans ──────────────────────────────────────────────────────────────
 router.get('/plans', getAllPlans);

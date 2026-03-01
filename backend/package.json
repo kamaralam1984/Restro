@@ -10,6 +10,7 @@
     "start": "node dist/server.js",
     "create-admin": "tsx src/scripts/createAdmin.ts",
     "create-super-admin": "tsx src/scripts/createSuperAdmin.ts",
+    "create-master-admin": "tsx src/scripts/createMasterAdmin.ts",
     "seed-plans": "tsx src/scripts/seedRentalPlans.ts",
     "add-appetizers": "tsx src/scripts/addAppetizers.ts",
     "add-all-menu": "tsx src/scripts/addAllMenuItems.ts",
@@ -26,8 +27,11 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "express-mongo-sanitize": "^2.2.0",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.5.1",
+    "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "nodemailer": "^6.10.1",
     "razorpay": "^2.9.2"
@@ -37,6 +41,7 @@
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/morgan": "^1.9.10",
     "@types/node": "^20.14.12",
     "tsx": "^4.16.2",
     "typescript": "^5.5.4"

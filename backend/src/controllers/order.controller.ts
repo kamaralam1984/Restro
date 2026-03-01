@@ -1,9 +1,11 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import { Order } from '../models/Order.model';
 import { Menu } from '../models/Menu.model';
 import { Booking } from '../models/Booking.model';
 import { orderService } from '../services/order.service';
 import { getBookingConfig, checkDiscountEligibility } from '../utils/booking.utils';
+import { createAuditLog } from '../utils/auditLog';
 
 export const createOrder = async (req: Request, res: Response) => {
   try {
@@ -174,6 +176,7 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
+    const oldOrder = await Order.findById(id).lean();
 
     const order = await Order.findByIdAndUpdate(
       id,
@@ -183,6 +186,21 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
 
     if (!order) {
       return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const user = (req as any).user;
+    if (user?.userId && (oldOrder?.status !== status || status === 'cancelled')) {
+      await createAuditLog({
+        userId: new mongoose.Types.ObjectId(user.userId),
+        userEmail: user.email || 'unknown',
+        userRole: user.role || 'staff',
+        restaurantId: user.restaurantId ? new mongoose.Types.ObjectId(user.restaurantId) : undefined,
+        action: status === 'cancelled' ? 'order.cancel' : 'order.status_change',
+        entityType: 'Order',
+        entityId: order._id,
+        oldValue: oldOrder ? { status: oldOrder.status } : undefined,
+        newValue: { status },
+      });
     }
 
     res.json(order);

@@ -28,7 +28,7 @@ export default function LoginPage() {
     
     setLoading(true);
 
-    const loginData = {
+    const customerLoginData = {
       email: credentials.email.trim(),
       password: credentials.password,
       restaurantId: process.env.NEXT_PUBLIC_RESTAURANT_ID,
@@ -36,7 +36,7 @@ export default function LoginPage() {
 
     try {
       // First try customer login
-      const response = await api.post('/auth/login', loginData);
+      const response = await api.post('/auth/login', customerLoginData);
       if (response.token && response.user) {
         login(response.token, response.user);
         toast.success('Login successful!');
@@ -47,8 +47,14 @@ export default function LoginPage() {
       // Customer login failed — try admin/super_admin login
     }
 
+    // Admin/Super Admin login: do NOT send restaurantId so super_admin (null restaurantId) can be found
+    const adminLoginData = {
+      email: credentials.email.trim(),
+      password: credentials.password,
+    };
+
     try {
-      const adminResponse = await api.post('/auth/admin/login', loginData);
+      const adminResponse = await api.post('/auth/admin/login', adminLoginData);
       if (adminResponse.token && adminResponse.admin) {
         localStorage.setItem('token', adminResponse.token);
         localStorage.setItem('admin', JSON.stringify(adminResponse.admin));

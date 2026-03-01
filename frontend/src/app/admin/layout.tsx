@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import AdminLayoutComponent from '@/components/admin/AdminLayout';
 
 export default function AdminLayout({
@@ -9,15 +8,14 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const router = useRouter();
+  const pathname = usePathname();
+  const isLoginPage = pathname === '/admin/login' || pathname === '/admin/super/login' || pathname === '/admin/master/login';
+  const isSuperPanel = pathname?.startsWith('/admin/super');
+  const isMasterPanel = pathname?.startsWith('/admin/master');
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/admin/login');
-    }
-  }, [router]);
+  if (isLoginPage) return <>{children}</>;
+  if (isSuperPanel || isMasterPanel) return <>{children}</>;
 
-  return <AdminLayoutComponent>{children}</AdminLayoutComponent>;
+  return <AdminLayoutComponent panelType="rental">{children}</AdminLayoutComponent>;
 }
 

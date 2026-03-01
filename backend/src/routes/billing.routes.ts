@@ -1,5 +1,7 @@
 import { Router } from 'express';
-import { authenticate, requireAdminOrSuperAdmin } from '../middleware/auth.middleware';
+import { authenticate, requireStaffOrAdmin } from '../middleware/auth.middleware';
+import { requireFeature } from '../middleware/featureFlag.middleware';
+import { requirePermission } from '../middleware/permission.middleware';
 import {
   createBillFromOrder,
   createOfflineBill,
@@ -10,8 +12,8 @@ import {
 
 const router = Router();
 
-// All billing routes are protected - only admin/shopper users
-router.use(authenticate, requireAdminOrSuperAdmin);
+// Billing: staff with billing permission (cashier, manager, admin) + billing feature
+router.use(authenticate, requireStaffOrAdmin, requirePermission('billing:manage'), requireFeature('billing'));
 
 // Online order billing
 router.post('/from-order', createBillFromOrder);
