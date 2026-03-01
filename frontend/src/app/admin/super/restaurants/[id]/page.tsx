@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, Store, ShoppingBag, IndianRupee, UtensilsCrossed, Users,
-  Calendar, Shield, Power, CheckCircle, XCircle, AlertTriangle, RefreshCw,
+  Calendar, Power, CheckCircle, XCircle, AlertTriangle, RefreshCw, KeyRound, Eye, EyeOff,
 } from 'lucide-react';
 import Link from 'next/link';
 import api from '@/services/api';
@@ -104,6 +104,10 @@ export default function RestaurantManagePage() {
   const [featureSaving, setFeatureSaving] = useState(false);
   const [statusSaving, setStatusSaving] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [showPwd, setShowPwd] = useState(false);
+  const [resetSaving, setResetSaving] = useState(false);
 
   const headers = useCallback(() => ({ Authorization: `Bearer ${localStorage.getItem('token')}` }), []);
 
@@ -187,6 +191,28 @@ export default function RestaurantManagePage() {
       showToast('Failed', 'error');
     } finally {
       setFeatureSaving(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (newPassword.length < 8) {
+      showToast('Password must be at least 8 characters', 'error');
+      return;
+    }
+    setResetSaving(true);
+    try {
+      const data = await api.post(
+        `/super-admin/restaurants/${id}/reset-password`,
+        { newPassword },
+        { headers: headers() }
+      );
+      showToast(`Password reset for ${data.adminEmail}`);
+      setShowResetModal(false);
+      setNewPassword('');
+    } catch (e: any) {
+      showToast(e?.message || 'Failed to reset password', 'error');
+    } finally {
+      setResetSaving(false);
     }
   };
 
@@ -305,8 +331,74 @@ export default function RestaurantManagePage() {
               <Power className="w-4 h-4" /> Deactivate
             </button>
           </div>
+
+          <div className="mt-4 pt-4 border-t border-slate-800">
+            <button
+              onClick={() => setShowResetModal(true)}
+              className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white">
+              <KeyRound className="w-4 h-4" /> Reset Admin Password
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Password Reset Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl"
+          >
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 bg-purple-600/20 rounded-xl flex items-center justify-center">
+                <KeyRound className="w-5 h-5 text-purple-400" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold">Reset Admin Password</h3>
+                <p className="text-slate-400 text-xs mt-0.5">{restaurant.name}</p>
+              </div>
+            </div>
+
+            <p className="text-slate-400 text-sm mb-4">
+              This will reset the password for the restaurant&apos;s admin account. Share the new password securely.
+            </p>
+
+            <div className="relative mb-5">
+              <input
+                type={showPwd ? 'text' : 'password'}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="New password (min 8 chars)"
+                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPwd(!showPwd)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+              >
+                {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowResetModal(false); setNewPassword(''); }}
+                className="flex-1 px-4 py-2.5 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-lg text-sm font-semibold transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleResetPassword}
+                disabled={resetSaving || newPassword.length < 8}
+                className="flex-1 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {resetSaving ? 'Resetting...' : 'Reset Password'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Live Stats */}
       <div>

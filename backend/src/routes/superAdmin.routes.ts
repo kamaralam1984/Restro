@@ -8,6 +8,8 @@ import {
   updateRestaurantStatus,
   getRestaurantStats,
   updateRestaurantFeatures,
+  resetRestaurantAdminPassword,
+  getPlatformAnalytics,
 } from '../controllers/restaurant.controller';
 import {
   getAllPlans,
@@ -35,6 +37,9 @@ router.post('/restaurants', createRestaurant);
 router.put('/restaurants/:id', updateRestaurant);
 router.patch('/restaurants/:id/status', updateRestaurantStatus);
 router.patch('/restaurants/:id/features', updateRestaurantFeatures);
+router.post('/restaurants/:id/reset-password', resetRestaurantAdminPassword);
+
+router.get('/analytics', getPlatformAnalytics);
 
 // ── Rental Plans ──────────────────────────────────────────────────────────────
 router.get('/plans', getAllPlans);

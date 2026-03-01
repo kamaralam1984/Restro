@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, ShoppingBag, UtensilsCrossed, Calendar, Users, UserCog,
   Star, BarChart3, Settings, Power, ReceiptIndianRupee, TrendingUp, Image,
-  Store, Package, CreditCard, Building2,
+  Store, Package, CreditCard, Building2, PieChart,
 } from 'lucide-react';
 import api from '@/services/api';
 
@@ -27,6 +27,7 @@ interface AdminUser {
 const SUPER_ADMIN_NAV: NavItem[] = [
   { name: 'Dashboard',      href: '/admin/dashboard',            icon: LayoutDashboard },
   { name: 'Restaurants',    href: '/admin/super/restaurants',    icon: Store },
+  { name: 'Analytics',      href: '/admin/super/analytics',      icon: PieChart },
   { name: 'Plans',          href: '/admin/super/plans',          icon: Package },
   { name: 'Subscriptions',  href: '/admin/super/subscriptions',  icon: CreditCard },
 ];

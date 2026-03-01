@@ -9,6 +9,167 @@ import { Menu } from '../models/Menu.model';
 import { Order } from '../models/Order.model';
 import { Booking } from '../models/Booking.model';
 
+// ─── Super Admin: Reset restaurant admin password ─────────────────────────────
+
+export const resetRestaurantAdminPassword = async (req: Request, res: Response) => {
+  try {
+    const { newPassword } = req.body;
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+
+    const admin = await User.findOne({
+      restaurantId: req.params.id,
+      role: { $in: ['admin', 'manager'] },
+    }).sort({ role: 1 }); // prefer 'admin' role
+
+    if (!admin) return res.status(404).json({ error: 'No admin user found for this restaurant' });
+
+    admin.password = await bcrypt.hash(newPassword, 10);
+    await admin.save();
+
+    res.json({ message: 'Password reset successfully', adminEmail: admin.email });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ─── Super Admin: Platform-wide business analytics ───────────────────────────
+
+export const getPlatformAnalytics = async (req: Request, res: Response) => {
+  try {
+    const days = parseInt((req.query.days as string) || '30', 10);
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    since.setHours(0, 0, 0, 0);
+
+    // Per-restaurant revenue summary
+    const perRestaurantRaw = await Order.aggregate([
+      { $match: { createdAt: { $gte: since } } },
+      {
+        $group: {
+          _id: '$restaurantId',
+          totalOrders: { $sum: 1 },
+          totalRevenue: {
+            $sum: { $cond: [{ $eq: ['$paymentStatus', 'paid'] }, '$total', 0] },
+          },
+          onlineOrders: {
+            $sum: { $cond: [{ $in: ['$paymentMethod', ['online', 'card']] }, 1, 0] },
+          },
+          onlineRevenue: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$paymentStatus', 'paid'] },
+                    { $in: ['$paymentMethod', ['online', 'card']] },
+                  ],
+                },
+                '$total',
+                0,
+              ],
+            },
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: 'restaurants',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'restaurant',
+        },
+      },
+      { $unwind: { path: '$restaurant', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 1,
+          name: { $ifNull: ['$restaurant.name', 'Unknown'] },
+          city: { $ifNull: ['$restaurant.city', ''] },
+          status: { $ifNull: ['$restaurant.status', 'active'] },
+          totalOrders: 1,
+          totalRevenue: 1,
+          onlineOrders: 1,
+          onlineRevenue: 1,
+        },
+      },
+      { $sort: { totalRevenue: -1 } },
+    ]);
+
+    // Daily revenue trend (last N days) across all restaurants
+    const dailyTrend = await Order.aggregate([
+      { $match: { createdAt: { $gte: since }, paymentStatus: 'paid' } },
+      {
+        $group: {
+          _id: {
+            date: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          },
+          revenue: { $sum: '$total' },
+          orders: { $sum: 1 },
+          onlineRevenue: {
+            $sum: {
+              $cond: [{ $in: ['$paymentMethod', ['online', 'card']] }, '$total', 0],
+            },
+          },
+        },
+      },
+      { $sort: { '_id.date': 1 } },
+      {
+        $project: {
+          _id: 0,
+          date: '$_id.date',
+          revenue: 1,
+          orders: 1,
+          onlineRevenue: 1,
+        },
+      },
+    ]);
+
+    // Platform totals
+    const [totals] = await Order.aggregate([
+      { $match: { createdAt: { $gte: since } } },
+      {
+        $group: {
+          _id: null,
+          totalOrders: { $sum: 1 },
+          totalRevenue: {
+            $sum: { $cond: [{ $eq: ['$paymentStatus', 'paid'] }, '$total', 0] },
+          },
+          onlineRevenue: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$paymentStatus', 'paid'] },
+                    { $in: ['$paymentMethod', ['online', 'card']] },
+                  ],
+                },
+                '$total',
+                0,
+              ],
+            },
+          },
+          onlineOrders: {
+            $sum: { $cond: [{ $in: ['$paymentMethod', ['online', 'card']] }, 1, 0] },
+          },
+        },
+      },
+    ]);
+
+    const totalRestaurants = await Restaurant.countDocuments({ status: 'active' });
+
+    res.json({
+      period: days,
+      totals: totals || { totalOrders: 0, totalRevenue: 0, onlineRevenue: 0, onlineOrders: 0 },
+      totalRestaurants,
+      perRestaurant: perRestaurantRaw,
+      dailyTrend,
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 // ─── Super Admin: List all restaurants ───────────────────────────────────────
 
 export const getAllRestaurants = async (req: Request, res: Response) => {
