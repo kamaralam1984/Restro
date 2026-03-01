@@ -42,6 +42,7 @@ export default function SignupPage() {
         email: formData.email,
         phone: formData.phone,
         password: formData.password,
+        restaurantId: process.env.NEXT_PUBLIC_RESTAURANT_ID,
       });
       
       if (response.token && response.user) {

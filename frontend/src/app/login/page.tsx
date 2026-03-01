@@ -31,6 +31,7 @@ export default function LoginPage() {
     const loginData = {
       email: credentials.email.trim(),
       password: credentials.password,
+      restaurantId: process.env.NEXT_PUBLIC_RESTAURANT_ID,
     };
 
     try {
