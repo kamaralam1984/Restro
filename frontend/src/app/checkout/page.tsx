@@ -78,7 +78,7 @@ export default function CheckoutPage() {
         customerPhone: customerInfo.phone,
         tableNumber: customerInfo.tableNumber || '',
         notes: customerInfo.notes || '',
-        paymentMethod: 'cod',
+        paymentMethod: 'cash' as const,
       });
 
       setPaymentSuccess(true);
@@ -143,7 +143,7 @@ export default function CheckoutPage() {
         amount: getTotalPrice(),
       });
       
-      const razorpayOrder = razorpayOrderResponse;
+      const razorpayOrder = razorpayOrderResponse as { amount: number; currency: string; orderId: string };
 
       // Initialize Razorpay
       const options = {
@@ -213,7 +213,7 @@ export default function CheckoutPage() {
           className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded"
         >
           <h2 className="text-2xl font-bold mb-2">Order Placed Successfully!</h2>
-          <p>Thank you for your order. We'll notify you when it's ready.</p>
+          <p>Thank you for your order. We&apos;ll notify you when it&apos;s ready.</p>
         </motion.div>
       </div>
     );

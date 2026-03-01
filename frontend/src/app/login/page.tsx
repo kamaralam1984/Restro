@@ -21,7 +21,6 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate inputs
     if (!credentials.email || !credentials.password) {
       toast.error('Please fill in all fields');
       return;
@@ -29,25 +28,37 @@ export default function LoginPage() {
     
     setLoading(true);
 
+    const loginData = {
+      email: credentials.email.trim(),
+      password: credentials.password,
+    };
+
     try {
-      console.log('Attempting login with email:', credentials.email);
-      const response = await api.post('/auth/login', {
-        email: credentials.email.trim(),
-        password: credentials.password,
-      });
-      
+      // First try customer login
+      const response = await api.post('/auth/login', loginData);
       if (response.token && response.user) {
         login(response.token, response.user);
         toast.success('Login successful!');
         router.push('/');
-      } else {
-        toast.error('Invalid response from server');
+        return;
+      }
+    } catch {
+      // Customer login failed — try admin/super_admin login
+    }
+
+    try {
+      const adminResponse = await api.post('/auth/admin/login', loginData);
+      if (adminResponse.token && adminResponse.admin) {
+        localStorage.setItem('token', adminResponse.token);
+        localStorage.setItem('admin', JSON.stringify(adminResponse.admin));
+        const role = adminResponse.admin?.role;
+        toast.success('Login successful! Redirecting...');
+        router.push('/admin/dashboard');
+        return;
       }
     } catch (error: any) {
-      // The API interceptor throws Error objects, so check error.message first
-      const errorMessage = error?.message || error?.response?.data?.error || 'Login failed. Please check your credentials.';
+      const errorMessage = error?.message || 'Invalid email or password';
       toast.error(errorMessage);
-      console.error('Login error:', error);
     } finally {
       setLoading(false);
     }
@@ -117,7 +128,7 @@ export default function LoginPage() {
 
         <div className="mt-6 text-center">
           <p className="text-slate-400">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/signup" className="text-orange-600 hover:text-orange-500 font-semibold">
               Sign Up
             </Link>
@@ -125,9 +136,9 @@ export default function LoginPage() {
         </div>
 
         <div className="mt-4 text-center">
-          <Link href="/admin/login" className="text-sm text-slate-400 hover:text-orange-600">
-            Admin Login
-          </Link>
+          <p className="text-xs text-slate-600">
+            Admin credentials also work here — you&apos;ll be redirected to the admin panel.
+          </p>
         </div>
       </motion.div>
     </div>

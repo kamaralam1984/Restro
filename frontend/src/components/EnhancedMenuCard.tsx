@@ -6,7 +6,7 @@ import { useCart, CartAddOn } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
 
 interface MenuItem {
-  _id: string;
+  _id?: string;
   id?: string;
   name: string;
   description: string;

@@ -16,7 +16,8 @@
     "init-tables": "tsx src/scripts/initializeTables.ts",
     "update-table-capacities": "tsx src/scripts/updateTableCapacities.ts",
     "init-hero-images": "tsx src/scripts/initializeHeroImages.ts",
-    "add-nonveg-main": "tsx src/scripts/addNonVegMainItems.ts"
+    "add-nonveg-main": "tsx src/scripts/addNonVegMainItems.ts",
+    "seed-menu": "tsx src/scripts/seedMenuItems.ts"
   },
   "dependencies": {
     "@types/multer": "^2.0.0",

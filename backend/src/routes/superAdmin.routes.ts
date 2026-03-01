@@ -6,6 +6,8 @@ import {
   createRestaurant,
   updateRestaurant,
   updateRestaurantStatus,
+  getRestaurantStats,
+  updateRestaurantFeatures,
 } from '../controllers/restaurant.controller';
 import {
   getAllPlans,
@@ -28,9 +30,11 @@ router.use(authenticate, requireSuperAdmin);
 // ── Restaurants ───────────────────────────────────────────────────────────────
 router.get('/restaurants', getAllRestaurants);
 router.get('/restaurants/:id', getRestaurantById);
+router.get('/restaurants/:id/stats', getRestaurantStats);
 router.post('/restaurants', createRestaurant);
 router.put('/restaurants/:id', updateRestaurant);
 router.patch('/restaurants/:id/status', updateRestaurantStatus);
+router.patch('/restaurants/:id/features', updateRestaurantFeatures);
 
 // ── Rental Plans ──────────────────────────────────────────────────────────────
 router.get('/plans', getAllPlans);

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate, requireAdmin } from '../middleware/auth.middleware';
+import { authenticate, requireAdminOrSuperAdmin } from '../middleware/auth.middleware';
 import {
   getRestaurantBySlug,
   getMyRestaurant,
@@ -16,7 +16,7 @@ router.get('/plans', getPlans);
 
 // ── Restaurant Admin (authenticated) ─────────────────────────────────────────
 router.get('/me', authenticate, getMyRestaurant);
-router.put('/me', authenticate, requireAdmin, updateMyRestaurant);
-router.get('/me/subscriptions', authenticate, requireAdmin, getMySubscriptions);
+router.put('/me', authenticate, requireAdminOrSuperAdmin, updateMyRestaurant);
+router.get('/me/subscriptions', authenticate, requireAdminOrSuperAdmin, getMySubscriptions);
 
 export default router;

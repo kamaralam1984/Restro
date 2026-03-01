@@ -222,7 +222,7 @@ export default function BookingPage() {
       // Create payment order
       const paymentOrder = await api.post('/bookings/payment/create', {
         bookingId,
-      });
+      }) as { amount: number; currency: string; orderId: string };
 
       if (!razorpayKey) {
         throw new Error('Payment gateway not configured');
@@ -301,11 +301,11 @@ export default function BookingPage() {
               Booking Number: {bookingId ? `BK-${bookingId.slice(-6)}` : 'N/A'}
             </p>
             <p className="text-sm text-orange-300 mt-2">
-              We'll send you a confirmation email shortly.
+              We&apos;ll send you a confirmation email shortly.
             </p>
             <p className="text-xs text-orange-400/80 mt-4">
               Note: Payment is non-refundable. If your order reaches ₹{bookingConfig?.discountThreshold || 0}, 
-              you'll get ₹{bookingConfig?.discountAmount || 0} discount!
+              you&apos;ll get ₹{bookingConfig?.discountAmount || 0} discount!
             </p>
           </motion.div>
         </div>

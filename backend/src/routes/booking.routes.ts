@@ -10,7 +10,7 @@ import {
   createBookingPaymentOrder,
   verifyBookingPayment,
 } from '../controllers/bookingPayment.controller';
-import { authenticate, requireAdmin } from '../middleware/auth.middleware';
+import { authenticate, requireAdminOrSuperAdmin } from '../middleware/auth.middleware';
 import { validateBookingCreate } from '../middleware/validation.middleware';
 
 const router = Router();
@@ -23,10 +23,10 @@ router.post('/payment/create', createBookingPaymentOrder);
 router.post('/payment/verify', verifyBookingPayment);
 
 // Protected admin routes
-router.get('/', authenticate, requireAdmin, getBookings);
-router.get('/:id', authenticate, requireAdmin, getBooking);
-router.put('/:id/status', authenticate, requireAdmin, updateBookingStatus);
-router.put('/:id/cancel', authenticate, requireAdmin, cancelBooking);
+router.get('/', authenticate, requireAdminOrSuperAdmin, getBookings);
+router.get('/:id', authenticate, requireAdminOrSuperAdmin, getBooking);
+router.put('/:id/status', authenticate, requireAdminOrSuperAdmin, updateBookingStatus);
+router.put('/:id/cancel', authenticate, requireAdminOrSuperAdmin, cancelBooking);
 
 export default router;
 

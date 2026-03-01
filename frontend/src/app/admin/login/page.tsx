@@ -35,7 +35,7 @@ export default function AdminLoginPage() {
         password: credentials.password,
       };
       
-      const response = await fetch(`${API_URL}/admin/login`, {
+      const response = await fetch(`${API_URL}/auth/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(loginData),
@@ -99,7 +99,7 @@ export default function AdminLoginPage() {
                 setCredentials({ ...credentials, email: e.target.value })
               }
               className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="admin@restroos.com"
+              placeholder="admin@demorestaurant.com"
             />
           </div>
 
@@ -131,7 +131,7 @@ export default function AdminLoginPage() {
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-500">
-          For demo: Use admin credentials configured in backend
+          Email: admin@demorestaurant.com &nbsp;|&nbsp; Password: Admin@123
         </p>
       </motion.div>
     </div>

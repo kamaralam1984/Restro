@@ -106,7 +106,7 @@ export default function ContactPage() {
               Get in <span className="text-orange-600">Touch</span>
             </h1>
             <p className="text-xl text-slate-300">
-              We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+              We&apos;d love to hear from you. Send us a message and we&apos;ll respond as soon as possible.
             </p>
           </motion.div>
         </div>

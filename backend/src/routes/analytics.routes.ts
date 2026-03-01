@@ -7,13 +7,13 @@ import {
   getRepeatCustomers,
   getBookingStats,
 } from '../controllers/analytics.controller';
-import { authenticate, requireAdmin } from '../middleware/auth.middleware';
+import { authenticate, requireAdminOrSuperAdmin } from '../middleware/auth.middleware';
 
 const router = Router();
 
-// All analytics routes require authentication and admin role
+// All analytics routes require authentication — admin or super_admin
 router.use(authenticate);
-router.use(requireAdmin);
+router.use(requireAdminOrSuperAdmin);
 
 router.get('/dashboard', getDashboardStats);
 router.get('/orders-per-hour', getOrdersPerHour);

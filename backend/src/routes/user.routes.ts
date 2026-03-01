@@ -6,13 +6,12 @@ import {
   updateUser,
   deleteUser,
 } from '../controllers/user.controller';
-import { authenticate, requireAdmin } from '../middleware/auth.middleware';
+import { authenticate, requireAdminOrSuperAdmin } from '../middleware/auth.middleware';
 
 const router = Router();
 
-// All routes require admin authentication
 router.use(authenticate);
-router.use(requireAdmin);
+router.use(requireAdminOrSuperAdmin);
 
 // Get all users
 router.get('/', getAllUsers);

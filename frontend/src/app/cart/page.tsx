@@ -119,7 +119,7 @@ export default function CartPage() {
             </div>
             <h2 className="text-3xl font-bold text-white mb-4">Your Cart is Empty</h2>
             <p className="text-slate-400 mb-8 max-w-md mx-auto">
-              Looks like you haven't added anything to your cart yet. Start adding delicious items
+              Looks like you haven&apos;t added anything to your cart yet. Start adding delicious items
               from our menu!
             </p>
             <motion.button
@@ -380,7 +380,7 @@ export default function CartPage() {
               <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mb-6 flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
                 <p className="text-xs text-blue-400">
-                  Free delivery on orders above ₹500. You're ₹{500 - subtotal} away!
+                  Free delivery on orders above ₹500. You&apos;re ₹{500 - subtotal} away!
                 </p>
               </div>
 

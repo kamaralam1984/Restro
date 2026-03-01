@@ -98,12 +98,12 @@ export default function AboutPage() {
                   Founded in 2019, we started as a small family restaurant with a passion for culinary excellence.
                 </p>
                 <p>
-                  Over the years, we've grown from a humble kitchen to a beloved restaurant known for our 
+                  Over the years, we&apos;ve grown from a humble kitchen to a beloved restaurant known for our 
                   commitment to quality, freshness, and exceptional service. Every dish we serve is crafted 
                   with care, using only the finest ingredients.
                 </p>
                 <p>
-                  Today, Restro OS stands as a testament to our dedication. We've served over 10,000 happy 
+                  Today, Restro OS stands as a testament to our dedication. We&apos;ve served over 10,000 happy 
                   customers and continue to innovate while staying true to our roots - pure, delicious food 
                   that brings people together.
                 </p>

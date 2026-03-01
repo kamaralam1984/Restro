@@ -8,7 +8,7 @@ import {
   getCategories,
   getPriceRange,
 } from '../controllers/menu.controller';
-import { authenticate, requireAdmin } from '../middleware/auth.middleware';
+import { authenticate, requireAdminOrSuperAdmin } from '../middleware/auth.middleware';
 import { validateMenuCreate } from '../middleware/validation.middleware';
 
 const router = Router();
@@ -20,9 +20,9 @@ router.get('/price-range', getPriceRange);
 router.get('/:id', getMenuItem);
 
 // Protected admin routes
-router.post('/', authenticate, requireAdmin, validateMenuCreate, createMenuItem);
-router.put('/:id', authenticate, requireAdmin, updateMenuItem);
-router.delete('/:id', authenticate, requireAdmin, deleteMenuItem);
+router.post('/', authenticate, requireAdminOrSuperAdmin, validateMenuCreate, createMenuItem);
+router.put('/:id', authenticate, requireAdminOrSuperAdmin, updateMenuItem);
+router.delete('/:id', authenticate, requireAdminOrSuperAdmin, deleteMenuItem);
 
 export default router;
 

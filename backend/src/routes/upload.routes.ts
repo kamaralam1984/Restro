@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { uploadImage } from '../controllers/upload.controller';
-import { authenticate, requireAdmin } from '../middleware/auth.middleware';
+import { authenticate, requireAdminOrSuperAdmin } from '../middleware/auth.middleware';
 import { uploadSingle } from '../middleware/upload.middleware';
 
 const router = Router();
@@ -9,7 +9,7 @@ const router = Router();
 router.post(
   '/image',
   authenticate,
-  requireAdmin,
+  requireAdminOrSuperAdmin,
   uploadSingle,
   uploadImage
 );

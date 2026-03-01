@@ -10,6 +10,17 @@ export interface IEmailConfig {
   fromEmail: string;
 }
 
+export interface IRestaurantFeatures {
+  onlineOrdering: boolean;
+  tableBooking: boolean;
+  onlinePayments: boolean;
+  reviews: boolean;
+  heroImages: boolean;
+  whatsappNotifications: boolean;
+  analytics: boolean;
+  menuManagement: boolean;
+}
+
 export interface IRestaurant extends Document {
   name: string;
   slug: string; // unique identifier used in URLs / tenant resolution
@@ -51,6 +62,9 @@ export interface IRestaurant extends Document {
   ownerId?: mongoose.Types.ObjectId;
 
   status: 'active' | 'suspended' | 'inactive';
+
+  // Super admin feature controls per restaurant
+  features: IRestaurantFeatures;
 
   createdAt: Date;
   updatedAt: Date;
@@ -160,6 +174,20 @@ const RestaurantSchema = new Schema<IRestaurant>(
       type: String,
       enum: ['active', 'suspended', 'inactive'],
       default: 'active',
+    },
+
+    features: {
+      type: new Schema({
+        onlineOrdering:          { type: Boolean, default: true },
+        tableBooking:            { type: Boolean, default: true },
+        onlinePayments:          { type: Boolean, default: true },
+        reviews:                 { type: Boolean, default: true },
+        heroImages:              { type: Boolean, default: true },
+        whatsappNotifications:   { type: Boolean, default: false },
+        analytics:               { type: Boolean, default: true },
+        menuManagement:          { type: Boolean, default: true },
+      }, { _id: false }),
+      default: () => ({}),
     },
   },
   {

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate, requireAdmin } from '../middleware/auth.middleware';
+import { authenticate, requireAdminOrSuperAdmin } from '../middleware/auth.middleware';
 import {
   createBillFromOrder,
   createOfflineBill,
@@ -11,7 +11,7 @@ import {
 const router = Router();
 
 // All billing routes are protected - only admin/shopper users
-router.use(authenticate, requireAdmin);
+router.use(authenticate, requireAdminOrSuperAdmin);
 
 // Online order billing
 router.post('/from-order', createBillFromOrder);

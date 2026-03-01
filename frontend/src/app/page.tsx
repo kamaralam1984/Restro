@@ -61,8 +61,8 @@ export default function Home() {
       } else {
         // Fallback: Get first 3 menu items
         const allItems = await menuService.getMenuItems();
-        if (allItems && allItems.length > 0) {
-          setBestSellers(allItems.slice(0, 3));
+        if (allItems && allItems.items && allItems.items.length > 0) {
+          setBestSellers(allItems.items.slice(0, 3));
         } else {
           // Default best sellers if no items in database
           setBestSellers([
@@ -103,8 +103,8 @@ export default function Home() {
       // Fallback: Get menu items
       try {
         const items = await menuService.getMenuItems();
-        if (items && items.length > 0) {
-          setBestSellers(items.slice(0, 3));
+        if (items && items.items && items.items.length > 0) {
+          setBestSellers(items.items.slice(0, 3));
         } else {
           // Default best sellers
           setBestSellers([

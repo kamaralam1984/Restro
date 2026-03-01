@@ -5,6 +5,9 @@ import { Restaurant } from '../models/Restaurant.model';
 import { User } from '../models/User.model';
 import { RentalPlan } from '../models/RentalPlan.model';
 import { Subscription } from '../models/Subscription.model';
+import { Menu } from '../models/Menu.model';
+import { Order } from '../models/Order.model';
+import { Booking } from '../models/Booking.model';
 
 // ─── Super Admin: List all restaurants ───────────────────────────────────────
 
@@ -182,6 +185,75 @@ export const updateRestaurantStatus = async (req: Request, res: Response) => {
     );
     if (!restaurant) return res.status(404).json({ error: 'Restaurant not found' });
     res.json({ message: `Restaurant ${status}`, restaurant });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ─── Super Admin: Get restaurant live stats ───────────────────────────────────
+
+export const getRestaurantStats = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const restaurantId = new mongoose.Types.ObjectId(id);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const [
+      totalOrders, todayOrders, totalRevenue, todayRevenue,
+      menuItems, staffCount, bookingsTotal, bookingsToday,
+    ] = await Promise.all([
+      Order.countDocuments({ restaurantId }),
+      Order.countDocuments({ restaurantId, createdAt: { $gte: today, $lt: tomorrow } }),
+      Order.aggregate([
+        { $match: { restaurantId, paymentStatus: 'paid' } },
+        { $group: { _id: null, total: { $sum: '$total' } } },
+      ]),
+      Order.aggregate([
+        { $match: { restaurantId, paymentStatus: 'paid', createdAt: { $gte: today, $lt: tomorrow } } },
+        { $group: { _id: null, total: { $sum: '$total' } } },
+      ]),
+      Menu.countDocuments({ restaurantId }),
+      User.countDocuments({ restaurantId, role: { $in: ['admin', 'manager', 'staff', 'cashier'] } }),
+      Booking.countDocuments({ restaurantId }),
+      Booking.countDocuments({ restaurantId, createdAt: { $gte: today, $lt: tomorrow } }),
+    ]);
+
+    res.json({
+      totalOrders,
+      todayOrders,
+      totalRevenue: totalRevenue[0]?.total ?? 0,
+      todayRevenue: todayRevenue[0]?.total ?? 0,
+      menuItems,
+      staffCount,
+      bookingsTotal,
+      bookingsToday,
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ─── Super Admin: Update restaurant features ──────────────────────────────────
+
+export const updateRestaurantFeatures = async (req: Request, res: Response) => {
+  try {
+    const { features } = req.body;
+    if (!features || typeof features !== 'object') {
+      return res.status(400).json({ error: 'features object required' });
+    }
+
+    const restaurant = await Restaurant.findByIdAndUpdate(
+      req.params.id,
+      { $set: { features } },
+      { new: true, runValidators: true }
+    );
+    if (!restaurant) return res.status(404).json({ error: 'Restaurant not found' });
+
+    res.json({ message: 'Features updated', features: restaurant.features });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

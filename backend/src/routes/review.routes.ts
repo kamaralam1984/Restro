@@ -6,7 +6,7 @@ import {
   updateReview,
   deleteReview,
 } from '../controllers/review.controller';
-import { authenticate, requireAdmin } from '../middleware/auth.middleware';
+import { authenticate, requireAdminOrSuperAdmin } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -16,8 +16,8 @@ router.get('/:id', getReview);
 router.post('/', createReview); // Customers can create reviews
 
 // Protected admin routes
-router.put('/:id', authenticate, requireAdmin, updateReview);
-router.delete('/:id', authenticate, requireAdmin, deleteReview);
+router.put('/:id', authenticate, requireAdminOrSuperAdmin, updateReview);
+router.delete('/:id', authenticate, requireAdminOrSuperAdmin, deleteReview);
 
 export default router;
 

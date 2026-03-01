@@ -6,7 +6,7 @@ import {
   deleteHeroImage,
   updateHeroImageOrder,
 } from '../controllers/heroImage.controller';
-import { authenticate, requireAdmin } from '../middleware/auth.middleware';
+import { authenticate, requireAdminOrSuperAdmin } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -14,10 +14,10 @@ const router = Router();
 router.get('/', getHeroImages);
 
 // Admin routes
-router.get('/admin', authenticate, requireAdmin, getAllHeroImages);
-router.post('/admin', authenticate, requireAdmin, upsertHeroImage);
-router.put('/admin/order', authenticate, requireAdmin, updateHeroImageOrder);
-router.delete('/admin/:id', authenticate, requireAdmin, deleteHeroImage);
+router.get('/admin', authenticate, requireAdminOrSuperAdmin, getAllHeroImages);
+router.post('/admin', authenticate, requireAdminOrSuperAdmin, upsertHeroImage);
+router.put('/admin/order', authenticate, requireAdminOrSuperAdmin, updateHeroImageOrder);
+router.delete('/admin/:id', authenticate, requireAdminOrSuperAdmin, deleteHeroImage);
 
 export default router;
 

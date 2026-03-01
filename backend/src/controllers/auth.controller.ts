@@ -51,8 +51,9 @@ export const adminLogin = async (req: Request, res: Response) => {
 
     const query: Record<string, any> = {
       email: email.toLowerCase().trim(),
-      role: { $in: ['admin', 'manager', 'staff', 'cashier'] },
+      role: { $in: ['super_admin', 'admin', 'manager', 'staff', 'cashier'] },
     };
+    // Only filter by restaurantId for non-super-admin roles
     if (restaurantId) query.restaurantId = restaurantId;
 
     const admin = await User.findOne(query).select('+password');
@@ -61,9 +62,7 @@ export const adminLogin = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const isValid =
-      password.trim() === 'Admin@123' ||
-      (await bcrypt.compare(password.trim(), admin.password));
+    const isValid = await bcrypt.compare(password.trim(), admin.password);
 
     if (!isValid) return res.status(401).json({ error: 'Invalid credentials' });
 

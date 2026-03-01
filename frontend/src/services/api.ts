@@ -59,19 +59,19 @@ axiosInstance.interceptors.response.use(
 );
 
 export const api = {
-  get: <T>(endpoint: string, config?: AxiosRequestConfig) =>
+  get: <T = any>(endpoint: string, config?: AxiosRequestConfig) =>
     axiosInstance.get<T>(endpoint, config).then((res) => res.data),
   
-  post: <T>(endpoint: string, data?: unknown, config?: AxiosRequestConfig) =>
+  post: <T = any>(endpoint: string, data?: unknown, config?: AxiosRequestConfig) =>
     axiosInstance.post<T>(endpoint, data, config).then((res) => res.data),
   
-  put: <T>(endpoint: string, data?: unknown, config?: AxiosRequestConfig) =>
+  put: <T = any>(endpoint: string, data?: unknown, config?: AxiosRequestConfig) =>
     axiosInstance.put<T>(endpoint, data, config).then((res) => res.data),
   
-  delete: <T>(endpoint: string, config?: AxiosRequestConfig) =>
+  delete: <T = any>(endpoint: string, config?: AxiosRequestConfig) =>
     axiosInstance.delete<T>(endpoint, config).then((res) => res.data),
   
-  patch: <T>(endpoint: string, data?: unknown, config?: AxiosRequestConfig) =>
+  patch: <T = any>(endpoint: string, data?: unknown, config?: AxiosRequestConfig) =>
     axiosInstance.patch<T>(endpoint, data, config).then((res) => res.data),
 };
 
