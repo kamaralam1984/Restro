@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import { Menu } from '../models/Menu.model';
 import { Restaurant } from '../models/Restaurant.model';
 import { createAuditLog } from '../utils/auditLog';
+import { cacheGet, cacheSet, cacheDel, cacheKeyMenuByRestaurant } from '../utils/cache';
+import { CACHE_TTL } from '../config/redis';
 
 export const getMenuItems = async (req: Request, res: Response) => {
   try {
@@ -24,9 +26,32 @@ export const getMenuItems = async (req: Request, res: Response) => {
     const filter: any = { isDeleted: { $ne: true } };
 
     // Filter by restaurant when slug is provided (for /r/[slug] storefront)
+    let rest: { _id: mongoose.Types.ObjectId } | null = null;
     if (restaurantSlug && typeof restaurantSlug === 'string') {
-      const rest = await Restaurant.findOne({ slug: restaurantSlug.trim(), status: 'active' }).select('_id').lean();
-      if (rest) filter.restaurantId = new mongoose.Types.ObjectId(rest._id);
+      rest = await Restaurant.findOne({ slug: restaurantSlug.trim(), status: 'active' }).select('_id').lean();
+      if (rest) filter.restaurantId = rest._id;
+    }
+
+    // Cache only for simple public menu list: by slug, default availability, no search/filters
+    const simpleList =
+      rest &&
+      !category &&
+      available !== 'all' &&
+      (available === undefined || available === 'true') &&
+      !isVeg &&
+      !search &&
+      !minPrice &&
+      !maxPrice &&
+      String(sortBy) === 'createdAt' &&
+      String(sortOrder) === 'desc' &&
+      String(page) === '1' &&
+      String(limit) === '50';
+    if (simpleList && rest) {
+      const cacheKey = cacheKeyMenuByRestaurant(String(rest._id));
+      const cached = await cacheGet(cacheKey);
+      if (cached) {
+        return res.json(JSON.parse(cached));
+      }
     }
 
     // Category filter
@@ -101,7 +126,7 @@ export const getMenuItems = async (req: Request, res: Response) => {
     const hasNextPage = pageNum < totalPages;
     const hasPrevPage = pageNum > 1;
 
-    res.json({
+    const payload = {
       items: menuItems,
       pagination: {
         currentPage: pageNum,
@@ -121,7 +146,11 @@ export const getMenuItems = async (req: Request, res: Response) => {
           max: maxPrice ? Number(maxPrice) : null,
         },
       },
-    });
+    };
+    if (simpleList && rest) {
+      await cacheSet(cacheKeyMenuByRestaurant(String(rest._id)), JSON.stringify(payload), CACHE_TTL.MENU_SEC);
+    }
+    res.json(payload);
   } catch (error: any) {
     console.error('Error fetching menu items:', error);
     res.status(500).json({ error: error.message || 'Failed to fetch menu items' });
@@ -147,6 +176,9 @@ export const createMenuItem = async (req: Request, res: Response) => {
   try {
     const menuItem = new Menu(req.body);
     await menuItem.save();
+    if (menuItem.restaurantId) {
+      await cacheDel(cacheKeyMenuByRestaurant(String(menuItem.restaurantId)));
+    }
     res.status(201).json(menuItem);
   } catch (error: any) {
     res.status(400).json({ error: error.message || 'Failed to create menu item' });
@@ -181,7 +213,9 @@ export const updateMenuItem = async (req: Request, res: Response) => {
         newValue: { name: menuItem.name, price: menuItem.price },
       });
     }
-
+    if (menuItem.restaurantId) {
+      await cacheDel(cacheKeyMenuByRestaurant(String(menuItem.restaurantId)));
+    }
     res.json(menuItem);
   } catch (error: any) {
     res.status(400).json({ error: error.message || 'Failed to update menu item' });
@@ -214,7 +248,9 @@ export const deleteMenuItem = async (req: Request, res: Response) => {
         oldValue: { name: menuItem.name },
       });
     }
-
+    if (menuItem.restaurantId) {
+      await cacheDel(cacheKeyMenuByRestaurant(String(menuItem.restaurantId)));
+    }
     res.json({ message: 'Menu item deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete menu item' });

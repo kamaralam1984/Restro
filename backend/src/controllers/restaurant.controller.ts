@@ -477,8 +477,56 @@ export const updateMyRestaurant = async (req: Request, res: Response) => {
       { new: true, runValidators: true }
     );
     if (!restaurant) return res.status(404).json({ error: 'Restaurant not found' });
-
+    const { cacheDel, cacheKeyRestaurant } = await import('../utils/cache');
+    await cacheDel(cacheKeyRestaurant(restaurant.slug));
     res.json({ message: 'Restaurant settings updated', restaurant });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ─── Restaurant Admin: Get / update onboarding state ─────────────────────────
+
+export const getOnboarding = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.user?.restaurantId;
+    if (!restaurantId) return res.status(400).json({ error: 'No restaurant context' });
+    const restaurant = await Restaurant.findById(restaurantId)
+      .select('onboardingStep onboardingCompletedAt')
+      .lean();
+    if (!restaurant) return res.status(404).json({ error: 'Restaurant not found' });
+    res.json({
+      step: restaurant.onboardingStep || 'menu',
+      completedAt: restaurant.onboardingCompletedAt,
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const updateOnboarding = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.user?.restaurantId;
+    if (!restaurantId) return res.status(400).json({ error: 'No restaurant context' });
+    const { step, completed } = req.body;
+    const update: Record<string, unknown> = {};
+    if (['menu', 'tables', 'razorpay', 'publish', 'done'].includes(step)) {
+      update.onboardingStep = step;
+    }
+    if (completed === true) {
+      update.onboardingCompletedAt = new Date();
+      update.onboardingStep = 'done';
+    }
+    const restaurant = await Restaurant.findByIdAndUpdate(
+      restaurantId,
+      { $set: update },
+      { new: true }
+    ).select('onboardingStep onboardingCompletedAt');
+    if (!restaurant) return res.status(404).json({ error: 'Restaurant not found' });
+    res.json({
+      step: restaurant.onboardingStep,
+      completedAt: restaurant.onboardingCompletedAt,
+    });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -488,10 +536,18 @@ export const updateMyRestaurant = async (req: Request, res: Response) => {
 // Returns restaurant even when inactive/suspended so frontend can show "Service Temporarily Suspended"
 export const getRestaurantBySlug = async (req: Request, res: Response) => {
   try {
-    const restaurant = await Restaurant.findOne({ slug: req.params.slug })
+    const slug = req.params.slug;
+    const { cacheGet, cacheSet, cacheKeyRestaurant } = await import('../utils/cache');
+    const { CACHE_TTL } = await import('../config/redis');
+    const cached = await cacheGet(cacheKeyRestaurant(slug));
+    if (cached) {
+      return res.json(JSON.parse(cached));
+    }
+    const restaurant = await Restaurant.findOne({ slug })
       .select('-razorpayKeySecret -emailConfig.password -whatsappApiKey')
       .lean();
     if (!restaurant) return res.status(404).json({ error: 'Restaurant not found' });
+    await cacheSet(cacheKeyRestaurant(slug), JSON.stringify(restaurant), CACHE_TTL.RESTAURANT_SEC);
     res.json(restaurant);
   } catch (error: any) {
     res.status(500).json({ error: error.message });

@@ -23,6 +23,13 @@ export interface ISubscription extends Document {
   paymentId?: string;         // Razorpay payment ID (for online)
   invoiceNumber?: string;
 
+  // Razorpay Subscriptions (recurring)
+  razorpaySubscriptionId?: string;
+  razorpayPlanId?: string;
+
+  // Grace period: when payment fails, status → past_due; suspend after gracePeriodEndsAt
+  gracePeriodEndsAt?: Date;
+
   // Renewal
   autoRenew: boolean;
   renewalReminderSent: boolean;
@@ -87,6 +94,9 @@ const SubscriptionSchema = new Schema<ISubscription>(
       type: String,
       trim: true,
     },
+    razorpaySubscriptionId: { type: String, trim: true },
+    razorpayPlanId: { type: String, trim: true },
+    gracePeriodEndsAt: { type: Date },
     invoiceNumber: {
       type: String,
       unique: true,
@@ -117,6 +127,7 @@ const SubscriptionSchema = new Schema<ISubscription>(
 SubscriptionSchema.index({ restaurantId: 1, status: 1 });
 SubscriptionSchema.index({ status: 1, endDate: 1 });
 SubscriptionSchema.index({ endDate: 1 });
+SubscriptionSchema.index({ razorpaySubscriptionId: 1 }, { sparse: true });
 
 // Auto-generate invoice number before saving
 SubscriptionSchema.pre('save', async function (next) {

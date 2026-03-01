@@ -23,7 +23,7 @@ import superAdminRoutes from './routes/superAdmin.routes';
 import restaurantRoutes from './routes/restaurant.routes';
 import v1Routes from './routes/v1.index';
 import { errorHandler, notFound } from './middleware/error.middleware';
-import { generalRateLimiter, apiRateLimiter } from './middleware/rateLimiter.middleware';
+import { generalRateLimiter, apiRateLimiter, tenantApiRateLimiter } from './middleware/rateLimiter.middleware';
 
 dotenv.config();
 
@@ -49,6 +49,10 @@ app.use(cors({
 // NoSQL injection sanitization (strip $ and . from user input)
 app.use(mongoSanitize());
 
+// Razorpay webhook must get raw body (before json parser)
+import { razorpaySubscriptionWebhook } from './controllers/subscriptionWebhook.controller';
+app.post('/api/webhooks/razorpay', express.raw({ type: 'application/json' }), razorpaySubscriptionWebhook);
+
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -63,8 +67,8 @@ app.use('/api', (req, res, next) => {
   }
   return generalRateLimiter(req, res, next);
 });
-app.use('/api/orders', apiRateLimiter);
-app.use('/api/bookings', apiRateLimiter);
+app.use('/api/orders', apiRateLimiter, tenantApiRateLimiter);
+app.use('/api/bookings', apiRateLimiter, tenantApiRateLimiter);
 
 // Health check (liveness) — includes DB so frontend can show DB Online/Offline
 app.get('/api/health', (_req, res) => {

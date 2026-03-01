@@ -3,9 +3,19 @@ import { analyticsService } from '../services/analytics.service';
 import { Order } from '../models/Order.model';
 import { Booking } from '../models/Booking.model';
 import { User } from '../models/User.model';
+import { cacheGet, cacheSet, cacheKeyAnalytics } from '../utils/cache';
+import { CACHE_TTL } from '../config/redis';
 
 export const getDashboardStats = async (req: Request, res: Response) => {
   try {
+    const restaurantId = (req as any).user?.restaurantId;
+    if (restaurantId) {
+      const cached = await cacheGet(cacheKeyAnalytics(restaurantId));
+      if (cached) {
+        return res.json(JSON.parse(cached));
+      }
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
@@ -58,7 +68,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     const totalPaid = onlineCount + codCount;
     const onlinePercentage = totalPaid > 0 ? Math.round((onlineCount / totalPaid) * 100) : 0;
 
-    res.json({
+    const payload = {
       todayOrders,
       todayRevenue: todayRevenue[0]?.total || 0,
       pendingOrders,
@@ -67,7 +77,11 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         cod: codCount,
         onlinePercentage,
       },
-    });
+    };
+    if (restaurantId) {
+      await cacheSet(cacheKeyAnalytics(restaurantId), JSON.stringify(payload), CACHE_TTL.ANALYTICS_SEC);
+    }
+    res.json(payload);
   } catch (error: any) {
     console.error('Error fetching dashboard stats:', error);
     res.status(500).json({ error: error?.message || 'Failed to fetch dashboard stats' });
