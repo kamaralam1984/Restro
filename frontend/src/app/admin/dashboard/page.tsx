@@ -214,11 +214,26 @@ interface Order {
   createdAt: string;
 }
 
+const DASHBOARD_QUICK_LINKS: { label: string; href: string; featureKey?: keyof typeof DEFAULT_FEATURES }[] = [
+  { label: 'Orders', href: '/admin/orders', featureKey: 'onlineOrdering' },
+  { label: 'Menu', href: '/admin/menu', featureKey: 'menuManagement' },
+  { label: 'Bookings', href: '/admin/bookings', featureKey: 'tableBooking' },
+  { label: 'Hero / Front page', href: '/admin/hero-images', featureKey: 'heroImages' },
+  { label: 'Revenue & business', href: '/admin/revenue', featureKey: 'billing' },
+  { label: 'Payment details', href: '/admin/payments', featureKey: 'onlinePayments' },
+  { label: 'Customers', href: '/admin/customers', featureKey: 'onlineOrdering' },
+  { label: 'Staff & users', href: '/admin/users', featureKey: 'staffControl' },
+  { label: 'Analytics', href: '/admin/analytics', featureKey: 'analytics' },
+  { label: 'Settings & design', href: '/admin/settings' },
+];
+const DEFAULT_FEATURES = { menuManagement: true, onlineOrdering: true, tableBooking: false, billing: false, heroImages: true, analytics: false, staffControl: false, reviews: true, onlinePayments: true };
+
 function RestaurantAdminDashboard() {
   const router = useRouter();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [features, setFeatures] = useState<Record<string, boolean> | null>(null);
 
   useEffect(() => { loadData(); }, []);
 
@@ -227,12 +242,17 @@ function RestaurantAdminDashboard() {
       const token = localStorage.getItem('token');
       if (!token) { window.location.href = '/admin/login'; return; }
       const headers = { Authorization: `Bearer ${token}` };
-      const [statsData, ordersData] = await Promise.all([
-        api.get<DashboardStats>('/analytics/dashboard', { headers }),
-        api.get<Order[]>('/orders', { headers, params: { limit: '10' } }),
+      const [statsData, ordersData, restaurantData] = await Promise.all([
+        api.get<DashboardStats>('/analytics/dashboard', { headers }).catch(() => null),
+        api.get<Order[]>('/orders', { headers, params: { limit: '10' } }).catch(() => []),
+        api.get<{ features?: Record<string, boolean> }>('/restaurants/me', { headers }).catch((): { features?: Record<string, boolean> } => ({})),
       ]);
-      setStats(statsData);
+      setStats(statsData ?? null);
       setRecentOrders(Array.isArray(ordersData) ? ordersData.slice(0, 10) : []);
+      const restFeatures = restaurantData && 'features' in restaurantData ? restaurantData.features : undefined;
+      if (restFeatures && typeof restFeatures === 'object') {
+        setFeatures(restFeatures);
+      }
     } catch (error: any) {
       if (error?.response?.status === 401) {
         localStorage.removeItem('token');
@@ -280,20 +300,23 @@ function RestaurantAdminDashboard() {
         <p className="text-slate-400 text-sm mt-1">Your restaurant dashboard — orders, revenue & recent activity</p>
       </div>
 
-      {/* Rental Admin: quick links to control website, business, staff, customers, payments, design */}
+      {/* Rental Admin: quick links — only show items enabled in subscription/plan */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
         <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Rental Admin Panel — You can</h2>
         <div className="flex flex-wrap gap-2">
-          <Link href="/admin/orders" className="px-3 py-1.5 bg-orange-600/20 text-orange-400 rounded-lg text-sm font-medium hover:bg-orange-600/30">Orders</Link>
-          <Link href="/admin/menu" className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-600">Menu</Link>
-          <Link href="/admin/bookings" className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-600">Bookings</Link>
-          <Link href="/admin/hero-images" className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-600">Hero / Front page</Link>
-          <Link href="/admin/revenue" className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-600">Revenue & business</Link>
-          <Link href="/admin/payments" className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-600">Payment details</Link>
-          <Link href="/admin/customers" className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-600">Customers</Link>
-          <Link href="/admin/users" className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-600">Staff & users</Link>
-          <Link href="/admin/analytics" className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-600">Analytics</Link>
-          <Link href="/admin/settings" className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-600">Settings & design</Link>
+          {DASHBOARD_QUICK_LINKS.filter((item) => {
+            if (!item.featureKey) return true;
+            const f = features ?? DEFAULT_FEATURES;
+            return f[item.featureKey] === true;
+          }).map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={item.label === 'Orders' ? 'px-3 py-1.5 bg-orange-600/20 text-orange-400 rounded-lg text-sm font-medium hover:bg-orange-600/30' : 'px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-600'}
+            >
+              {item.label}
+            </Link>
+          ))}
         </div>
       </div>
 

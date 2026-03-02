@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import { Booking } from '../models/Booking.model';
 import { Table } from '../models/Table.model';
+import { Restaurant } from '../models/Restaurant.model';
 import { orderService } from '../services/order.service';
 import { 
   getBookingConfig, 
@@ -120,12 +122,20 @@ export const createBooking = async (req: Request, res: Response) => {
     let tableCapacity = null;
     let advancePaymentAmount = 0;
     let totalBookingAmount = 0;
-    
+    let table: { restaurantId?: mongoose.Types.ObjectId } | null = null;
+
     if (req.body.tableNumber) {
       selectedTableNumber = req.body.tableNumber;
-      
-      // Verify table exists and is available
-      const table = await Table.findOne({ tableNumber: selectedTableNumber });
+      const restaurantIdFromReq = (req as any).restaurantId || req.body.restaurantId;
+
+      // Verify table exists and is available (optionally scoped by restaurant)
+      const tableFilter: Record<string, unknown> = { tableNumber: selectedTableNumber };
+      if (restaurantIdFromReq) {
+        tableFilter.restaurantId = typeof restaurantIdFromReq === 'string'
+          ? new mongoose.Types.ObjectId(restaurantIdFromReq)
+          : restaurantIdFromReq;
+      }
+      table = await Table.findOne(tableFilter);
       if (!table) {
         return res.status(400).json({ error: `Table ${selectedTableNumber} not found` });
       }
@@ -146,8 +156,11 @@ export const createBooking = async (req: Request, res: Response) => {
       const bookingConfig = getBookingConfig(table.capacity);
       advancePaymentAmount = bookingConfig.hourlyRate; // Advance payment is 1 hour rate
 
-      // Check if table is already booked for overlapping time slots
-      const tableBookings = existingBookings.filter(b => b.tableNumber === selectedTableNumber!);
+      // Check if table is already booked for overlapping time slots (same restaurant only)
+      const sameRestaurantBookings = table?.restaurantId
+        ? existingBookings.filter((b: any) => b.restaurantId?.toString() === table.restaurantId?.toString())
+        : existingBookings;
+      const tableBookings = sameRestaurantBookings.filter((b: any) => b.tableNumber === selectedTableNumber!);
       for (const existingBooking of tableBookings) {
         const existingTimeParts = existingBooking.time.split(':');
         const existingStartMinutes = parseInt(existingTimeParts[0], 10) * 60 + parseInt(existingTimeParts[1], 10);
@@ -169,7 +182,18 @@ export const createBooking = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Table number is required' });
     }
 
+    let restaurantId = table?.restaurantId || (req as any).restaurantId || req.body.restaurantId;
+    if (!restaurantId && req.body.restaurantSlug) {
+      const rest = await Restaurant.findOne({ slug: req.body.restaurantSlug }).select('_id').lean();
+      if (rest) restaurantId = (rest as any)._id;
+    }
+    if (!restaurantId) {
+      return res.status(400).json({ error: 'Restaurant context required for booking (send restaurantId or restaurantSlug)' });
+    }
+    const restaurantIdObj = typeof restaurantId === 'string' ? new mongoose.Types.ObjectId(restaurantId) : restaurantId;
+
     const booking = new Booking({
+      restaurantId: restaurantIdObj,
       customerName: customerName.trim(),
       customerEmail: customerEmail.trim().toLowerCase(),
       customerPhone: customerPhone.trim(),
@@ -227,7 +251,11 @@ export const createBooking = async (req: Request, res: Response) => {
 export const getBookings = async (req: Request, res: Response) => {
   try {
     const { status, date } = req.query;
-    const filter: any = {};
+    const filter: Record<string, unknown> = {};
+    const user = (req as any).user;
+    if (user?.restaurantId) {
+      filter.restaurantId = new mongoose.Types.ObjectId(user.restaurantId);
+    }
 
     if (status) {
       filter.status = status;
@@ -268,15 +296,20 @@ export const getBookings = async (req: Request, res: Response) => {
 export const getBooking = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const booking = await Booking.findById(id);
+    const filter: Record<string, unknown> = { _id: id };
+    const user = (req as any).user;
+    if (user?.restaurantId) {
+      filter.restaurantId = new mongoose.Types.ObjectId(user.restaurantId);
+    }
+    const booking = await Booking.findOne(filter);
 
     if (!booking) {
       return res.status(404).json({ error: 'Booking not found' });
     }
 
     res.json(booking);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch booking' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to fetch booking' });
   }
 };
 
@@ -284,17 +317,17 @@ export const updateBookingStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status, tableNumber } = req.body;
-
-    const updateData: any = { status };
+    const filter: Record<string, unknown> = { _id: id };
+    const user = (req as any).user;
+    if (user?.restaurantId) {
+      filter.restaurantId = new mongoose.Types.ObjectId(user.restaurantId);
+    }
+    const updateData: Record<string, unknown> = { status };
     if (tableNumber) {
       updateData.tableNumber = tableNumber;
     }
 
-    const booking = await Booking.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true, runValidators: true }
-    );
+    const booking = await Booking.findOneAndUpdate(filter, updateData, { new: true, runValidators: true });
 
     if (!booking) {
       return res.status(404).json({ error: 'Booking not found' });
@@ -309,19 +342,20 @@ export const updateBookingStatus = async (req: Request, res: Response) => {
 export const cancelBooking = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const booking = await Booking.findByIdAndUpdate(
-      id,
-      { status: 'cancelled' },
-      { new: true }
-    );
+    const filter: Record<string, unknown> = { _id: id };
+    const user = (req as any).user;
+    if (user?.restaurantId) {
+      filter.restaurantId = new mongoose.Types.ObjectId(user.restaurantId);
+    }
+    const booking = await Booking.findOneAndUpdate(filter, { status: 'cancelled' }, { new: true });
 
     if (!booking) {
       return res.status(404).json({ error: 'Booking not found' });
     }
 
     res.json(booking);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to cancel booking' });
+  } catch (error: any) {
+    res.status(500).json({ error: (error as Error).message || 'Failed to cancel booking' });
   }
 };
 

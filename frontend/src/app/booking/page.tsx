@@ -19,6 +19,7 @@ import {
   validateTimeSlot
 } from '@/utils/booking.utils';
 import api from '@/services/api';
+import { useRestaurantPage } from '@/context/RestaurantPageContext';
 import { CreditCard, Info, AlertCircle, CheckCircle } from 'lucide-react';
 import ServiceSuspendedMessage from '@/components/ServiceSuspendedMessage';
 
@@ -31,6 +32,7 @@ function BookingPageContent() {
   const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { setRestaurant } = useRestaurantPage();
   const restaurantSlug = searchParams.get('restaurant') || undefined;
   const [restaurantSuspended, setRestaurantSuspended] = useState<boolean | null>(null);
   const [restaurantName, setRestaurantName] = useState<string>('');
@@ -125,10 +127,11 @@ function BookingPageContent() {
   useEffect(() => {
     if (!restaurantSlug) {
       setRestaurantSuspended(null);
+      setRestaurant(null);
       return;
     }
     api
-      .get<{ status?: string; subscriptionStatus?: string; name?: string }>(`/restaurants/by-slug/${restaurantSlug}`)
+      .get<{ status?: string; subscriptionStatus?: string; name?: string; logo?: string; primaryColor?: string }>(`/restaurants/by-slug/${restaurantSlug}`)
       .then((r) => {
         const suspended =
           r.status === 'inactive' ||
@@ -136,9 +139,13 @@ function BookingPageContent() {
           r.subscriptionStatus === 'cancelled';
         setRestaurantSuspended(suspended);
         setRestaurantName(r.name || '');
+        setRestaurant({ slug: restaurantSlug, name: r.name || restaurantSlug, logo: r.logo, primaryColor: r.primaryColor });
       })
-      .catch(() => setRestaurantSuspended(false));
-  }, [restaurantSlug]);
+      .catch(() => {
+        setRestaurantSuspended(false);
+        setRestaurant(null);
+      });
+  }, [restaurantSlug, setRestaurant]);
 
   useEffect(() => {
     if (selectedTable && selectedTableInfo) {
@@ -222,6 +229,7 @@ function BookingPageContent() {
         numberOfGuests: formData.numberOfGuests,
         specialRequests: formData.specialRequests,
         tableNumber: selectedTable,
+        ...(restaurantSlug && { restaurantSlug }),
       });
 
       setBookingId(booking.id || (booking as any)._id);

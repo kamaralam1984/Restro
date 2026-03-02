@@ -8,7 +8,7 @@ import { Request, Response } from 'express';
 import crypto from 'crypto';
 import { Subscription } from '../models/Subscription.model';
 import { Restaurant } from '../models/Restaurant.model';
-import { logger } from '../config/logger';
+import { logger } from '../utils/logger';
 
 const WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || '';
 

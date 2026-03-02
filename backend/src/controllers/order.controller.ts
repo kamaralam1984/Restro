@@ -19,6 +19,7 @@ export const createOrder = async (req: Request, res: Response) => {
     // Validate items and calculate total
     let total = 0;
     const orderItems = [];
+    let orderRestaurantId: mongoose.Types.ObjectId | null = null;
 
     for (const item of items) {
       if (!item.menuItemId) {
@@ -29,7 +30,10 @@ export const createOrder = async (req: Request, res: Response) => {
       if (!menuItem) {
         return res.status(400).json({ error: `Menu item with ID ${item.menuItemId} not found` });
       }
-      
+      if (!orderRestaurantId && menuItem.restaurantId) {
+        orderRestaurantId = menuItem.restaurantId as mongoose.Types.ObjectId;
+      }
+
       if (!menuItem.available) {
         return res.status(400).json({ error: `Menu item "${menuItem.name}" is not available` });
       }
@@ -90,8 +94,12 @@ export const createOrder = async (req: Request, res: Response) => {
     }
     
     const finalTotal = Math.max(0, total - discountAmount);
-    
+    if (!orderRestaurantId) {
+      return res.status(400).json({ error: 'Could not determine restaurant from order items' });
+    }
+
     const order = new Order({
+      restaurantId: orderRestaurantId,
       items: orderItems,
       total: finalTotal,
       customerName,
@@ -131,7 +139,11 @@ export const createOrder = async (req: Request, res: Response) => {
 export const getOrders = async (req: Request, res: Response) => {
   try {
     const { status, paymentStatus, limit } = req.query;
-    const filter: any = {};
+    const filter: Record<string, unknown> = {};
+    const user = (req as any).user;
+    if (user?.restaurantId) {
+      filter.restaurantId = new mongoose.Types.ObjectId(user.restaurantId);
+    }
 
     if (status) {
       filter.status = status;
@@ -160,7 +172,12 @@ export const getOrders = async (req: Request, res: Response) => {
 export const getOrder = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const order = await Order.findById(id).populate('items.menuItemId');
+    const filter: Record<string, unknown> = { _id: id };
+    const user = (req as any).user;
+    if (user?.restaurantId) {
+      filter.restaurantId = new mongoose.Types.ObjectId(user.restaurantId);
+    }
+    const order = await Order.findOne(filter).populate('items.menuItemId');
 
     if (!order) {
       return res.status(404).json({ error: 'Order not found' });
@@ -176,10 +193,14 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const oldOrder = await Order.findById(id).lean();
-
-    const order = await Order.findByIdAndUpdate(
-      id,
+    const filter: Record<string, unknown> = { _id: id };
+    const user = (req as any).user;
+    if (user?.restaurantId) {
+      filter.restaurantId = new mongoose.Types.ObjectId(user.restaurantId);
+    }
+    const oldOrder = await Order.findOne(filter).lean();
+    const order = await Order.findOneAndUpdate(
+      filter,
       { status },
       { new: true, runValidators: true }
     );
@@ -188,7 +209,6 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Order not found' });
     }
 
-    const user = (req as any).user;
     if (user?.userId && (oldOrder?.status !== status || status === 'cancelled')) {
       await createAuditLog({
         userId: new mongoose.Types.ObjectId(user.userId),
@@ -213,9 +233,13 @@ export const updatePaymentStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { paymentStatus, paymentMethod, paymentId } = req.body;
-
-    const order = await Order.findByIdAndUpdate(
-      id,
+    const filter: Record<string, unknown> = { _id: id };
+    const user = (req as any).user;
+    if (user?.restaurantId) {
+      filter.restaurantId = new mongoose.Types.ObjectId(user.restaurantId);
+    }
+    const order = await Order.findOneAndUpdate(
+      filter,
       { paymentStatus, paymentMethod, paymentId },
       { new: true, runValidators: true }
     );

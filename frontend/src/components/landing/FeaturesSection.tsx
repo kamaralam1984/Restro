@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import {
   Package,
   CreditCard,
@@ -10,37 +11,20 @@ import {
   Wallet,
 } from 'lucide-react';
 
-const features = [
-  {
-    icon: Package,
-    title: 'Smart Order Management',
-    description: 'Track every order in real time.',
-  },
-  {
-    icon: CreditCard,
-    title: 'Built-in Billing System',
-    description: 'Online + Walk-in billing.',
-  },
-  {
-    icon: BarChart3,
-    title: 'Powerful Analytics',
-    description: 'Know your peak hours, best-selling items.',
-  },
-  {
-    icon: CalendarCheck,
-    title: 'Table Booking Automation',
-    description: 'No double bookings.',
-  },
-  {
-    icon: Users,
-    title: 'Staff & Role Control',
-    description: 'Admin / Staff access control.',
-  },
-  {
-    icon: Wallet,
-    title: 'Payment Integration',
-    description: 'Razorpay and offline payments.',
-  },
+type FeatureItem = {
+  icon: typeof Package;
+  image?: string | null;
+  title: string;
+  description: string;
+};
+
+const features: FeatureItem[] = [
+  { icon: Package, title: 'Smart Order Management', description: 'Track every order in real time.' },
+  { icon: CreditCard, title: 'Built-in Billing System', description: 'Online + Walk-in billing.' },
+  { icon: BarChart3, title: 'Powerful Analytics', description: 'Know your peak hours, best-selling items.' },
+  { icon: CalendarCheck, title: 'Table Booking Automation', description: 'No double bookings.' },
+  { icon: Users, title: 'Staff & Role Control', description: 'Admin / Staff access control.' },
+  { icon: Wallet, title: 'Payment Integration', description: 'Razorpay and offline payments.' },
 ];
 
 export default function FeaturesSection() {
@@ -76,8 +60,22 @@ export default function FeaturesSection() {
                 transition={{ delay: i * 0.06 }}
                 whileHover={{ y: -4 }}
               >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500/20 to-violet-500/20 flex items-center justify-center mb-4">
-                  <Icon className="w-6 h-6 text-orange-400" />
+                <div className="mb-4 flex justify-start">
+                  {feature.image ? (
+                    <div className="relative w-14 h-14 rounded-xl overflow-hidden ring-2 ring-orange-500/50 shadow-[0_0_20px_rgba(249,115,22,0.3)]">
+                      <Image
+                        src={feature.image}
+                        alt={feature.title}
+                        fill
+                        className="object-cover"
+                        sizes="56px"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-slate-800/80 ring-2 ring-orange-500/60 shadow-[0_0_24px_rgba(249,115,22,0.25)] [&_svg]:stroke-[1.5]">
+                      <Icon className="w-7 h-7 text-orange-400 drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
+                    </div>
+                  )}
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-2">{feature.title}</h3>
                 <p className="text-slate-400">{feature.description}</p>

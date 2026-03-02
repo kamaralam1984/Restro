@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { User } from '../models/User.model';
+import { Restaurant } from '../models/Restaurant.model';
 import { generateToken } from '../utils/jwt';
 
 // ─── Super Admin Login ────────────────────────────────────────────────────────
@@ -113,15 +114,24 @@ export const adminLogin = async (req: Request, res: Response) => {
       restaurantId: admin.restaurantId?.toString(),
     });
 
+    const adminPayload: Record<string, any> = {
+      id: admin._id,
+      name: admin.name,
+      email: admin.email,
+      role: admin.role,
+      restaurantId: admin.restaurantId,
+    };
+    if (admin.restaurantId) {
+      const restaurant = await Restaurant.findById(admin.restaurantId).select('slug name').lean();
+      if (restaurant) {
+        adminPayload.restaurantSlug = restaurant.slug;
+        adminPayload.restaurantName = restaurant.name;
+      }
+    }
+
     res.json({
       token,
-      admin: {
-        id: admin._id,
-        name: admin.name,
-        email: admin.email,
-        role: admin.role,
-        restaurantId: admin.restaurantId,
-      },
+      admin: adminPayload,
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Login failed' });

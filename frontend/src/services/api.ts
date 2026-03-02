@@ -31,18 +31,20 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (error.response) {
-      // Handle 401/403 - Unauthorized/Forbidden (token expired or invalid)
-      if (error.response.status === 401 || error.response.status === 403) {
-        // Clear invalid token
+      // Only 401 clears session and redirects; 403 is permission denied (e.g. feature not in plan) — let the page handle it
+      if (error.response.status === 401) {
         if (typeof window !== 'undefined') {
           localStorage.removeItem('token');
           localStorage.removeItem('admin');
-          // Redirect to login if we're in admin area
           if (window.location.pathname.startsWith('/admin') && window.location.pathname !== '/admin/login') {
             window.location.href = '/admin/login';
           }
         }
         const message = (error.response.data as any)?.error || 'Session expired. Please login again.';
+        throw new Error(message);
+      }
+      if (error.response.status === 403) {
+        const message = (error.response.data as any)?.error || 'Access denied.';
         throw new Error(message);
       }
       // Server responded with error status

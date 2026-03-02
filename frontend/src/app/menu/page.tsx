@@ -2,12 +2,15 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Search, ChefHat, Filter, Sparkles, ArrowUpDown, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, ChefHat, Filter, Sparkles, ArrowUpDown, X, ChevronLeft, ChevronRight, Store } from 'lucide-react';
 import EnhancedMenuCard from '@/components/EnhancedMenuCard';
 import { menuService, MenuItem, MenuCategory, MenuFilters } from '@/services/menu.service';
 import { useLanguage } from '@/context/LanguageContext';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useRestaurantPage } from '@/context/RestaurantPageContext';
 import api from '@/services/api';
 import ServiceSuspendedMessage from '@/components/ServiceSuspendedMessage';
 
@@ -15,8 +18,11 @@ function MenuPageContent() {
   const searchParams = useSearchParams();
   const restaurantSlug = searchParams.get('restaurant') || undefined;
   const { t } = useLanguage();
+  const { setRestaurant } = useRestaurantPage();
   const [restaurantSuspended, setRestaurantSuspended] = useState<boolean | null>(null);
   const [restaurantName, setRestaurantName] = useState<string>('');
+  const [restaurantLogo, setRestaurantLogo] = useState<string | undefined>(undefined);
+  const [restaurantPrimaryColor, setRestaurantPrimaryColor] = useState<string>('#ea580c');
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 1000 });
@@ -47,14 +53,17 @@ function MenuPageContent() {
   // Debounce search term
   const debouncedSearch = useDebounce(searchTerm, 500);
 
-  // When viewing a specific restaurant, check if suspended
+  // When viewing a specific restaurant, fetch details and set context for navbar branding
   useEffect(() => {
     if (!restaurantSlug) {
       setRestaurantSuspended(null);
+      setRestaurantName('');
+      setRestaurantLogo(undefined);
+      setRestaurant(null);
       return;
     }
     api
-      .get<{ status?: string; subscriptionStatus?: string; name?: string }>(`/restaurants/by-slug/${restaurantSlug}`)
+      .get<{ status?: string; subscriptionStatus?: string; name?: string; logo?: string; primaryColor?: string }>(`/restaurants/by-slug/${restaurantSlug}`)
       .then((r) => {
         const suspended =
           r.status === 'inactive' ||
@@ -62,9 +71,29 @@ function MenuPageContent() {
           r.subscriptionStatus === 'cancelled';
         setRestaurantSuspended(suspended);
         setRestaurantName(r.name || '');
+        setRestaurantLogo(r.logo);
+        setRestaurantPrimaryColor(r.primaryColor || '#ea580c');
+        setRestaurant({
+          slug: restaurantSlug,
+          name: r.name || restaurantSlug,
+          logo: r.logo,
+          primaryColor: r.primaryColor,
+        });
       })
-      .catch(() => setRestaurantSuspended(false));
-  }, [restaurantSlug]);
+      .catch(() => {
+        setRestaurantSuspended(false);
+        setRestaurant(null);
+      });
+  }, [restaurantSlug, setRestaurant]);
+
+  useEffect(() => {
+    if (restaurantName && restaurantSlug) {
+      document.title = `${restaurantName} - Menu | Restro OS`;
+    } else {
+      document.title = 'Our Menu | Restro OS';
+    }
+    return () => { document.title = 'Restro OS'; };
+  }, [restaurantName, restaurantSlug]);
 
   // Load initial data
   useEffect(() => {
@@ -180,9 +209,11 @@ function MenuPageContent() {
     );
   }
 
+  const primaryColor = restaurantPrimaryColor || '#ea580c';
+
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      {/* Hero Section */}
+      {/* Hero Section — restaurant logo/name when ?restaurant= */}
       <section className="relative py-16 bg-gradient-to-b from-slate-900 to-slate-950">
         <div className="container mx-auto px-4">
           <motion.div
@@ -191,10 +222,24 @@ function MenuPageContent() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
+            {restaurantSlug && restaurantName && (
+              <div className="mb-6">
+                <Link href={`/r/${restaurantSlug}`} className="inline-flex items-center gap-3 text-slate-400 hover:text-white transition-colors">
+                  {restaurantLogo ? (
+                    <Image src={restaurantLogo} alt={restaurantName} width={56} height={56} className="rounded-xl object-cover" unoptimized />
+                  ) : (
+                    <div className="w-14 h-14 rounded-xl flex items-center justify-center border-2" style={{ backgroundColor: `${primaryColor}25`, borderColor: `${primaryColor}50` }}>
+                      <Store className="w-7 h-7" style={{ color: primaryColor }} />
+                    </div>
+                  )}
+                  <span className="text-xl font-semibold text-white">{restaurantName}</span>
+                </Link>
+              </div>
+            )}
             <div className="flex items-center justify-center gap-3 mb-4">
-              <ChefHat className="w-12 h-12 text-orange-600" />
+              <ChefHat className="w-12 h-12" style={{ color: primaryColor }} />
               <h1 className="text-5xl md:text-6xl font-bold">
-                Our <span className="text-orange-600">Menu</span>
+                Our <span style={{ color: primaryColor }}>Menu</span>
               </h1>
             </div>
             <p className="text-xl text-slate-300 mb-8">

@@ -2,22 +2,27 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChefHat, LogOut, User } from 'lucide-react';
+import { ChefHat, LogOut, User, Store } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useUser } from '@/context/UserContext';
+import { useRestaurantPage } from '@/context/RestaurantPageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import api from '@/services/api';
 
 export default function Navbar() {
   const { cartItems } = useCart();
   const { user, logout, isAuthenticated } = useUser();
+  const { restaurant: restaurantContext } = useRestaurantPage();
   const pathname = usePathname();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [dbConnected, setDbConnected] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
+
+  const showRestaurantBranding = restaurantContext && (pathname === '/menu' || pathname === '/booking' || pathname?.startsWith('/contact'));
   
   // Prevent hydration mismatch by only calculating after mount
   const itemCount = mounted ? cartItems.reduce((sum, item) => sum + item.quantity, 0) : 0;
@@ -25,21 +30,19 @@ export default function Navbar() {
   useEffect(() => {
     setMounted(true);
     checkDatabaseStatus();
-    // Check every 10 seconds
     const interval = setInterval(checkDatabaseStatus, 10000);
     return () => clearInterval(interval);
   }, []);
 
   const checkDatabaseStatus = async () => {
     try {
-      const response = await api.get('/health');
-      if (response && response.database && response.database.connected) {
-        setDbConnected(true);
-      } else {
-        setDbConnected(false);
-      }
-    } catch (error: any) {
-      console.error('Database status check failed:', error.message);
+      // api.get already returns response.data
+      const data = await api.get<{ status: string; database?: { connected?: boolean } }>('/health', {
+        timeout: 8000,
+      });
+      const connected = data?.database?.connected === true;
+      setDbConnected(connected);
+    } catch {
       setDbConnected(false);
     } finally {
       setCheckingStatus(false);
@@ -52,7 +55,14 @@ export default function Navbar() {
   };
 
   const isLandingPage = pathname === '/';
-  const navLinks = isLandingPage
+  const navLinks = showRestaurantBranding && restaurantContext
+    ? [
+        { href: `/r/${restaurantContext.slug}`, label: 'Home' },
+        { href: `/menu?restaurant=${restaurantContext.slug}`, label: 'Menu' },
+        { href: `/booking?restaurant=${restaurantContext.slug}`, label: 'Book Table' },
+        { href: `/contact?restaurant=${restaurantContext.slug}`, label: 'Contact' },
+      ]
+    : isLandingPage
     ? [
         { href: '/#features', label: 'Features' },
         { href: '/#pricing', label: 'Pricing' },
@@ -65,6 +75,8 @@ export default function Navbar() {
         { href: '/contact', label: 'Contact' },
       ];
 
+  const primaryColor = showRestaurantBranding && restaurantContext?.primaryColor ? restaurantContext.primaryColor : '#ea580c';
+
   return (
     <motion.nav
       className="bg-slate-950 border-b border-slate-800 sticky top-0 z-50"
@@ -74,20 +86,38 @@ export default function Navbar() {
     >
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-20">
-          {/* Logo */}
+          {/* Logo — restaurant branding when on menu/booking with ?restaurant= */}
           <motion.div
             className="flex items-center gap-3"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <Link href="/" className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center">
-                <ChefHat className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-white">Restro OS</div>
-                <div className="text-xs text-slate-400">{isLandingPage ? 'Restaurant Management' : 'Pure & Delicious'}</div>
-              </div>
+            <Link href={showRestaurantBranding && restaurantContext ? `/r/${restaurantContext.slug}` : '/'} className="flex items-center gap-3">
+              {showRestaurantBranding && restaurantContext ? (
+                <>
+                  {restaurantContext.logo ? (
+                    <Image src={restaurantContext.logo} alt={restaurantContext.name} width={48} height={48} className="rounded-xl object-cover" unoptimized />
+                  ) : (
+                    <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${primaryColor}30`, border: `2px solid ${primaryColor}50` }}>
+                      <Store className="w-6 h-6" style={{ color: primaryColor }} />
+                    </div>
+                  )}
+                  <div>
+                    <div className="text-xl font-bold text-white">{restaurantContext.name}</div>
+                    <div className="text-xs text-slate-400">Menu</div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center">
+                    <ChefHat className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-white">Restro OS</div>
+                    <div className="text-xs text-slate-400">{isLandingPage ? 'Restaurant Management' : 'Pure & Delicious'}</div>
+                  </div>
+                </>
+              )}
             </Link>
           </motion.div>
           

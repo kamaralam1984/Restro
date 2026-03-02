@@ -62,7 +62,7 @@ export async function processExpiredSubscriptions(): Promise<{ processed: number
       }
     } catch (err) {
       await session.abortTransaction();
-      const { logger } = await import('../config/logger');
+      const { logger } = await import('../utils/logger');
       logger.error('Subscription expiry: failed for subscription', { subId: sub._id, err });
     } finally {
       session.endSession();
@@ -95,7 +95,7 @@ export async function processExpiredSubscriptions(): Promise<{ processed: number
         }
       }
     } catch (err) {
-      const { logger } = await import('../config/logger');
+      const { logger } = await import('../utils/logger');
       logger.error('Grace period expiry: failed for subscription', { subId: sub._id, err });
     }
   }
@@ -123,7 +123,7 @@ export async function processExpiredSubscriptions(): Promise<{ processed: number
         });
       }
     } catch (err) {
-      const { logger } = await import('../config/logger');
+      const { logger } = await import('../utils/logger');
       logger.error('Trial expiry: failed for restaurant', { restaurantId: rest._id, err });
     }
   }

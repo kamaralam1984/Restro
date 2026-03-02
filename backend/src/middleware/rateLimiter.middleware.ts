@@ -74,3 +74,14 @@ export const apiRateLimiter = rateLimiter({
   max: 200, // 200 requests per minute (increased for development)
 });
 
+// Per-tenant rate limiter: key by restaurantId (from auth) or IP when unauthenticated
+export const tenantApiRateLimiter = (req: Request, res: Response, next: NextFunction) => {
+  const tenantId = (req as any).user?.restaurantId ?? req.headers['x-tenant-id'];
+  const key = tenantId ? `tenant:${tenantId}` : `ip:${req.ip || req.socket.remoteAddress || 'unknown'}`;
+  return rateLimiter({
+    windowMs: 60 * 1000,
+    max: 300,
+    message: 'Too many requests for this tenant, please try again later.',
+  })({ ...req, ip: key } as any, res, next);
+};
+

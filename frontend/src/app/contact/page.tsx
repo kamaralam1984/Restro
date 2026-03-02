@@ -1,11 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Phone, Mail, Clock, Send, Facebook, Instagram, Twitter, Linkedin, Youtube } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
+import api from '@/services/api';
 
 export default function ContactPage() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -20,9 +24,7 @@ export default function ContactPage() {
     setLoading(true);
 
     try {
-      // Here you can integrate with your backend API
-      // await api.post('/contact', formData);
-      
+      await api.post('/contact', formData);
       toast.success('Message sent successfully! We will get back to you soon.');
       setFormData({
         name: '',
@@ -31,8 +33,9 @@ export default function ContactPage() {
         subject: '',
         message: '',
       });
-    } catch (error) {
-      toast.error('Failed to send message. Please try again.');
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || 'Failed to send message. Please try again.';
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -53,8 +56,8 @@ export default function ContactPage() {
       icon: Phone,
       title: 'Call Us',
       details: [
-        '+1 (555) 123-4567',
-        '+1 (555) 123-4568',
+        '+91 9942000413',
+        '+91 9386994688',
         'Mon-Sun: 9AM - 11PM',
       ],
       color: 'bg-blue-600',
@@ -91,7 +94,7 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      <Toaster position="top-right" />
+      {mounted && <Toaster position="top-right" />}
       
       {/* Hero Section */}
       <section className="relative py-20 bg-gradient-to-b from-slate-900 to-slate-950">
@@ -195,7 +198,7 @@ export default function ContactPage() {
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      placeholder="+1 (555) 123-4567"
+                      placeholder="+91 9942000413"
                     />
                   </div>
                 </div>

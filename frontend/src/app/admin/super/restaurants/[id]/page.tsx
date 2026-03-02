@@ -170,9 +170,9 @@ export default function RestaurantManagePage() {
 
   const handleDisableAll = async () => {
     const allOff: Features = {
-      onlineOrdering: false, tableBooking: false, onlinePayments: false,
+      onlineOrdering: false, tableBooking: false, billing: false, onlinePayments: false,
       reviews: false, heroImages: false, whatsappNotifications: false,
-      analytics: false, menuManagement: false,
+      analytics: false, staffControl: false, menuManagement: false,
     };
     setFeatures(allOff);
     setFeatureSaving(true);
@@ -484,7 +484,7 @@ export default function RestaurantManagePage() {
               label={f.label}
               desc={f.desc}
               icon={f.icon}
-              enabled={features[f.key]}
+              enabled={features[f.key] ?? false}
               saving={featureSaving}
               onChange={(val) => handleFeatureToggle(f.key, val)}
             />

@@ -3,8 +3,8 @@ import "@/styles/globals.css";
 import { CartProvider } from "@/context/CartContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { UserProvider } from "@/context/UserContext";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import { RestaurantPageProvider } from "@/context/RestaurantPageContext";
+import ConditionalLayout from "@/components/ConditionalLayout";
 import WhatsAppButtonWrapper from "@/components/WhatsAppButtonWrapper";
 import PWAProvider from "@/components/PWAProvider";
 import { generateMetadata as generateSEOMetadata } from "@/utils/seo";
@@ -48,11 +48,11 @@ export default function RootLayout({
         <UserProvider>
           <LanguageProvider>
             <CartProvider>
-              <Navbar />
-              <main className="flex-grow">{children}</main>
-              <Footer />
-              <WhatsAppButtonWrapper />
-              <PWAProvider />
+              <RestaurantPageProvider>
+                <ConditionalLayout>{children}</ConditionalLayout>
+                <WhatsAppButtonWrapper />
+                <PWAProvider />
+              </RestaurantPageProvider>
             </CartProvider>
           </LanguageProvider>
         </UserProvider>

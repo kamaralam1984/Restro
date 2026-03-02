@@ -34,6 +34,7 @@ export interface Booking {
   numberOfGuests: number;
   specialRequests?: string;
   tableNumber?: string;
+  restaurantSlug?: string;
   status?: 'pending' | 'confirmed' | 'cancelled';
 }
 

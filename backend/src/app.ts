@@ -21,6 +21,7 @@ import revenueRoutes from './routes/revenue.routes';
 import heroImageRoutes from './routes/heroImage.routes';
 import superAdminRoutes from './routes/superAdmin.routes';
 import restaurantRoutes from './routes/restaurant.routes';
+import contactRoutes from './routes/contact.routes';
 import v1Routes from './routes/v1.index';
 import { errorHandler, notFound } from './middleware/error.middleware';
 import { generalRateLimiter, apiRateLimiter, tenantApiRateLimiter } from './middleware/rateLimiter.middleware';
@@ -121,6 +122,7 @@ app.use('/api/hero-images', heroImageRoutes);
 // Multi-tenant routes
 app.use('/api/super-admin', superAdminRoutes);   // Super admin panel
 app.use('/api/restaurants', restaurantRoutes);   // Restaurant info + admin settings
+app.use('/api/contact', contactRoutes);           // Website contact form → email to client
 
 // API versioning: /api/v1/* (same routes as /api/* for backward compatibility)
 app.use('/api/v1', v1Routes);

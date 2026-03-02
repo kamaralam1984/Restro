@@ -399,3 +399,83 @@ For any queries, please contact us.
   }
 };
 
+/** Send subscription/trial expiry warning to restaurant owner. */
+export async function sendSubscriptionExpiryWarning(params: {
+  toEmail: string;
+  restaurantName: string;
+  storeLink: string;
+}): Promise<void> {
+  const transporter = createTransporter();
+  if (!transporter) return;
+
+  const { toEmail, restaurantName, storeLink } = params;
+  const html = `
+    <p>Hello,</p>
+    <p>Your subscription or trial for <strong>${restaurantName}</strong> has expired.</p>
+    <p>To continue using Restro OS, please renew your subscription.</p>
+    <p><a href="${storeLink}">Log in to renew</a></p>
+    <p>— Restro OS</p>
+  `;
+  try {
+    await transporter.sendMail({
+      from: `"Restro OS" <${process.env.SMTP_USER}>`,
+      to: toEmail,
+      subject: `Subscription expired – ${restaurantName}`,
+      html,
+      text: `Your subscription for ${restaurantName} has expired. Log in to renew: ${storeLink}`,
+    });
+  } catch (err: any) {
+    console.error('Failed to send subscription expiry email:', err?.message);
+  }
+}
+
+export interface ContactFormPayload {
+  name: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+}
+
+/** Send contact form submission to client (restaurant/admin). */
+export async function sendContactFormNotification(
+  toEmail: string,
+  payload: ContactFormPayload
+): Promise<void> {
+  const transporter = createTransporter();
+  if (!transporter) {
+    throw new Error('Email is not configured. Set SMTP_USER and SMTP_PASSWORD.');
+  }
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;line-height:1.6;color:#333;}.container{max-width:600px;margin:0 auto;padding:20px;}.header{background:#f97316;color:white;padding:20px;text-align:center;border-radius:8px 8px 0 0;}.content{background:#f9fafb;padding:24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;}.row{margin:12px 0;}.label{font-weight:bold;color:#6b7280;}.footer{text-align:center;margin-top:20px;color:#9ca3af;font-size:12px;}</style></head>
+<body>
+  <div class="container">
+    <div class="header"><h2>📩 New Contact Form Message</h2><p>Restro OS – website contact</p></div>
+    <div class="content">
+      <div class="row"><span class="label">Name:</span> ${payload.name}</div>
+      <div class="row"><span class="label">Email:</span> <a href="mailto:${payload.email}">${payload.email}</a></div>
+      ${payload.phone ? `<div class="row"><span class="label">Phone:</span> ${payload.phone}</div>` : ''}
+      <div class="row"><span class="label">Subject:</span> ${payload.subject}</div>
+      <div class="row"><span class="label">Message:</span></div>
+      <p style="white-space:pre-wrap;background:white;padding:12px;border-radius:6px;">${(payload.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+    </div>
+    <div class="footer">Sent via Restro OS contact form</div>
+  </div>
+</body>
+</html>`;
+
+  const mailOptions = {
+    from: `"Restro OS" <${process.env.SMTP_USER}>`,
+    to: toEmail,
+    replyTo: payload.email,
+    subject: `[Contact] ${payload.subject} – ${payload.name}`,
+    html: htmlContent,
+    text: `Name: ${payload.name}\nEmail: ${payload.email}\n${payload.phone ? `Phone: ${payload.phone}\n` : ''}Subject: ${payload.subject}\n\nMessage:\n${payload.message}`,
+  };
+
+  await transporter.sendMail(mailOptions);
+}
+
