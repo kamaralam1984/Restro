@@ -4,6 +4,7 @@ import { CartProvider } from "@/context/CartContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { UserProvider } from "@/context/UserContext";
 import { RestaurantPageProvider } from "@/context/RestaurantPageContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 import ConditionalLayout from "@/components/ConditionalLayout";
 import VisitorTracker from "@/components/VisitorTracker";
 import WhatsAppButtonWrapper from "@/components/WhatsAppButtonWrapper";
@@ -47,19 +48,21 @@ export default function RootLayout({
         />
       </head>
       <body className="flex flex-col min-h-screen bg-slate-950">
-        <UserProvider>
-          <LanguageProvider>
-            <CartProvider>
-              <RestaurantPageProvider>
-                <VisitorTracker />
-                <ConditionalLayout>{children}</ConditionalLayout>
-                <ChatWidget />
-                <WhatsAppButtonWrapper />
-                <PWAProvider />
-              </RestaurantPageProvider>
-            </CartProvider>
-          </LanguageProvider>
-        </UserProvider>
+        <ThemeProvider>
+          <UserProvider>
+            <LanguageProvider>
+              <CartProvider>
+                <RestaurantPageProvider>
+                  <VisitorTracker />
+                  <ConditionalLayout>{children}</ConditionalLayout>
+                  <ChatWidget />
+                  <WhatsAppButtonWrapper />
+                  <PWAProvider />
+                </RestaurantPageProvider>
+              </CartProvider>
+            </LanguageProvider>
+          </UserProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

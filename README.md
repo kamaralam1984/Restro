@@ -1,240 +1,226 @@
-# Silver Plate - Restaurant Management System
+### 1. Project Title
 
-A complete, production-ready restaurant management system with Next.js frontend and Node.js backend.
-
-## 🚀 Features
-
-### Customer Side
-- ✅ Category-wise menu with filters
-- ✅ Veg/Non-Veg filter
-- ✅ Add-ons & custom items
-- ✅ Cart persistence (localStorage)
-- ✅ Online Order + COD
-- ✅ Razorpay payment integration
-- ✅ Payment validation before order placement
-- ✅ WhatsApp fallback order
-- ✅ Table booking system
-- ✅ QR Menu page
-- ✅ Live language switch (Hindi/English)
-- ✅ Font change per language
-- ✅ SEO + Schema.org structured data
-
-### Admin Side
-- ✅ Dashboard with KPIs
-- ✅ Order management
-- ✅ Menu CRUD operations
-- ✅ Booking management
-- ✅ Analytics & Reports
-- ✅ Most ordered items
-- ✅ Peak hours analysis
-- ✅ Revenue summary
-- ✅ Repeat customers tracking
-
-### Backend Features
-- ✅ JWT Authentication
-- ✅ API Rate Limiting
-- ✅ Input Validation
-- ✅ Environment-based secrets
-- ✅ Optimized MongoDB queries
-- ✅ Razorpay payment verification
-- ✅ Auto WhatsApp notifications
-- ✅ Slot-based booking with conflict prevention
-
-## 📁 Project Structure
-
-```
-restaurant-system/
-├── frontend/          # Next.js 14 App Router
-│   ├── src/
-│   │   ├── app/       # Pages & routes
-│   │   ├── components/ # React components
-│   │   ├── context/   # State management
-│   │   ├── services/   # API services
-│   │   └── utils/     # Utilities
-│   └── package.json
-│
-├── backend/           # Node.js + Express API
-│   ├── src/
-│   │   ├── config/    # Configuration
-│   │   ├── models/    # MongoDB models
-│   │   ├── controllers/ # Business logic
-│   │   ├── routes/    # API routes
-│   │   ├── middleware/ # Auth, validation, rate limiting
-│   │   ├── services/   # Business services
-│   │   └── utils/     # Utilities
-│   └── package.json
-│
-└── README.md
-```
-
-## 🛠️ Tech Stack
-
-### Frontend
-- Next.js 14 (App Router)
-- TypeScript
-- Tailwind CSS
-- Framer Motion
-- Axios
-- Context API
-
-### Backend
-- Node.js
-- Express.js
-- MongoDB (Mongoose)
-- JWT Authentication
-- Razorpay SDK
-- dotenv
-- CORS
-
-## 📦 Installation
-
-### Prerequisites
-- Node.js 18+
-- MongoDB (local or Atlas)
-- npm or yarn
-
-### Backend Setup
-
-```bash
-cd backend
-npm install
-cp .env.example .env
-# Edit .env with your configuration
-npm run dev
-```
-
-### Frontend Setup
-
-```bash
-cd frontend
-npm install
-cp .env.example .env.local
-# Edit .env.local with your configuration
-npm run dev
-```
-
-## 🔐 Environment Variables
-
-### Backend (.env)
-```env
-PORT=5000
-MONGODB_URI=mongodb://localhost:27017/restaurant-system
-RAZORPAY_KEY_ID=your_key_id
-RAZORPAY_KEY_SECRET=your_key_secret
-JWT_SECRET=your_jwt_secret
-JWT_EXPIRES_IN=7d
-ADMIN_PHONE=+1234567890
-WHATSAPP_API_URL=your_whatsapp_api_url
-WHATSAPP_API_KEY=your_whatsapp_api_key
-```
-
-### Frontend (.env.local)
-```env
-NEXT_PUBLIC_API_URL=http://localhost:5000/api
-NEXT_PUBLIC_RAZORPAY_KEY_ID=your_razorpay_key_id
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-```
-
-## 🚀 Development
-
-### Start Backend
-```bash
-cd backend
-npm run dev
-```
-
-### Start Frontend
-```bash
-cd frontend
-npm run dev
-```
-
-### Start Both (from root)
-```bash
-npm run dev
-```
-
-## 📡 API Endpoints
-
-### Public Endpoints
-- `GET /api/health` - Health check
-- `GET /api/menu` - Get menu items
-- `GET /api/menu/:id` - Get menu item
-- `POST /api/orders` - Create order
-- `POST /api/bookings` - Create booking
-- `POST /api/payments/create-order` - Create payment order
-- `POST /api/payments/verify` - Verify payment
-
-### Protected Endpoints (Admin)
-- `GET /api/orders` - Get all orders
-- `PUT /api/orders/:id/status` - Update order status
-- `GET /api/analytics/dashboard` - Dashboard stats
-- `GET /api/analytics/orders-per-hour` - Orders per hour
-- `GET /api/analytics/top-selling` - Top selling items
-- `GET /api/analytics/revenue` - Revenue summary
-- `GET /api/analytics/repeat-customers` - Repeat customers
-
-## 🗄️ Database Models
-
-- **User** - User accounts
-- **Menu** - Menu items with categories, pricing, add-ons
-- **Order** - Orders with items, payment status
-- **Booking** - Table bookings with slots
-- **Review** - Customer reviews
-
-## 🔒 Security Features
-
-- JWT Authentication
-- API Rate Limiting
-- Input Validation
-- Environment-based secrets
-- CORS configuration
-- MongoDB injection prevention
-
-## 📊 Analytics
-
-- Today's orders & revenue
-- Pending orders count
-- Online vs COD ratio
-- Orders per hour
-- Top selling items
-- Revenue summary
-- Repeat customers
-- Booking statistics
-
-## 🌍 Deployment
-
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions.
-
-### Quick Deploy
-
-**Frontend (Vercel):**
-1. Push to GitHub
-2. Import to Vercel
-3. Set environment variables
-4. Deploy
-
-**Backend (Render/VPS):**
-1. Push to GitHub
-2. Create web service on Render
-3. Set environment variables
-4. Deploy
-
-**Database:**
-- Use MongoDB Atlas (free tier available)
-
-## 📝 License
-
-MIT
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📧 Support
-
-For support, email support@silverplate.com or create an issue.
+**Restro OS – Multi-Tenant Restaurant Management SaaS**
 
 ---
 
-Built with ❤️ for modern restaurants
+### 2. Executive Summary
+
+Restro OS is a production-ready, multi-tenant restaurant management SaaS built with Next.js 14 (App Router), Node.js/Express, and MongoDB (Mongoose).  
+Each restaurant operates in an isolated tenant, identified by `restaurantId` / `slug`, and secured by role-based access control (Admin, Manager, Staff, Cashier).  
+The platform manages end-to-end subscription lifecycles (trial → active → past-due → suspended), enforces per-tenant rate limiting, and centralizes logging for debugging and audit.  
+Slot-based table booking logic prevents conflicting reservations, and table-level pricing rules safely determine when booking-based discounts are applied.  
+The system is designed around clean boundaries, observability, and safe recovery through transaction-based backup and restore flows.
+
+---
+
+### 3. Architecture Overview
+
+**High-level flow**
+
+`Client (Next.js 14, App Router)`  
+→ `Express API (Node.js + TypeScript)`  
+→ `MongoDB (Mongoose models)`  
+→ `Razorpay (order & subscription payments)`  
+→ `Email / SMS / WhatsApp services`
+
+**Multi-tenant characteristics**
+
+- **restaurantId / slug-based data isolation**
+  - All restaurant-specific entities (users, menu, orders, bookings, bills, analytics) include a `restaurantId` and/or URL `slug`.
+  - API controllers always filter data by the current tenant, typically using `req.user.restaurantId` or route parameters.
+
+- **Feature gating per subscription plan**
+  - `RentalPlan` defines plan-level capabilities.
+  - Each `Restaurant` stores a `features` object representing enabled modules (billing, bookings, analytics, staff control, etc.).
+  - Super Admin can override per-restaurant features regardless of the base plan.
+
+---
+
+### 4. Engineering Highlights
+
+- **Multi-tenant data isolation**
+  - Tenant-aware models and controllers; no cross-tenant queries without explicit intent.
+  - Business logic always resolves and uses the current tenant (`restaurantId`) before touching data.
+
+- **Scoped JWT authentication**
+  - JWT payload includes `userId`, `role`, and optional `restaurantId`.
+  - Auth middleware attaches `req.user`, which powers authorization, rate limiting, logging, and multi-tenant access checks.
+
+- **Role-based access control**
+  - Platform roles: `super_admin`, `master_admin`.
+  - Restaurant roles: `admin`, `manager`, `staff`, `cashier`, `customer`.
+  - Per-restaurant `rolePermissions` define which staff roles can access which navigation sections and APIs.
+
+- **Slot-based booking conflict prevention algorithm**
+  - Bookings normalize and store start/end time and duration.
+  - On create, the system queries existing bookings for the same restaurant + table to detect overlapping time windows.
+  - Booking rules (at least 2 hours in advance, within operating hours) are enforced server-side.
+
+- **Table-level pricing & discount qualification engine**
+  - `Table` model optionally holds:
+    - `hourlyRate` – per-table booking rate.
+    - `discountThreshold` – minimum order total required for discount.
+    - `discountAmount` – discount to apply (often equal to one hour of booking).
+  - Shared `getBookingConfig(capacity, table?)` function (frontend + backend) computes effective pricing/discount config.
+  - When an order is associated with a booking and meets the threshold, the engine applies a 1-hour discount safely.
+
+- **Centralized structured logging**
+  - Logger outputs structured, JSON-like entries in production (timestamp, level, message, metadata).
+  - Global `errorHandler` middleware:
+    - Logs error details (status code, stack, route).
+    - Persists error into `ErrorLog` collection with status (`open`, `investigating`, `resolved`).
+  - Super Admin UI exposes an “Error & Bug Control” dashboard backed by this data.
+
+- **Per-tenant rate limiting with abuse detection**
+  - Generic rate limiting on `/api` to protect from brute-force or flooding.
+  - Tenant-aware limiter on `/api/orders` and `/api/bookings`, keyed by `restaurantId` where possible.
+  - Prevents a single tenant from over-consuming shared capacity.
+
+- **Subscription lifecycle enforcement**
+  - `Subscription` documents model plan, billing cycle, amount, and status (`trial`, `active`, `expired`, `past_due`, `cancelled`).
+  - Razorpay subscription webhooks adjust `Subscription` and `Restaurant.subscriptionStatus` on:
+    - Successful charging,
+    - Payment failure (with grace periods),
+    - Cancellation.
+  - Only restaurants with valid, active subscriptions can access gated features.
+
+- **Cron-based automation (emails, expiry checks, backups)**
+  - `node-cron` jobs handle:
+    - Weekly full-platform backups (`BackupSnapshot` collection) with TTL index for auto-cleanup after 6 months.
+    - Trial and subscription expiry checks, including transitions to `past_due` or `suspended`.
+
+- **Backup & restore system with transaction safety**
+  - Backup export aggregates:
+    - `Restaurant`, `User`, `Menu`, `Order`, `Bill`, `Booking`, `Table`, `HeroImage`, `Subscription`, `RentalPlan`, `AuditLog`.
+  - Restore process:
+    - Runs in a MongoDB transaction.
+    - Uses `bulkWrite` + `upsert` per collection to recreate state.
+    - Supports a “dry run” mode to validate snapshots without persisting changes.
+
+---
+
+### 5. Tech Stack
+
+#### Frontend
+
+- Next.js 14 (App Router) with TypeScript  
+- React Context for:
+  - Cart (per restaurant slug)
+  - User/auth state
+  - Restaurant branding
+  - Language (Hindi/English)
+  - Theme (dark / light / color-blind)
+- Tailwind CSS and Framer Motion  
+- Axios HTTP client with centralized interceptors
+
+#### Backend
+
+- Node.js + Express + TypeScript  
+- MongoDB with Mongoose  
+- Razorpay SDK (order payments + subscription webhooks)  
+- Nodemailer + SMS/WhatsApp adapters  
+- `helmet`, `cors`, `express-mongo-sanitize` for HTTP and data protection  
+- Custom rate limiter (IP + tenant aware)  
+- `node-cron` for scheduled tasks
+
+---
+
+### 6. Security & Production Considerations
+
+- **Input validation**
+  - Controllers validate required fields, formats (email, slug, phone), booking rules, and password length.
+  - Mongoose schemas enforce type and enum constraints for model integrity.
+
+- **Rate limiting**
+  - Global limiter on `/api`.
+  - Stricter rate limits on login/auth and write-intensive endpoints (orders, bookings).
+  - Tenant-aware limiter ensures one restaurant cannot flood shared resources.
+
+- **Environment-based secrets**
+  - JWT secrets, Razorpay keys, SMTP and SMS/WhatsApp credentials are loaded from environment variables.
+  - Only `NEXT_PUBLIC_*` variables are exposed to the frontend bundle.
+
+- **Structured logging**
+  - Logging includes timestamp, level, message, and contextual metadata (route, tenant, user, status).
+  - Production logs are JSON-compatible for integration with log aggregation systems (ELK, Loki, etc.).
+
+- **Error tracking**
+  - All unhandled errors are written to `ErrorLog`.
+  - Super Admin tooling allows filtering by status and restaurant, and updating investigation status.
+
+- **Multi-tenant access enforcement**
+  - Auth middleware limits platform routes to `super_admin` / `master_admin`.
+  - Restaurant-scoped routes require `req.user.restaurantId` to match target tenant.
+  - Feature flags and `rolePermissions` are checked at middleware/controller level to avoid accidental cross-tenant access.
+
+---
+
+### 7. Installation (Short)
+
+#### Backend Setup
+
+```bash
+cd backend
+npm install
+
+cp .env.example .env
+# Configure:
+# - MONGODB_URI
+# - JWT_SECRET
+# - RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET
+# - SMTP / SMS / WhatsApp credentials
+
+npm run dev              # development
+# or
+npm run build && npm start   # production
+```
+
+#### Frontend Setup
+
+```bash
+cd frontend
+npm install
+
+cp .env.example .env.local
+# Configure:
+# - NEXT_PUBLIC_API_URL (e.g. https://api.your-domain.com/api)
+# - NEXT_PUBLIC_RAZORPAY_KEY_ID
+# - NEXT_PUBLIC_SITE_URL
+
+npm run dev    # development
+npm run build  # production build
+```
+
+---
+
+### 8. Deployment Overview
+
+- **Frontend (Next.js)**
+  - Typical target: Vercel or any Node-compatible host.
+  - `NEXT_PUBLIC_API_URL` set to the public backend API base URL.
+
+- **Backend (Express API)**
+  - Typical target: VPS (DigitalOcean, Hetzner) or Render.
+  - Run behind a reverse proxy (Nginx/Traefik) with HTTPS termination.
+  - Environment-specific configuration via `.env` or secret manager.
+
+- **Database (MongoDB Atlas)**
+  - Managed MongoDB cluster.
+  - Access restricted to backend via IP allowlist or VPC peering.
+
+- **HTTPS requirements**
+  - All traffic (frontend ↔ backend ↔ Razorpay) is expected to be HTTPS.
+  - Razorpay webhooks must be HTTPS and validated using `RAZORPAY_WEBHOOK_SECRET`.
+
+---
+
+### 9. Documentation
+
+For deeper architecture and flow diagrams, see:
+
+- `docs/SYSTEM_OVERVIEW.md`  
+  *(or the equivalent system overview document in this repository, such as `info.md`)*  
+
+This documentation covers multi-tenant design, booking and billing internals, subscription lifecycle, backup/restore mechanisms, and operational practices in more detail.
+

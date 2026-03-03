@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChefHat, Rocket } from 'lucide-react';
 import api from '@/services/api';
+import { loadRazorpayScript } from '@/utils/razorpay';
 import toast, { Toaster } from 'react-hot-toast';
 
 interface Plan {
@@ -20,6 +21,7 @@ export default function RestaurantSignupPage() {
   const router = useRouter();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(false);
+  const [signupMode, setSignupMode] = useState<'trial' | 'paid'>('trial');
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
@@ -67,6 +69,7 @@ export default function RestaurantSignupPage() {
       return;
     }
 
+
     setLoading(true);
     try {
       const payload: Record<string, string> = {
@@ -79,12 +82,71 @@ export default function RestaurantSignupPage() {
       if (formData.adminName?.trim()) payload.adminName = formData.adminName.trim();
       if (formData.adminPhone?.trim()) payload.adminPhone = formData.adminPhone.trim();
 
-      const res = await api.post<{ message: string; adminUser: { loginUrl: string }; restaurant: { name: string; slug: string } }>(
-        '/restaurants/signup',
-        payload
-      );
-      toast.success(res.message || 'Restaurant created! You can now log in.');
-      router.push('/admin/login');
+      if (signupMode === 'trial') {
+        const res = await api.post<{
+          message: string;
+          adminUser: { loginUrl: string };
+          restaurant: { name: string; slug: string };
+        }>('/restaurants/signup', payload);
+
+        toast.success(res.message || 'Restaurant created with free trial! You can now log in.');
+        router.push('/admin/login');
+        return;
+      }
+
+      // Paid subscription: create Razorpay order, open checkout, then verify and finish signup
+      const orderData = await api.post<{
+        key: string;
+        razorpayOrderId: string;
+        amount: number;
+        currency: string;
+        pendingId: string;
+      }>('/restaurants/signup/payment-order', payload);
+
+      await loadRazorpayScript();
+
+      const options: any = {
+        key: orderData.key,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: 'Restro OS Subscription',
+        description: 'Restaurant subscription signup',
+        order_id: orderData.razorpayOrderId,
+        prefill: {
+          name: formData.adminName || formData.name,
+          email: formData.email,
+          contact: formData.adminPhone || '',
+        },
+        theme: {
+          color: '#ea580c',
+        },
+        handler: async (response: any) => {
+          try {
+            const verifyRes = await api.post<{
+              message: string;
+              adminUser: { loginUrl: string };
+              restaurant: { name: string; slug: string };
+            }>('/restaurants/signup/verify-payment', {
+              pendingId: orderData.pendingId,
+              razorpayOrderId: response.razorpay_order_id,
+              paymentId: response.razorpay_payment_id,
+              signature: response.razorpay_signature,
+            });
+            toast.success(verifyRes.message || 'Restaurant created with paid subscription! You can now log in.');
+            router.push('/admin/login');
+          } catch (err: any) {
+            toast.error(err?.message || 'Payment verified but signup failed. Please contact support.');
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            toast.error('Payment cancelled. Restaurant was not created.');
+          },
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
     } catch (err: any) {
       const msg = err?.message || err?.response?.data?.error || 'Signup failed';
       toast.error(msg);
@@ -107,7 +169,9 @@ export default function RestaurantSignupPage() {
               <ChefHat className="w-7 h-7 text-white" />
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-white mb-2">Start Your Free Trial</h1>
+          <h1 className="text-2xl font-bold text-white mb-2">
+            {signupMode === 'trial' ? 'Start Your Free Trial' : 'Start With Paid Subscription'}
+          </h1>
           <p className="text-slate-400 text-sm">Create your restaurant and admin account</p>
         </div>
 
@@ -156,6 +220,47 @@ export default function RestaurantSignupPage() {
               </select>
             </div>
           )}
+
+          {/* Signup mode: trial vs paid subscription */}
+          <div>
+            <span className="block text-sm font-medium text-slate-300 mb-2">How do you want to start?</span>
+            <div className="flex flex-col gap-2 bg-slate-900 border border-slate-800 rounded-lg p-3">
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="signupMode"
+                  value="trial"
+                  checked={signupMode === 'trial'}
+                  onChange={() => setSignupMode('trial')}
+                  className="mt-1"
+                />
+                <div>
+                  <p className="text-sm text-slate-100 font-medium">Free trial (recommended)</p>
+                  <p className="text-xs text-slate-400">
+                    Start with a {plans.find((p) => p._id === formData.planId)?.trialDays ?? 10}-day trial. You can
+                    upgrade to a paid subscription any time from Super Admin.
+                  </p>
+                </div>
+              </label>
+              <label className="flex items-start gap-2 cursor-pointer opacity-90">
+                <input
+                  type="radio"
+                  name="signupMode"
+                  value="paid"
+                  checked={signupMode === 'paid'}
+                  onChange={() => setSignupMode('paid')}
+                  className="mt-1"
+                />
+                <div>
+                  <p className="text-sm text-slate-100 font-medium">Paid subscription (online payment)</p>
+                  <p className="text-xs text-slate-400">
+                    Create your account now and complete the subscription payment online. (Current version still
+                    creates a trial; payment integration will be enabled next.)
+                  </p>
+                </div>
+              </label>
+            </div>
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Admin email</label>

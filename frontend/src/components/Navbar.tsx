@@ -10,6 +10,7 @@ import { useCart } from '@/context/CartContext';
 import { useUser } from '@/context/UserContext';
 import { useRestaurantPage } from '@/context/RestaurantPageContext';
 import LanguageSwitcher from './LanguageSwitcher';
+import ThemeSwitcher from './ThemeSwitcher';
 import api from '@/services/api';
 
 export default function Navbar() {
@@ -185,6 +186,7 @@ export default function Navbar() {
                     {checkingStatus ? 'Checking...' : dbConnected ? 'DB Online' : 'DB Offline'}
                   </span>
                 </div>
+                <ThemeSwitcher />
                 <LanguageSwitcher />
                 <Link href={cartHref}>
                   <motion.div

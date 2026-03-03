@@ -31,6 +31,9 @@ import {
   getVisitorAnalytics,
 } from '../controllers/visitor.controller';
 import { getAuditLogs } from '../controllers/auditLog.controller';
+import { exportBackup, importBackup } from '../controllers/backup.controller';
+import { getErrorLogs, updateErrorLogStatus } from '../controllers/errorLog.controller';
+import { scanAndRepairSystem } from '../controllers/systemHealth.controller';
 
 const router = Router();
 
@@ -68,5 +71,14 @@ router.get('/visitors', getVisitors);
 router.get('/visitors/:id', getVisitorById);
 router.post('/visitors/:id/send-info', sendVisitorInfo);
 router.get('/visitors-analytics', getVisitorAnalytics);
+
+// ── Backup & Restore (Super Admin only – be careful) ────────────────────────────
+router.get('/backup', exportBackup);
+router.post('/backup/import', importBackup);
+
+// ── Error handling / bug control ────────────────────────────────────────────────
+router.get('/error-logs', getErrorLogs);
+router.patch('/error-logs/:id/status', updateErrorLogStatus);
+router.post('/system/scan-repair', scanAndRepairSystem);
 
 export default router;

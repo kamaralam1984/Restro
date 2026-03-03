@@ -4,6 +4,7 @@ import { Bill } from '../models/Bill.model';
 import { Order } from '../models/Order.model';
 import { Restaurant } from '../models/Restaurant.model';
 import { sendBillReceiptToCustomer } from '../utils/notifications';
+import PDFDocument from 'pdfkit';
 
 // Helper to get current user id from auth middleware
 const getUserId = (req: Request): string | null => {
@@ -235,7 +236,12 @@ export const createOfflineBill = async (req: Request, res: Response) => {
 // Get all bills (with optional filters)
 export const getBills = async (req: Request, res: Response) => {
   try {
-    const { source, status } = req.query;
+    const { source, status, startDate, endDate } = req.query as {
+      source?: string;
+      status?: string;
+      startDate?: string;
+      endDate?: string;
+    };
     const filter: any = {};
     const user = (req as any).user;
     if (user?.restaurantId) {
@@ -246,6 +252,15 @@ export const getBills = async (req: Request, res: Response) => {
     }
     if (status) {
       filter.status = status;
+    }
+
+    // Optional date range filter (createdAt)
+    if (startDate || endDate) {
+      const start = startDate ? new Date(startDate) : new Date('1970-01-01');
+      const end = endDate ? new Date(endDate) : new Date();
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+      filter.createdAt = { $gte: start, $lte: end };
     }
 
     const bills = await Bill.find(filter)
@@ -315,6 +330,127 @@ export const updateBillStatus = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Error updating bill status:', error);
     res.status(400).json({ error: error.message || 'Failed to update bill status' });
+  }
+};
+
+// Generate billing report as PDF for a given period (day/week/month/year or custom range)
+export const getBillingReportPdf = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const restaurantId = user?.restaurantId as mongoose.Types.ObjectId | undefined;
+    if (!restaurantId) {
+      return res.status(403).json({ error: 'No restaurant context' });
+    }
+
+    const { period = 'day', startDate, endDate } = req.query as {
+      period?: 'day' | 'week' | 'month' | 'year';
+      startDate?: string;
+      endDate?: string;
+    };
+
+    const now = new Date();
+    let start = new Date(now);
+    let end = new Date(now);
+
+    if (startDate || endDate) {
+      start = startDate ? new Date(startDate) : new Date('1970-01-01');
+      end = endDate ? new Date(endDate) : now;
+    } else {
+      switch (period) {
+        case 'week': {
+          // last 7 days
+          start = new Date(now);
+          start.setDate(start.getDate() - 7);
+          break;
+        }
+        case 'month': {
+          start = new Date(now.getFullYear(), now.getMonth(), 1);
+          break;
+        }
+        case 'year': {
+          start = new Date(now.getFullYear(), 0, 1);
+          break;
+        }
+        case 'day':
+        default: {
+          start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          break;
+        }
+      }
+    }
+    // Normalize times
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+
+    const bills = await Bill.find({
+      restaurantId,
+      createdAt: { $gte: start, $lte: end },
+    })
+      .sort({ createdAt: 1 })
+      .lean();
+
+    const restaurant = await Restaurant.findById(restaurantId).select('name taxRate').lean();
+    const restaurantName = restaurant?.name || 'Your Restaurant';
+    const taxRate = typeof restaurant?.taxRate === 'number' ? restaurant.taxRate : 5;
+
+    const totals = bills.reduce(
+      (acc, b: any) => {
+        acc.subtotal += b.subtotal || 0;
+        acc.taxAmount += b.taxAmount || 0;
+        acc.discountAmount += b.discountAmount || 0;
+        acc.deliveryCharge += b.deliveryCharge || 0;
+        acc.grandTotal += b.grandTotal || 0;
+        return acc;
+      },
+      { subtotal: 0, taxAmount: 0, discountAmount: 0, deliveryCharge: 0, grandTotal: 0 }
+    );
+
+    const doc = new PDFDocument({ margin: 40 });
+    const filename = `billing-report-${period}-${now.toISOString().slice(0, 10)}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    doc.fontSize(18).text('Restro OS - Billing Report', { align: 'center' });
+    doc.moveDown(0.5);
+    doc.fontSize(12).text(`Restaurant: ${restaurantName}`);
+    doc.text(`GST Rate: ${taxRate}%`);
+    doc.text(
+      `Period: ${start.toISOString().slice(0, 10)} to ${end.toISOString().slice(0, 10)} (${period})`
+    );
+    doc.moveDown();
+
+    doc.fontSize(12).text('Summary:', { underline: true });
+    doc.text(`Subtotal: ₹${totals.subtotal.toFixed(0)}`);
+    doc.text(`GST: ₹${totals.taxAmount.toFixed(0)}`);
+    doc.text(`Discount: -₹${totals.discountAmount.toFixed(0)}`);
+    doc.text(`Delivery: ₹${totals.deliveryCharge.toFixed(0)}`);
+    doc.text(`Grand Total: ₹${totals.grandTotal.toFixed(0)}`);
+    doc.moveDown();
+
+    doc.text('Bills:', { underline: true });
+    doc.moveDown(0.5);
+
+    if (bills.length === 0) {
+      doc.text('No bills found for this period.');
+    } else {
+      bills.forEach((b: any) => {
+        const dateStr = new Date(b.createdAt).toLocaleString('en-IN');
+        doc
+          .fontSize(11)
+          .text(
+            `${dateStr}  |  ${b.billNumber || ''}  |  Total: ₹${(b.grandTotal || 0).toFixed(
+              0
+            )}  |  Status: ${b.status}  |  Payment: ${b.paymentMethod}`,
+            { lineGap: 2 }
+          );
+      });
+    }
+
+    doc.end();
+    doc.pipe(res);
+  } catch (error: any) {
+    console.error('Error generating billing report PDF:', error);
+    res.status(500).json({ error: error.message || 'Failed to generate report PDF' });
   }
 };
 

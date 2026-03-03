@@ -8,6 +8,7 @@ import {
   getBills,
   getBill,
   updateBillStatus,
+  getBillingReportPdf,
 } from '../controllers/billing.controller';
 
 const router = Router();
@@ -23,6 +24,7 @@ router.post('/offline', createOfflineBill);
 
 // List & detail
 router.get('/', getBills);
+router.get('/report/pdf', getBillingReportPdf);
 router.get('/:id', getBill);
 
 // Update payment/status

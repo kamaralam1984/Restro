@@ -1,4 +1,4 @@
-# Silver Plate Restaurant - Table Booking System Rules
+# Restro OS Restaurant - Table Booking System Rules
 
 ## 📋 Table Booking Rules
 

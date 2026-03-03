@@ -2,22 +2,105 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Base CSS variables for theming */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #020617; /* slate-950 */
+  --foreground: #e5e7eb; /* slate-200 */
+  --accent: #ea580c; /* orange-600 */
+  --danger: #ef4444; /* red-500 */
+  --success: #22c55e; /* green-500 */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Light mode */
+html.theme-light {
+  --background: #f9fafb; /* slate-50 */
+  --foreground: #020617; /* slate-950 */
+  --accent: #ea580c;
+  --danger: #b91c1c;
+  --success: #16a34a;
+}
+
+/* Color-blind friendly palette (avoid red/green clash, higher contrast) */
+html.theme-colorblind {
+  --background: #020617;
+  --foreground: #f9fafb;
+  --accent: #2563eb; /* blue-600 */
+  --danger: #f97316; /* orange-500 instead of pure red */
+  --success: #10b981; /* teal/green with good contrast */
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Override some Tailwind background/text utilities under different themes to keep existing components working */
+
+/* Light mode overrides */
+html.theme-light .bg-slate-950,
+html.theme-light .bg-slate-900,
+html.theme-light .bg-slate-800 {
+  background-color: #f9fafb !important;
+}
+
+html.theme-light .bg-slate-700 {
+  background-color: #e5e7eb !important;
+}
+
+html.theme-light .text-white {
+  color: #020617;
+}
+
+html.theme-light a.text-white:hover,
+html.theme-light button.text-white:hover,
+html.theme-light span.text-white:hover,
+html.theme-light div.text-white:hover {
+  color: #f9fafb;
+}
+
+html.theme-light .text-slate-200,
+html.theme-light .text-slate-300,
+html.theme-light .text-slate-400,
+html.theme-light .text-slate-500,
+html.theme-light .text-slate-600 {
+  color: #111827 !important; /* slate-900 for better contrast in light mode */
+}
+
+html.theme-light .border-slate-800,
+html.theme-light .border-slate-700 {
+  border-color: #e5e7eb !important;
+}
+
+/* Accent colors */
+html.theme-light .bg-orange-600,
+html.theme-light .bg-orange-700 {
+  background-color: var(--accent) !important;
+}
+
+/* Color-blind mode overrides: swap strong red/green indicators to safer palette */
+html.theme-colorblind .bg-orange-600,
+html.theme-colorblind .bg-orange-700,
+html.theme-colorblind .text-orange-500,
+html.theme-colorblind .text-orange-600 {
+  background-color: var(--accent) !important;
+  color: #f9fafb !important;
+}
+
+html.theme-colorblind .bg-green-500,
+html.theme-colorblind .bg-green-600,
+html.theme-colorblind .text-green-500,
+html.theme-colorblind .text-green-600 {
+  background-color: var(--success) !important;
+  color: #f9fafb !important;
+}
+
+html.theme-colorblind .bg-red-500,
+html.theme-colorblind .bg-red-600,
+html.theme-colorblind .text-red-500,
+html.theme-colorblind .text-red-600 {
+  background-color: var(--danger) !important;
+  color: #0f172a !important;
 }
 
 @layer utilities {

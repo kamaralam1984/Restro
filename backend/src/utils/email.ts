@@ -350,7 +350,7 @@ const generateBookingConfirmationHTML = (booking: IBooking): string => {
 <body>
   <div class="container">
     <div class="header">
-      <h1>🍽️ Silver Plate</h1>
+      <h1>🍽️ Restro OS</h1>
       <p>Pure & Delicious</p>
     </div>
     <div class="content">
@@ -428,7 +428,7 @@ const generateBookingConfirmationHTML = (booking: IBooking): string => {
       </div>
 
       <div class="footer">
-        <p>Thank you for choosing Silver Plate!</p>
+        <p>Thank you for choosing Restro OS!</p>
         <p>We look forward to serving you.</p>
         <p style="margin-top: 20px; font-size: 12px;">
           For any queries, please contact us or reply to this email.
@@ -460,7 +460,7 @@ export const sendBookingConfirmationEmail = async (booking: IBooking): Promise<v
     const bookingDateTime = `${bookingDate.toLocaleDateString('en-IN')} at ${booking.time}`;
     
     const textContent = `
-Silver Plate - Table Booking Confirmation
+Restro OS - Table Booking Confirmation
 
 Booking Number: ${booking.bookingNumber}
 Status: CONFIRMED
@@ -487,14 +487,14 @@ Important Notes:
 - Your table is reserved for ${booking.bookingHours} hour${booking.bookingHours > 1 ? 's' : ''}
 - Payment is non-refundable
 
-Thank you for choosing Silver Plate!
+Thank you for choosing Restro OS!
 We look forward to serving you.
 
 For any queries, please contact us.
     `.trim();
 
     const mailOptions = {
-      from: `"Silver Plate" <${process.env.SMTP_USER}>`,
+      from: `"Restro OS" <${process.env.SMTP_USER}>`,
       to: booking.customerEmail,
       subject: `Table Booking Confirmed - ${booking.bookingNumber}`,
       text: textContent,

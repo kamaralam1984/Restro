@@ -7,6 +7,8 @@ import {
   getRolePermissions,
   updateRolePermissions,
   restaurantSignup,
+  restaurantSignupPaymentOrder,
+  restaurantSignupVerifyPayment,
 } from '../controllers/restaurant.controller';
 import { requireAdmin } from '../middleware/auth.middleware';
 import { getPlans } from '../controllers/rentalPlan.controller';
@@ -18,6 +20,8 @@ const router = Router();
 router.get('/by-slug/:slug', getRestaurantBySlug);
 router.get('/plans', getPlans);
 router.post('/signup', restaurantSignup);
+router.post('/signup/payment-order', restaurantSignupPaymentOrder);
+router.post('/signup/verify-payment', restaurantSignupVerifyPayment);
 
 // ── Restaurant Admin (authenticated) ─────────────────────────────────────────
 router.get('/me', authenticate, getMyRestaurant);

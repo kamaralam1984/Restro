@@ -10,6 +10,8 @@ import { seedDefaultMenuForRestaurant } from '../services/defaultMenu.service';
 import { createDefaultTablesForRestaurant } from './table.controller';
 import { Order } from '../models/Order.model';
 import { Booking } from '../models/Booking.model';
+import { createRazorpayOrder } from '../config/razorpay';
+import { PendingRestaurantSignup } from '../models/PendingRestaurantSignup.model';
 
 // ─── Super Admin: Reset restaurant admin password ─────────────────────────────
 
@@ -767,3 +769,222 @@ export const restaurantSignup = async (req: Request, res: Response) => {
     res.status(500).json({ error: error.message || 'Signup failed' });
   }
 };
+
+// ─── Public: Paid signup – create Razorpay order and pending signup ────────────
+
+export const restaurantSignupPaymentOrder = async (req: Request, res: Response) => {
+  try {
+    const { name, slug, email, planId, adminName, adminPassword, adminPhone } = req.body;
+
+    if (!name || !slug || !email || !planId || !adminPassword || String(adminPassword).length < 8) {
+      return res.status(400).json({ error: 'Name, slug, plan, email and password are required' });
+    }
+
+    const trimmedSlug = String(slug).toLowerCase().trim().replace(/\s+/g, '-');
+    if (!/^[a-z0-9-]+$/.test(trimmedSlug)) {
+      return res.status(400).json({ error: 'Slug can only contain lowercase letters, numbers, and hyphens' });
+    }
+
+    const existing = await Restaurant.findOne({ slug: trimmedSlug }).lean();
+    if (existing) {
+      return res.status(409).json({ error: 'This restaurant URL is already taken. Please choose another slug.' });
+    }
+
+    const plan = await RentalPlan.findById(planId).lean();
+    if (!plan) {
+      return res.status(400).json({ error: 'Plan not found' });
+    }
+
+    const amount = plan.price;
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: 'Plan price is not configured for online payment' });
+    }
+
+    const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID;
+    const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
+    if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
+      return res.status(500).json({
+        error:
+          'Razorpay is not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in environment variables.',
+      });
+    }
+
+    const order = await createRazorpayOrder(amount, 'INR');
+    const passwordHash = await bcrypt.hash(String(adminPassword), 12);
+
+    const pending = await PendingRestaurantSignup.create({
+      name: String(name).trim(),
+      slug: trimmedSlug,
+      email: String(email).toLowerCase().trim(),
+      adminPasswordHash: passwordHash,
+      adminName: adminName ? String(adminName).trim() : undefined,
+      adminPhone: adminPhone ? String(adminPhone).trim() : undefined,
+      planId: plan._id,
+      razorpayOrderId: order.id,
+    });
+
+    res.json({
+      key: RAZORPAY_KEY_ID,
+      razorpayOrderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      pendingId: pending._id,
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to create payment order for signup' });
+  }
+};
+
+// ─── Public: Verify Razorpay payment and complete restaurant signup ────────────
+
+export const restaurantSignupVerifyPayment = async (req: Request, res: Response) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const { pendingId, razorpayOrderId, paymentId, signature } = req.body as {
+      pendingId?: string;
+      razorpayOrderId?: string;
+      paymentId?: string;
+      signature?: string;
+    };
+
+    if (!pendingId || !razorpayOrderId || !paymentId || !signature) {
+      await session.abortTransaction();
+      return res.status(400).json({ error: 'Missing payment verification fields' });
+    }
+
+    // Verify payment signature
+    const isValid = await (await import('../config/razorpay')).verifyPayment(
+      razorpayOrderId,
+      paymentId,
+      signature
+    );
+    if (!isValid) {
+      await session.abortTransaction();
+      return res.status(400).json({ error: 'Invalid payment signature' });
+    }
+
+    const pending = await PendingRestaurantSignup.findById(pendingId).session(session);
+    if (!pending || pending.status !== 'pending') {
+      await session.abortTransaction();
+      return res.status(400).json({ error: 'Pending signup not found or already completed' });
+    }
+
+    // Ensure slug still unique
+    const existing = await Restaurant.findOne({ slug: pending.slug }).session(session);
+    if (existing) {
+      await session.abortTransaction();
+      return res.status(409).json({
+        error: 'This restaurant URL is already taken. Please start signup again with a different slug.',
+      });
+    }
+
+    const plan = await RentalPlan.findById(pending.planId).session(session);
+    if (!plan) {
+      await session.abortTransaction();
+      return res.status(400).json({ error: 'Plan not found for pending signup' });
+    }
+
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + 1);
+
+    const features = planToRestaurantFeatures(plan as any);
+
+    const [restaurant] = await Restaurant.create(
+      [
+        {
+          name: pending.name,
+          slug: pending.slug,
+          phone: pending.adminPhone || '0000000000',
+          address: 'To be updated',
+          country: 'India',
+          subscriptionStatus: 'active',
+          trialEndsAt: undefined,
+          currentPlanId: plan._id,
+          status: 'active',
+          features,
+        },
+      ],
+      { session }
+    );
+
+    await Subscription.create(
+      [
+        {
+          restaurantId: restaurant._id,
+          planId: plan._id,
+          billingCycle: 'monthly',
+          status: 'active',
+          amount: plan.price,
+          currency: 'INR',
+          startDate,
+          endDate,
+          nextBillingDate: endDate,
+          paymentMethod: 'online',
+          paymentId,
+          autoRenew: false,
+        },
+      ],
+      { session }
+    );
+
+    const [adminUser] = await User.create(
+      [
+        {
+          name: pending.adminName || pending.name,
+          email: pending.email,
+          phone: pending.adminPhone || '0000000000',
+          role: 'admin',
+          password: pending.adminPasswordHash,
+          restaurantId: restaurant._id,
+          isActive: true,
+        },
+      ],
+      { session }
+    );
+
+    restaurant.ownerId = adminUser._id as any;
+    await restaurant.save({ session });
+
+    pending.status = 'completed';
+    await pending.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    // Seed default menu and tables (non-blocking)
+    seedDefaultMenuForRestaurant(restaurant._id).catch((err) => {
+      console.error('Failed to seed default menu for paid signup', err);
+    });
+    createDefaultTablesForRestaurant(restaurant._id as mongoose.Types.ObjectId).catch((err) => {
+      console.error('Failed to create default tables for paid signup', err);
+    });
+
+    const baseUrl = (process.env.PUBLIC_APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000').replace(
+      /\/$/,
+      ''
+    );
+    const storeLink = `${baseUrl}/r/${restaurant.slug}`;
+    const loginUrl = `${baseUrl}/admin/login`;
+
+    res.status(201).json({
+      message: 'Restaurant created with paid subscription. You can now log in.',
+      restaurant: {
+        _id: restaurant._id,
+        name: restaurant.name,
+        slug: restaurant.slug,
+        storeLink,
+      },
+      adminUser: {
+        email: adminUser.email,
+        loginUrl,
+      },
+    });
+  } catch (error: any) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(500).json({ error: error.message || 'Signup verification failed' });
+  }
+};
+

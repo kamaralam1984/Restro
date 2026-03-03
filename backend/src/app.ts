@@ -27,10 +27,14 @@ import chatRoutes from './routes/chat.routes';
 import v1Routes from './routes/v1.index';
 import { errorHandler, notFound } from './middleware/error.middleware';
 import { generalRateLimiter, apiRateLimiter, tenantApiRateLimiter } from './middleware/rateLimiter.middleware';
+import { scheduleWeeklyBackups } from './services/backupScheduler.service';
 
 dotenv.config();
 
 const app = express();
+
+// Schedule weekly platform backups (runs in background)
+scheduleWeeklyBackups();
 
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const CORS_ORIGIN = process.env.CORS_ORIGIN || process.env.FRONTEND_URL || '';

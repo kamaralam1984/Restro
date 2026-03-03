@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, ShoppingBag, UtensilsCrossed, Calendar, Users, UserCog,
   Star, BarChart3, Settings, Power, ReceiptIndianRupee, TrendingUp, Image,
-  ShieldCheck, IndianRupee,
+  ShieldCheck, IndianRupee, FileText,
   Store, Package, CreditCard, Building2, PieChart, Wallet, ExternalLink, Copy, Check,
 } from 'lucide-react';
 import api from '@/services/api';
@@ -40,6 +40,8 @@ const SUPER_ADMIN_NAV: NavItem[] = [
   { name: 'Visitors',       href: '/admin/super/visitors',       icon: BarChart3 },
   { name: 'Plans',          href: '/admin/super/plans',          icon: Package },
   { name: 'Subscriptions',  href: '/admin/super/subscriptions',  icon: CreditCard },
+  { name: 'Backup & Restore', href: '/admin/super/backup',       icon: FileText },
+  { name: 'Error & Bug Control', href: '/admin/super/errors',    icon: ShieldCheck },
 ];
 
 const MASTER_ADMIN_NAV: NavItem[] = [
@@ -60,6 +62,7 @@ const ADMIN_NAV: NavItem[] = [
   { name: 'Billing Panel', href: '/admin/billing',      icon: ReceiptIndianRupee, featureKey: 'billing' },
   { name: 'Payments',     href: '/admin/payments',     icon: Wallet,            featureKey: 'onlinePayments' },
   { name: 'Revenue',      href: '/admin/revenue',      icon: TrendingUp,        featureKey: 'billing' },
+  { name: 'Reports',      href: '/admin/reports',      icon: FileText,          featureKey: 'billing' },
   { name: 'Customers',    href: '/admin/customers',    icon: Users,             featureKey: 'onlineOrdering' },
   { name: 'Staff & Users', href: '/admin/users',       icon: UserCog,           featureKey: 'staffControl' },
   { name: 'Staff roles',   href: '/admin/staff-roles', icon: ShieldCheck,       featureKey: 'staffControl' },
