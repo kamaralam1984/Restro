@@ -22,6 +22,7 @@ export interface IBill extends Document {
   subtotal: number;
   taxAmount: number;
   discountAmount: number;
+  deliveryCharge: number;
   grandTotal: number;
   paymentMethod: 'cash' | 'card' | 'online';
   status: 'unpaid' | 'paid' | 'cancelled';
@@ -66,6 +67,7 @@ const BillSchema = new Schema<IBill>(
     subtotal: { type: Number, required: true, min: 0 },
     taxAmount: { type: Number, required: true, min: 0, default: 0 },
     discountAmount: { type: Number, required: true, min: 0, default: 0 },
+    deliveryCharge: { type: Number, required: true, min: 0, default: 0 },
     grandTotal: { type: Number, required: true, min: 0 },
     paymentMethod: {
       type: String,

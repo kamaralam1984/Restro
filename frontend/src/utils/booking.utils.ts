@@ -36,41 +36,44 @@ export function calculateBookingAmount(capacity: number, hours: number): number 
   return hourlyRate * hours;
 }
 
-/**
- * Get booking configuration based on table capacity
- */
-export function getBookingConfig(capacity: number): BookingConfig {
+function getDefaultConfigByCapacity(capacity: number): BookingConfig {
   const hourlyRate = getHourlyRate(capacity);
-  
   if (capacity >= 6) {
-    return {
-      advanceAmount: 600,
-      discountThreshold: 1500,
-      discountAmount: 600, // 1 hour discount
-      durationHours: 1,
-      minAdvanceHours: 2,
-      hourlyRate: hourlyRate,
-    };
-  } else if (capacity >= 4) {
-    return {
-      advanceAmount: 400,
-      discountThreshold: 1000,
-      discountAmount: 400, // 1 hour discount
-      durationHours: 1,
-      minAdvanceHours: 2,
-      hourlyRate: hourlyRate,
-    };
-  } else {
-    // 2 person table
-    return {
-      advanceAmount: 200,
-      discountThreshold: 500,
-      discountAmount: 200, // 1 hour discount
-      durationHours: 1,
-      minAdvanceHours: 2,
-      hourlyRate: hourlyRate,
-    };
+    return { advanceAmount: 600, discountThreshold: 1500, discountAmount: 600, durationHours: 1, minAdvanceHours: 2, hourlyRate };
   }
+  if (capacity >= 4) {
+    return { advanceAmount: 400, discountThreshold: 1000, discountAmount: 400, durationHours: 1, minAdvanceHours: 2, hourlyRate };
+  }
+  return { advanceAmount: 200, discountThreshold: 500, discountAmount: 200, durationHours: 1, minAdvanceHours: 2, hourlyRate };
+}
+
+/**
+ * Get booking configuration. Uses table's custom hourlyRate/discountThreshold/discountAmount if set.
+ */
+export function getBookingConfig(
+  capacity: number,
+  table?: { hourlyRate?: number; discountThreshold?: number; discountAmount?: number } | null
+): BookingConfig {
+  const def = getDefaultConfigByCapacity(capacity);
+  if (!table) return def;
+  const hourlyRate =
+    typeof table.hourlyRate === 'number' && table.hourlyRate >= 0 ? table.hourlyRate : def.hourlyRate;
+  const discountThreshold =
+    typeof table.discountThreshold === 'number' && table.discountThreshold >= 0
+      ? table.discountThreshold
+      : def.discountThreshold;
+  const discountAmount =
+    typeof table.discountAmount === 'number' && table.discountAmount >= 0
+      ? table.discountAmount
+      : def.discountAmount;
+  return {
+    advanceAmount: hourlyRate,
+    discountThreshold,
+    discountAmount,
+    durationHours: 1,
+    minAdvanceHours: 2,
+    hourlyRate,
+  };
 }
 
 /**

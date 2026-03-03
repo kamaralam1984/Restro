@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
   LayoutDashboard, ShoppingBag, UtensilsCrossed, Calendar, Users, Star, BarChart3,
@@ -59,6 +59,7 @@ interface StaffLayoutProps {
 export default function StaffLayout({ children }: StaffLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const { setRestaurant } = useRestaurantPage();
   const [staffUser, setStaffUser] = useState<StaffUser | null>(null);
   const [permissions, setPermissions] = useState<StaffPermissionKey[]>([]);
   const [storeSlug, setStoreSlug] = useState<string | null>(null);

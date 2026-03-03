@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, ShoppingBag, UtensilsCrossed, Calendar, Users, UserCog,
   Star, BarChart3, Settings, Power, ReceiptIndianRupee, TrendingUp, Image,
+  ShieldCheck, IndianRupee,
   Store, Package, CreditCard, Building2, PieChart, Wallet, ExternalLink, Copy, Check,
 } from 'lucide-react';
 import api from '@/services/api';
@@ -36,6 +37,7 @@ const SUPER_ADMIN_NAV: NavItem[] = [
   { name: 'Restaurants',    href: '/admin/super/restaurants',    icon: Store },
   { name: 'Users',          href: '/admin/super/users',           icon: Users },
   { name: 'Analytics',      href: '/admin/super/analytics',      icon: PieChart },
+  { name: 'Visitors',       href: '/admin/super/visitors',       icon: BarChart3 },
   { name: 'Plans',          href: '/admin/super/plans',          icon: Package },
   { name: 'Subscriptions',  href: '/admin/super/subscriptions',  icon: CreditCard },
 ];
@@ -52,13 +54,15 @@ const ADMIN_NAV: NavItem[] = [
   { name: 'Dashboard',    href: '/admin/dashboard',    icon: LayoutDashboard },
   { name: 'Orders',       href: '/admin/orders',       icon: ShoppingBag,       featureKey: 'onlineOrdering' },
   { name: 'Menu',         href: '/admin/menu',         icon: UtensilsCrossed,   featureKey: 'menuManagement' },
-  { name: 'Bookings',     href: '/admin/bookings',     icon: Calendar,          featureKey: 'tableBooking' },
+  { name: 'Bookings',     href: '/admin/bookings',     icon: Calendar },
+  { name: 'Table rates & offers', href: '/admin/table-rates', icon: IndianRupee },
   { name: 'Hero Images',  href: '/admin/hero-images',  icon: Image,             featureKey: 'heroImages' },
-  { name: 'Billing',      href: '/admin/billing',      icon: ReceiptIndianRupee, featureKey: 'billing' },
+  { name: 'Billing Panel', href: '/admin/billing',      icon: ReceiptIndianRupee, featureKey: 'billing' },
   { name: 'Payments',     href: '/admin/payments',     icon: Wallet,            featureKey: 'onlinePayments' },
   { name: 'Revenue',      href: '/admin/revenue',      icon: TrendingUp,        featureKey: 'billing' },
   { name: 'Customers',    href: '/admin/customers',    icon: Users,             featureKey: 'onlineOrdering' },
   { name: 'Staff & Users', href: '/admin/users',       icon: UserCog,           featureKey: 'staffControl' },
+  { name: 'Staff roles',   href: '/admin/staff-roles', icon: ShieldCheck,       featureKey: 'staffControl' },
   { name: 'Reviews',      href: '/admin/reviews',      icon: Star,              featureKey: 'reviews' },
   { name: 'Analytics',    href: '/admin/analytics',    icon: BarChart3,         featureKey: 'analytics' },
   { name: 'Settings',     href: '/admin/settings',     icon: Settings },

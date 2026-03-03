@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Store, UtensilsCrossed, ArrowRight, Calendar, Phone, MapPin, LogIn, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Store, UtensilsCrossed, ArrowRight, Calendar, Phone, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '@/services/api';
 import ServiceSuspendedMessage from '@/components/ServiceSuspendedMessage';
 import { getThemeById, DEFAULT_THEME_ID, type WebsiteTheme } from '@/config/websiteThemes';
@@ -306,23 +306,6 @@ export default function RestaurantBySlugPage() {
           </p>
         </section>
       )}
-
-      {/* Rental Admin info */}
-      <section className="border-t border-slate-800 py-8 px-4">
-        <div className="container mx-auto max-w-2xl text-center">
-          <p className="text-slate-500 text-sm mb-2">Restaurant owner?</p>
-          <Link
-            href="/admin/login"
-            className="inline-flex items-center gap-2 text-slate-400 hover:text-white text-sm font-medium transition-colors"
-          >
-            <LogIn className="w-4 h-4" />
-            Rental Admin Panel Login
-          </Link>
-          <p className="text-slate-600 text-xs mt-2">
-            ID &amp; password is created from Super Admin panel. Contact your platform admin for credentials.
-          </p>
-        </div>
-      </section>
 
       {/* Footer */}
       <footer className="border-t border-slate-800 py-6 px-4 mt-auto">

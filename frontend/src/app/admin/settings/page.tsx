@@ -55,7 +55,9 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<RestaurantSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'website' | 'payment' | 'notifications' | 'security'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'website' | 'payment' | 'notifications' | 'security' | 'staffRoles'>('general');
+  const [rolePermissions, setRolePermissions] = useState<Record<string, string[]>>({ staff: ['dashboard', 'orders'], manager: ['dashboard', 'orders', 'menu', 'bookings', 'customers', 'reviews', 'analytics'], cashier: ['dashboard', 'orders', 'billing', 'revenue'] });
+  const [savingRolePerms, setSavingRolePerms] = useState(false);
   // Rental admin: change own password
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');

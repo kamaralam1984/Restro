@@ -28,9 +28,10 @@ export default function BookingsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'cancelled'>('all');
   const [selectedDate, setSelectedDate] = useState('');
+  const [tablesCount, setTablesCount] = useState<number | null>(null);
+  const [initializingTables, setInitializingTables] = useState(false);
 
   useEffect(() => {
-    // Check if user is authenticated
     const token = localStorage.getItem('token');
     if (!token) {
       window.location.href = '/admin/login';
@@ -38,6 +39,18 @@ export default function BookingsPage() {
     }
     loadBookings();
   }, [statusFilter, selectedDate]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const admin = typeof window !== 'undefined' ? localStorage.getItem('admin') : null;
+    let slug: string | undefined;
+    try { if (admin) slug = JSON.parse(admin).restaurantSlug; } catch {}
+    const params = slug ? { restaurant: slug } : {};
+    api.get<any[]>('/tables', { params, headers: { Authorization: `Bearer ${token}` } })
+      .then((data) => setTablesCount(Array.isArray(data) ? data.length : 0))
+      .catch(() => setTablesCount(0));
+  }, []);
 
   const loadBookings = async () => {
     try {
@@ -111,6 +124,29 @@ export default function BookingsPage() {
     return colors[status] || 'bg-gray-600';
   };
 
+  const handleInitializeTables = async () => {
+    setInitializingTables(true);
+    try {
+      const token = localStorage.getItem('token');
+      const admin = typeof window !== 'undefined' ? localStorage.getItem('admin') : null;
+      let slug: string | undefined;
+      try { if (admin) slug = JSON.parse(admin).restaurantSlug; } catch {}
+
+      await api.post(
+        '/tables/initialize',
+        slug ? { restaurant: slug } : {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      toast.success('20 tables created for your restaurant. Customers can now select tables when booking.');
+      setTablesCount(20);
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || e?.message || 'Failed to initialize tables');
+    } finally {
+      setInitializingTables(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Toaster position="top-right" />
@@ -119,6 +155,24 @@ export default function BookingsPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-white">Bookings</h1>
       </div>
+
+      {/* Initialize tables banner */}
+      {tablesCount !== null && tablesCount === 0 && (
+        <div className="bg-amber-900/30 border border-amber-600/50 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-amber-200 font-medium">Tables not set up</p>
+            <p className="text-amber-200/80 text-sm mt-1">Customers will see &quot;No tables found&quot; when booking. Create tables for your restaurant once.</p>
+          </div>
+          <button
+            type="button"
+            onClick={handleInitializeTables}
+            disabled={initializingTables}
+            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium disabled:opacity-50"
+          >
+            {initializingTables ? 'Creating...' : 'Create 20 tables'}
+          </button>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="bg-slate-900 rounded-xl p-4 space-y-4">

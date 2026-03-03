@@ -1,18 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { orderService } from '@/services/order.service';
 import { loadRazorpayScript } from '@/utils/razorpay';
 import api from '@/services/api';
 
-export default function CheckoutPage() {
-  const { cartItems, getTotalPrice, clearCart } = useCart();
+function CheckoutPageContent() {
+  const { getCartItems, getTotalPrice, clearCart } = useCart();
   const { t } = useLanguage();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const restaurantSlug = searchParams.get('restaurant') ?? undefined;
+
+  const cartItems = getCartItems(restaurantSlug);
+  const itemsSubtotal = getTotalPrice(restaurantSlug);
   const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('online');
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -25,13 +30,38 @@ export default function CheckoutPage() {
     notes: '',
   });
   const [razorpayKey, setRazorpayKey] = useState<string>('');
+  const [taxRate, setTaxRate] = useState<number>(0);
+  const [deliveryCharge] = useState<number>(50);
 
   useEffect(() => {
-    // Mark component as mounted to avoid hydration mismatch
     setMounted(true);
-    // Load Razorpay key from environment
     setRazorpayKey(process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '');
   }, []);
+
+  useEffect(() => {
+    if (!restaurantSlug) {
+      setTaxRate(0);
+      return;
+    }
+    api
+      .get<{ taxRate?: number }>(`/restaurants/by-slug/${restaurantSlug}`)
+      .then((data) => {
+        const rate = typeof data.taxRate === 'number' && data.taxRate >= 0 ? data.taxRate : 0;
+        setTaxRate(rate);
+      })
+      .catch(() => setTaxRate(0));
+  }, [restaurantSlug]);
+
+  const gstAmount = Math.round(itemsSubtotal * (taxRate / 100));
+  const finalTotal = itemsSubtotal + gstAmount + deliveryCharge;
+
+  // Redirect to cart if no restaurant or empty cart
+  useEffect(() => {
+    if (!mounted) return;
+    if (!restaurantSlug || cartItems.length === 0) {
+      router.replace(restaurantSlug ? `/cart?restaurant=${encodeURIComponent(restaurantSlug)}` : '/cart');
+    }
+  }, [mounted, restaurantSlug, cartItems.length, router]);
 
   const handlePlaceOrder = async () => {
     if (!customerInfo.name || !customerInfo.phone) {
@@ -72,7 +102,7 @@ export default function CheckoutPage() {
           addOns: item.addOns || [],
           customizations: item.customizations || '',
         })),
-        total: getTotalPrice(),
+        total: finalTotal,
         customerName: customerInfo.name,
         customerEmail: customerInfo.email || '',
         customerPhone: customerInfo.phone,
@@ -82,9 +112,9 @@ export default function CheckoutPage() {
       });
 
       setPaymentSuccess(true);
-      clearCart();
+      if (restaurantSlug) clearCart(restaurantSlug);
       setTimeout(() => {
-        router.push('/');
+        router.push(restaurantSlug ? `/r/${restaurantSlug}` : '/');
       }, 3000);
     } catch (error: any) {
       console.error('COD Order failed:', error);
@@ -125,7 +155,7 @@ export default function CheckoutPage() {
           addOns: item.addOns || [],
           customizations: item.customizations || '',
         })),
-        total: getTotalPrice(),
+        total: finalTotal,
         customerName: customerInfo.name,
         customerEmail: customerInfo.email || '',
         customerPhone: customerInfo.phone,
@@ -140,7 +170,7 @@ export default function CheckoutPage() {
       // Create Razorpay order via backend
       const razorpayOrderResponse = await api.post('/payments/create-order', {
         orderId: order.id || (order as any)._id,
-        amount: getTotalPrice(),
+        amount: finalTotal,
       });
       
       const razorpayOrder = razorpayOrderResponse as { amount: number; currency: string; orderId: string };
@@ -167,9 +197,9 @@ export default function CheckoutPage() {
             // No need to call separate update endpoint
 
             setPaymentSuccess(true);
-            clearCart();
+            if (restaurantSlug) clearCart(restaurantSlug);
             setTimeout(() => {
-              router.push('/');
+              router.push(restaurantSlug ? `/r/${restaurantSlug}` : '/');
             }, 3000);
           } catch (error: any) {
             console.error('Payment verification failed:', error);
@@ -219,12 +249,20 @@ export default function CheckoutPage() {
     );
   }
 
-  // Prevent hydration mismatch by not rendering cart-dependent content until mounted
   if (!mounted) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <h1 className="text-3xl font-bold mb-6">{t('checkout')}</h1>
         <div className="text-center py-8 text-gray-500">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!restaurantSlug || cartItems.length === 0) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <h1 className="text-3xl font-bold mb-6">{t('checkout')}</h1>
+        <div className="text-center py-8 text-gray-500">Redirecting to cart...</div>
       </div>
     );
   }
@@ -317,14 +355,28 @@ export default function CheckoutPage() {
         <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
         <div className="space-y-2">
           {cartItems.map((item) => (
-            <div key={item.id} className="flex justify-between">
+            <div key={item.id} className="flex justify-between text-sm">
               <span>{item.name} x {item.quantity}</span>
               <span>₹{(item.price * item.quantity).toFixed(0)}</span>
             </div>
           ))}
+          <div className="border-t pt-2 mt-2 space-y-1 text-sm">
+            <div className="flex justify-between">
+              <span>Subtotal</span>
+              <span>₹{itemsSubtotal.toFixed(0)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>GST ({taxRate || 0}%)</span>
+              <span>₹{gstAmount.toFixed(0)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Delivery Charge</span>
+              <span>₹{deliveryCharge.toFixed(0)}</span>
+            </div>
+          </div>
           <div className="border-t pt-2 mt-2 flex justify-between font-bold text-xl">
             <span>{t('total')}</span>
-            <span>₹{getTotalPrice().toFixed(0)}</span>
+            <span>₹{finalTotal.toFixed(0)}</span>
           </div>
         </div>
       </div>
@@ -344,5 +396,15 @@ export default function CheckoutPage() {
         {processing ? 'Processing...' : paymentSuccess ? 'Order Placed!' : t('placeOrder')}
       </motion.button>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto px-4 py-8 max-w-2xl text-center py-8 text-gray-500">Loading...</div>
+    }>
+      <CheckoutPageContent />
+    </Suspense>
   );
 }

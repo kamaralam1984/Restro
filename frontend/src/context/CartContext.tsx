@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 
 export interface CartAddOn {
   name: string;
@@ -17,92 +17,155 @@ export interface CartItem {
   customizations?: string;
 }
 
+/** Cart is stored per restaurant slug so each restaurant's orders stay separate. */
+type CartsByRestaurant = Record<string, CartItem[]>;
+
+const CART_STORAGE_KEY = 'restro_os_cart';
+
+function loadCartsFromStorage(): CartsByRestaurant {
+  if (typeof window === 'undefined') return {};
+  try {
+    const saved = localStorage.getItem(CART_STORAGE_KEY);
+    if (!saved) return {};
+    const parsed = JSON.parse(saved);
+    return typeof parsed === 'object' && parsed !== null ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
 interface CartContextType {
-  cartItems: CartItem[];
-  addToCart: (item: Omit<CartItem, 'quantity'>, addOns?: CartAddOn[], customizations?: string) => void;
-  removeFromCart: (id: string) => void;
-  updateQuantity: (id: string, quantity: number) => void;
-  clearCart: () => void;
-  getTotalPrice: () => number;
+  /** Get items for a restaurant's cart. Pass restaurant slug; without slug returns []. */
+  getCartItems: (restaurantSlug: string | undefined) => CartItem[];
+  /** Total quantity count for a restaurant's cart. */
+  getCartCount: (restaurantSlug: string | undefined) => number;
+  /** Subtotal for a restaurant's cart (items + add-ons). */
+  getTotalPrice: (restaurantSlug: string | undefined) => number;
+  addToCart: (
+    item: Omit<CartItem, 'quantity'>,
+    restaurantSlug: string,
+    addOns?: CartAddOn[],
+    customizations?: string
+  ) => void;
+  removeFromCart: (id: string, restaurantSlug: string) => void;
+  updateQuantity: (id: string, quantity: number, restaurantSlug: string) => void;
+  clearCart: (restaurantSlug: string) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-const CART_STORAGE_KEY = 'restro_os_cart';
-
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(CART_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : [];
-    }
-    return [];
-  });
+  const [cartsByRestaurant, setCartsByRestaurant] = useState<CartsByRestaurant>(loadCartsFromStorage);
 
-  // Persist cart to localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartsByRestaurant));
     }
-  }, [cartItems]);
+  }, [cartsByRestaurant]);
 
-  const addToCart = (item: Omit<CartItem, 'quantity'>, addOns?: CartAddOn[], customizations?: string) => {
-    setCartItems((prev) => {
-      // Check if item with same add-ons and customizations exists
-      const existingItem = prev.find((i) => 
-        i.id === item.id && 
-        JSON.stringify(i.addOns) === JSON.stringify(addOns) &&
-        i.customizations === customizations
-      );
-      
-      if (existingItem) {
-        return prev.map((i) =>
-          i.id === item.id && 
-          JSON.stringify(i.addOns) === JSON.stringify(addOns) &&
-          i.customizations === customizations
-            ? { ...i, quantity: i.quantity + 1 }
-            : i
+  const getCartItems = useCallback(
+    (restaurantSlug: string | undefined): CartItem[] => {
+      if (!restaurantSlug) return [];
+      return cartsByRestaurant[restaurantSlug] ?? [];
+    },
+    [cartsByRestaurant]
+  );
+
+  const getCartCount = useCallback(
+    (restaurantSlug: string | undefined): number => {
+      return getCartItems(restaurantSlug).reduce((sum, i) => sum + i.quantity, 0);
+    },
+    [getCartItems]
+  );
+
+  const getTotalPrice = useCallback(
+    (restaurantSlug: string | undefined): number => {
+      return getCartItems(restaurantSlug).reduce((total, item) => {
+        const itemPrice = item.price * item.quantity;
+        const addOnsPrice = (item.addOns ?? []).reduce((s, a) => s + a.price, 0) * item.quantity;
+        return total + itemPrice + addOnsPrice;
+      }, 0);
+    },
+    [getCartItems]
+  );
+
+  const addToCart = useCallback(
+    (
+      item: Omit<CartItem, 'quantity'>,
+      restaurantSlug: string,
+      addOns?: CartAddOn[],
+      customizations?: string
+    ) => {
+      if (!restaurantSlug) return;
+      setCartsByRestaurant((prev) => {
+        const list = prev[restaurantSlug] ?? [];
+        const existing = list.find(
+          (i) =>
+            i.id === item.id &&
+            JSON.stringify(i.addOns) === JSON.stringify(addOns) &&
+            i.customizations === customizations
         );
+        const nextList = existing
+          ? list.map((i) =>
+              i.id === item.id &&
+              JSON.stringify(i.addOns) === JSON.stringify(addOns) &&
+              i.customizations === customizations
+                ? { ...i, quantity: i.quantity + 1 }
+                : i
+            )
+          : [...list, { ...item, quantity: 1, addOns, customizations }];
+        return { ...prev, [restaurantSlug]: nextList };
+      });
+    },
+    []
+  );
+
+  const removeFromCart = useCallback((id: string, restaurantSlug: string) => {
+    if (!restaurantSlug) return;
+    setCartsByRestaurant((prev) => {
+      const list = prev[restaurantSlug] ?? [];
+      const nextList = list.filter((i) => i.id !== id);
+      if (nextList.length === 0) {
+        const next = { ...prev };
+        delete next[restaurantSlug];
+        return next;
       }
-      return [...prev, { ...item, quantity: 1, addOns, customizations }];
+      return { ...prev, [restaurantSlug]: nextList };
     });
-  };
+  }, []);
 
-  const removeFromCart = (id: string) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
-  };
-
-  const updateQuantity = (id: string, quantity: number) => {
+  const updateQuantity = useCallback((id: string, quantity: number, restaurantSlug: string) => {
+    if (!restaurantSlug) return;
     if (quantity <= 0) {
-      removeFromCart(id);
+      removeFromCart(id, restaurantSlug);
       return;
     }
-    setCartItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, quantity } : item))
-    );
-  };
+    setCartsByRestaurant((prev) => {
+      const list = prev[restaurantSlug] ?? [];
+      const nextList = list.map((i) => (i.id === id ? { ...i, quantity } : i));
+      return { ...prev, [restaurantSlug]: nextList };
+    });
+  }, [removeFromCart]);
 
-  const clearCart = () => {
-    setCartItems([]);
-  };
-
-  const getTotalPrice = () => {
-    return cartItems.reduce((total, item) => {
-      const itemPrice = item.price * item.quantity;
-      const addOnsPrice = (item.addOns || []).reduce((sum, addOn) => sum + addOn.price, 0) * item.quantity;
-      return total + itemPrice + addOnsPrice;
-    }, 0);
-  };
+  const clearCart = useCallback((restaurantSlug: string) => {
+    if (!restaurantSlug) return;
+    setCartsByRestaurant((prev) => {
+      const next = { ...prev };
+      delete next[restaurantSlug];
+      return next;
+    });
+  }, []);
 
   return (
     <CartContext.Provider
       value={{
-        cartItems,
+        getCartItems,
+        getCartCount,
+        getTotalPrice,
         addToCart,
         removeFromCart,
         updateQuantity,
         clearCart,
-        getTotalPrice,
       }}
     >
       {children}
@@ -117,4 +180,3 @@ export function useCart() {
   }
   return context;
 }
-

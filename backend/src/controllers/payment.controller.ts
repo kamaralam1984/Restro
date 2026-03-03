@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
 import { createRazorpayOrder, verifyPayment } from '../config/razorpay';
 import { Order } from '../models/Order.model';
+import { Restaurant } from '../models/Restaurant.model';
 import { generateBillFromOrderAuto } from './billing.controller';
-import { sendBillEmail } from '../utils/email';
+import { sendBillReceiptToCustomer } from '../utils/notifications';
 
 export const createPaymentOrder = async (req: Request, res: Response) => {
   try {
@@ -87,23 +88,21 @@ export const verifyPaymentOrder = async (req: Request, res: Response) => {
     }
     await order.save();
 
-    // Generate bill automatically for online payment
+    // Generate bill (with GST) and send receipt to customer (email + SMS + WhatsApp)
     try {
       const bill = await generateBillFromOrderAuto(order);
-      
-      // Send bill email to customer if email is available
-      if (order.customerEmail && bill) {
-        await sendBillEmail(bill, order.customerEmail).catch((error) => {
-          console.error('Failed to send bill email:', error);
-          // Don't fail the payment verification if email fails
-        });
-      } else {
-        console.log(`⚠️  No email provided for order ${order.orderNumber}. Bill email not sent.`);
+      if (bill && order.restaurantId) {
+        const restaurant = await Restaurant.findById(order.restaurantId)
+          .select('whatsappApiUrl whatsappApiKey')
+          .lean();
+        const rest = restaurant as { whatsappApiUrl?: string; whatsappApiKey?: string } | null;
+        sendBillReceiptToCustomer(bill, {
+          whatsappApiUrl: rest?.whatsappApiUrl,
+          whatsappApiKey: rest?.whatsappApiKey,
+        }).catch((err) => console.error('Send bill receipt failed:', err?.message || err));
       }
     } catch (billError: any) {
       console.error('Error generating bill after payment:', billError);
-      // Don't fail payment verification if bill generation fails
-      // Payment is already successful, bill can be generated manually later
     }
 
     res.json({ success: true, order });

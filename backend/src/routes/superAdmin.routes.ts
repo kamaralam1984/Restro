@@ -22,7 +22,14 @@ import {
   createSubscription,
   cancelSubscription,
   getSubscriptionStats,
+  updateSubscription,
 } from '../controllers/subscription.controller';
+import {
+  getVisitors,
+  getVisitorById,
+  sendVisitorInfo,
+  getVisitorAnalytics,
+} from '../controllers/visitor.controller';
 import { getAuditLogs } from '../controllers/auditLog.controller';
 
 const router = Router();
@@ -52,7 +59,14 @@ router.delete('/plans/:id', deletePlan);
 // ── Subscriptions ─────────────────────────────────────────────────────────────
 router.get('/subscriptions', getAllSubscriptions);
 router.post('/subscriptions', createSubscription);
+router.patch('/subscriptions/:id', updateSubscription);
 router.patch('/subscriptions/:id/cancel', cancelSubscription);
 router.get('/subscriptions/stats', getSubscriptionStats);
+
+// ── Visitors / traffic ────────────────────────────────────────────────────────
+router.get('/visitors', getVisitors);
+router.get('/visitors/:id', getVisitorById);
+router.post('/visitors/:id/send-info', sendVisitorInfo);
+router.get('/visitors-analytics', getVisitorAnalytics);
 
 export default router;

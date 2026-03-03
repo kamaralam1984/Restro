@@ -137,6 +137,65 @@ export const cancelSubscription = async (req: Request, res: Response) => {
   }
 };
 
+// ─── Super Admin: Update subscription (status / autoRenew / dates / notes) ───
+
+export const updateSubscription = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const {
+      status,
+      autoRenew,
+      endDate,
+      nextBillingDate,
+      notes,
+      amount,
+    } = req.body as {
+      status?: 'active' | 'expired' | 'cancelled' | 'past_due';
+      autoRenew?: boolean;
+      endDate?: string;
+      nextBillingDate?: string;
+      notes?: string;
+      amount?: number;
+    };
+
+    const update: Record<string, any> = {};
+    if (status) update.status = status;
+    if (typeof autoRenew === 'boolean') update.autoRenew = autoRenew;
+    if (endDate) update.endDate = new Date(endDate);
+    if (nextBillingDate) update.nextBillingDate = new Date(nextBillingDate);
+    if (typeof amount === 'number' && !Number.isNaN(amount)) update.amount = amount;
+    if (typeof notes === 'string') update.notes = notes.trim();
+
+    const subscription = await Subscription.findByIdAndUpdate(
+      id,
+      { $set: update },
+      { new: true }
+    );
+    if (!subscription) return res.status(404).json({ error: 'Subscription not found' });
+
+    // Keep restaurant.subscriptionStatus in sync with active subscriptions
+    if (status) {
+      const activeCount = await Subscription.countDocuments({
+        restaurantId: subscription.restaurantId,
+        status: 'active',
+      });
+      if (activeCount > 0 && status === 'active') {
+        await Restaurant.findByIdAndUpdate(subscription.restaurantId, {
+          $set: { subscriptionStatus: 'active' },
+        });
+      } else if (activeCount === 0 && status !== 'active') {
+        await Restaurant.findByIdAndUpdate(subscription.restaurantId, {
+          $set: { subscriptionStatus: 'suspended' },
+        });
+      }
+    }
+
+    res.json({ message: 'Subscription updated', subscription });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 // ─── Super Admin: Dashboard subscription summary ──────────────────────────────
 
 export const getSubscriptionStats = async (_req: Request, res: Response) => {

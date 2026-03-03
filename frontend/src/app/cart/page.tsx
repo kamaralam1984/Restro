@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShoppingCart,
@@ -9,7 +9,6 @@ import {
   Minus,
   Trash2,
   ArrowRight,
-  IndianRupee,
   Tag,
   Truck,
   X,
@@ -19,17 +18,31 @@ import {
 import { useCart, CartItem } from '@/context/CartContext';
 import toast, { Toaster } from 'react-hot-toast';
 import Image from 'next/image';
+import api from '@/services/api';
 
-export default function CartPage() {
+function CartPageContent() {
   const router = useRouter();
-  const { cartItems, updateQuantity, removeFromCart, clearCart, getTotalPrice } = useCart();
+  const searchParams = useSearchParams();
+  const restaurantSlug = searchParams.get('restaurant') ?? undefined;
+
+  const {
+    getCartItems,
+    getTotalPrice,
+    updateQuantity,
+    removeFromCart,
+    clearCart,
+  } = useCart();
+
+  const cartItems = getCartItems(restaurantSlug);
+  const subtotalFromCart = getTotalPrice(restaurantSlug);
+  const [taxRate, setTaxRate] = useState<number>(0);
+
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [discount, setDiscount] = useState(0);
-  const [deliveryCharge] = useState(50); // Fixed delivery charge
+  const [deliveryCharge] = useState(50);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
-  // Calculate item total (price + add-ons) * quantity
   const getItemTotal = (item: CartItem) => {
     const basePrice = item.price * item.quantity;
     const addOnsPrice = (item.addOns || []).reduce(
@@ -39,22 +52,30 @@ export default function CartPage() {
     return basePrice + addOnsPrice;
   };
 
-  // Calculate subtotal
   const subtotal = cartItems.reduce((sum, item) => sum + getItemTotal(item), 0);
+  const gstAmount = Math.round(subtotal * (taxRate / 100));
+  const total = subtotal + gstAmount + deliveryCharge - discount;
 
-  // Calculate total
-  const total = subtotal + deliveryCharge - discount;
+  useEffect(() => {
+    if (!restaurantSlug) {
+      setTaxRate(0);
+      return;
+    }
+    api
+      .get<{ taxRate?: number }>(`/restaurants/by-slug/${restaurantSlug}`)
+      .then((data) => {
+        const rate = typeof data.taxRate === 'number' && data.taxRate >= 0 ? data.taxRate : 0;
+        setTaxRate(rate);
+      })
+      .catch(() => setTaxRate(0));
+  }, [restaurantSlug]);
 
-  // Apply coupon
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
       toast.error('Please enter a coupon code');
       return;
     }
-
     setIsApplyingCoupon(true);
-    
-    // Simulate API call - replace with actual API
     setTimeout(() => {
       const validCoupons: { [key: string]: number } = {
         WELCOME10: 10,
@@ -62,23 +83,19 @@ export default function CartPage() {
         FIRST50: 50,
         FLAT100: 100,
       };
-
       const upperCode = couponCode.toUpperCase().trim();
-      
       if (validCoupons[upperCode]) {
-        const discountAmount = Math.min(validCoupons[upperCode], subtotal * 0.3); // Max 30% discount
+        const discountAmount = Math.min(validCoupons[upperCode], subtotal * 0.3);
         setDiscount(discountAmount);
         setAppliedCoupon(upperCode);
         toast.success(`Coupon "${upperCode}" applied!`);
       } else {
         toast.error('Invalid coupon code');
       }
-      
       setIsApplyingCoupon(false);
     }, 500);
   };
 
-  // Remove coupon
   const handleRemoveCoupon = () => {
     setAppliedCoupon(null);
     setDiscount(0);
@@ -86,16 +103,15 @@ export default function CartPage() {
     toast.success('Coupon removed');
   };
 
-  // Handle checkout
   const handleCheckout = () => {
     if (cartItems.length === 0) {
       toast.error('Your cart is empty');
       return;
     }
-    router.push('/checkout');
+    if (!restaurantSlug) return;
+    router.push(`/checkout?restaurant=${encodeURIComponent(restaurantSlug)}`);
   };
 
-  // Format currency
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -103,6 +119,39 @@ export default function CartPage() {
       maximumFractionDigits: 0,
     }).format(amount);
   };
+
+  // No restaurant context: show empty state and ask to open a restaurant menu
+  if (!restaurantSlug) {
+    return (
+      <div className="min-h-screen bg-slate-950 py-12 px-4">
+        <Toaster position="top-right" />
+        <div className="container mx-auto max-w-4xl">
+          <motion.div
+            className="text-center py-20"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div className="w-32 h-32 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
+              <ShoppingCart className="w-16 h-16 text-slate-600" />
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-4">Cart is for a restaurant</h2>
+            <p className="text-slate-400 mb-8 max-w-md mx-auto">
+              Open a restaurant&apos;s menu (e.g. Menu → select a restaurant) and add items. Your cart will be for that restaurant only.
+            </p>
+            <motion.button
+              onClick={() => router.push('/menu')}
+              className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 mx-auto"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <ArrowRight className="w-5 h-5" />
+              Browse Menu
+            </motion.button>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
 
   if (cartItems.length === 0) {
     return (
@@ -119,11 +168,10 @@ export default function CartPage() {
             </div>
             <h2 className="text-3xl font-bold text-white mb-4">Your Cart is Empty</h2>
             <p className="text-slate-400 mb-8 max-w-md mx-auto">
-              Looks like you haven&apos;t added anything to your cart yet. Start adding delicious items
-              from our menu!
+              Add items from this restaurant&apos;s menu to place an order.
             </p>
             <motion.button
-              onClick={() => router.push('/menu')}
+              onClick={() => router.push(`/menu?restaurant=${encodeURIComponent(restaurantSlug)}`)}
               className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 mx-auto"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -141,7 +189,6 @@ export default function CartPage() {
     <div className="min-h-screen bg-slate-950 py-8 px-4">
       <Toaster position="top-right" />
       <div className="container mx-auto max-w-6xl">
-        {/* Header */}
         <motion.div
           className="mb-8"
           initial={{ opacity: 0, y: -20 }}
@@ -154,138 +201,124 @@ export default function CartPage() {
                 {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'} in your cart
               </p>
             </div>
-            {cartItems.length > 0 && (
-              <motion.button
-                onClick={() => {
-                  if (confirm('Are you sure you want to clear your cart?')) {
-                    clearCart();
-                    toast.success('Cart cleared');
-                  }
-                }}
-                className="text-red-400 hover:text-red-300 text-sm flex items-center gap-2"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Trash2 className="w-4 h-4" />
-                Clear Cart
-              </motion.button>
-            )}
+            <motion.button
+              onClick={() => {
+                if (confirm('Are you sure you want to clear your cart?')) {
+                  clearCart(restaurantSlug);
+                  toast.success('Cart cleared');
+                }
+              }}
+              className="text-red-400 hover:text-red-300 text-sm flex items-center gap-2"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Trash2 className="w-4 h-4" />
+              Clear Cart
+            </motion.button>
           </div>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
             <AnimatePresence>
               {cartItems.map((item, index) => {
-                // Create unique key for each cart item
                 const itemKey = `${item.id}-${index}-${JSON.stringify(item.addOns || [])}-${item.customizations || ''}`;
                 return (
-                <motion.div
-                  key={itemKey}
-                  className="bg-slate-900 rounded-xl p-6 border border-slate-800"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <div className="flex gap-4">
-                    {/* Item Image */}
-                    <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0">
-                      {item.image ? (
-                        <Image
-                          src={item.image}
-                          alt={item.name}
-                          fill
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-600">
-                          <ShoppingCart className="w-8 h-8" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Item Details */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-4 mb-2">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-white mb-1">{item.name}</h3>
-                          <p className="text-orange-600 font-semibold text-lg">
-                            {formatCurrency(item.price)}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => removeFromCart(item.id)}
-                          className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors flex-shrink-0"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+                  <motion.div
+                    key={itemKey}
+                    className="bg-slate-900 rounded-xl p-6 border border-slate-800"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <div className="flex gap-4">
+                      <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0">
+                        {item.image ? (
+                          <Image
+                            src={item.image}
+                            alt={item.name}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-slate-600">
+                            <ShoppingCart className="w-8 h-8" />
+                          </div>
+                        )}
                       </div>
-
-                      {/* Add-ons */}
-                      {item.addOns && item.addOns.length > 0 && (
-                        <div className="mb-2">
-                          <p className="text-xs text-slate-400 mb-1">Add-ons:</p>
-                          <div className="flex flex-wrap gap-2">
-                            {item.addOns.map((addOn, idx) => (
-                              <span
-                                key={idx}
-                                className="text-xs bg-slate-800 text-slate-300 px-2 py-1 rounded"
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-4 mb-2">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-white mb-1">{item.name}</h3>
+                            <p className="text-orange-600 font-semibold text-lg">
+                              {formatCurrency(item.price)}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => removeFromCart(item.id, restaurantSlug)}
+                            className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors flex-shrink-0"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                        {item.addOns && item.addOns.length > 0 && (
+                          <div className="mb-2">
+                            <p className="text-xs text-slate-400 mb-1">Add-ons:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {item.addOns.map((addOn, idx) => (
+                                <span
+                                  key={idx}
+                                  className="text-xs bg-slate-800 text-slate-300 px-2 py-1 rounded"
+                                >
+                                  {addOn.name} (+{formatCurrency(addOn.price)})
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {item.customizations && (
+                          <div className="mb-2">
+                            <p className="text-xs text-slate-400 mb-1">Special Instructions:</p>
+                            <p className="text-xs text-slate-300 italic">{item.customizations}</p>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between mt-4">
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm text-slate-400">Quantity:</span>
+                            <div className="flex items-center gap-2 bg-slate-800 rounded-lg p-1">
+                              <button
+                                onClick={() => updateQuantity(item.id, item.quantity - 1, restaurantSlug)}
+                                className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
                               >
-                                {addOn.name} (+{formatCurrency(addOn.price)})
+                                <Minus className="w-4 h-4" />
+                              </button>
+                              <span className="text-white font-semibold w-8 text-center">
+                                {item.quantity}
                               </span>
-                            ))}
+                              <button
+                                onClick={() => updateQuantity(item.id, item.quantity + 1, restaurantSlug)}
+                                className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      )}
-
-                      {/* Customizations */}
-                      {item.customizations && (
-                        <div className="mb-2">
-                          <p className="text-xs text-slate-400 mb-1">Special Instructions:</p>
-                          <p className="text-xs text-slate-300 italic">{item.customizations}</p>
-                        </div>
-                      )}
-
-                      {/* Quantity Controls */}
-                      <div className="flex items-center justify-between mt-4">
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm text-slate-400">Quantity:</span>
-                          <div className="flex items-center gap-2 bg-slate-800 rounded-lg p-1">
-                            <button
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
-                            >
-                              <Minus className="w-4 h-4" />
-                            </button>
-                            <span className="text-white font-semibold w-8 text-center">
-                              {item.quantity}
-                            </span>
-                            <button
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
-                            >
-                              <Plus className="w-4 h-4" />
-                            </button>
+                          <div className="text-right">
+                            <p className="text-xs text-slate-400">Item Total</p>
+                            <p className="text-lg font-bold text-white">
+                              {formatCurrency(getItemTotal(item))}
+                            </p>
                           </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs text-slate-400">Item Total</p>
-                          <p className="text-lg font-bold text-white">
-                            {formatCurrency(getItemTotal(item))}
-                          </p>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
+                  </motion.div>
                 );
               })}
             </AnimatePresence>
           </div>
 
-          {/* Order Summary */}
           <div className="lg:col-span-1">
             <motion.div
               className="bg-slate-900 rounded-xl p-6 border border-slate-800 sticky top-4"
@@ -294,8 +327,6 @@ export default function CartPage() {
               transition={{ delay: 0.2 }}
             >
               <h2 className="text-xl font-bold text-white mb-6">Order Summary</h2>
-
-              {/* Coupon Code */}
               <div className="mb-6">
                 {!appliedCoupon ? (
                   <div className="space-y-2">
@@ -346,12 +377,14 @@ export default function CartPage() {
                   </div>
                 )}
               </div>
-
-              {/* Price Breakdown */}
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-slate-300">
                   <span>Subtotal</span>
                   <span>{formatCurrency(subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-slate-300">
+                  <span>GST ({taxRate || 0}%)</span>
+                  <span>{formatCurrency(gstAmount)}</span>
                 </div>
                 <div className="flex justify-between text-slate-300">
                   <span className="flex items-center gap-1">
@@ -375,16 +408,12 @@ export default function CartPage() {
                   </div>
                 </div>
               </div>
-
-              {/* Info Alert */}
               <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mb-6 flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
                 <p className="text-xs text-blue-400">
-                  Free delivery on orders above ₹500. You&apos;re ₹{500 - subtotal} away!
+                  Free delivery on orders above ₹500. You&apos;re ₹{Math.max(0, 500 - subtotal)} away!
                 </p>
               </div>
-
-              {/* Checkout Button */}
               <motion.button
                 onClick={handleCheckout}
                 className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-4 rounded-lg transition-colors flex items-center justify-center gap-2"
@@ -394,10 +423,8 @@ export default function CartPage() {
                 <span>Proceed to Checkout</span>
                 <ArrowRight className="w-5 h-5" />
               </motion.button>
-
-              {/* Continue Shopping */}
               <button
-                onClick={() => router.push('/menu')}
+                onClick={() => router.push(`/menu?restaurant=${encodeURIComponent(restaurantSlug)}`)}
                 className="w-full mt-3 text-slate-400 hover:text-white text-sm transition-colors"
               >
                 ← Continue Shopping
@@ -407,5 +434,17 @@ export default function CartPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CartPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="text-slate-400">Loading cart...</div>
+      </div>
+    }>
+      <CartPageContent />
+    </Suspense>
   );
 }

@@ -140,7 +140,7 @@ export default function BillingPage() {
       maximumFractionDigits: 0,
     }).format(amount);
 
-  const handleMarkAsPaid = async (billId: string, customerEmail?: string) => {
+  const handleMarkAsPaid = async (billId: string, customerEmail?: string, currentMethod?: 'cash' | 'card' | 'online') => {
     if (!confirm('Mark this bill as paid? Bill receipt will be sent to customer email if provided.')) {
       return;
     }
@@ -159,7 +159,7 @@ export default function BillingPage() {
     try {
       await api.put(`/billing/${billId}/status`, {
         status: 'paid',
-        paymentMethod: 'cash',
+        paymentMethod: currentMethod || 'cash',
         customerEmail: emailToUse,
       });
       toast.success('Bill marked as paid. Email sent to customer.');
@@ -567,7 +567,7 @@ export default function BillingPage() {
                     <td className="py-3 px-4">
                       {bill.status === 'unpaid' && (
                         <button
-                          onClick={() => handleMarkAsPaid(bill._id, bill.customerEmail)}
+                          onClick={() => handleMarkAsPaid(bill._id, bill.customerEmail, bill.paymentMethod)}
                           className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
                         >
                           Mark as Paid

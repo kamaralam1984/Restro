@@ -1,7 +1,9 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
+import { useRestaurantPage } from '@/context/RestaurantPageContext';
 import { X } from 'lucide-react';
 
 interface CartDrawerProps {
@@ -10,7 +12,11 @@ interface CartDrawerProps {
 }
 
 export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
-  const { cartItems, removeFromCart, updateQuantity, getTotalPrice } = useCart();
+  const { restaurant } = useRestaurantPage();
+  const { getCartItems, removeFromCart, updateQuantity, getTotalPrice } = useCart();
+  const restaurantSlug = restaurant?.slug;
+  const cartItems = getCartItems(restaurantSlug);
+  const totalPrice = getTotalPrice(restaurantSlug);
 
   return (
     <AnimatePresence>
@@ -57,21 +63,21 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                     </div>
                     <div className="flex items-center space-x-2">
                       <button
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        onClick={() => restaurantSlug && updateQuantity(item.id, item.quantity - 1, restaurantSlug)}
                         className="w-8 h-8 rounded border hover:bg-gray-100"
                       >
                         -
                       </button>
                       <span className="w-8 text-center">{item.quantity}</span>
                       <button
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        onClick={() => restaurantSlug && updateQuantity(item.id, item.quantity + 1, restaurantSlug)}
                         className="w-8 h-8 rounded border hover:bg-gray-100"
                       >
                         +
                       </button>
                     </div>
                     <motion.button
-                      onClick={() => removeFromCart(item.id)}
+                      onClick={() => restaurantSlug && removeFromCart(item.id, restaurantSlug)}
                       className="text-red-600 hover:text-red-800"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
@@ -88,15 +94,20 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             <div className="border-t p-4">
               <div className="flex justify-between items-center mb-4">
                 <span className="text-xl font-bold">Total:</span>
-                <span className="text-2xl font-bold">₹{getTotalPrice().toFixed(0)}</span>
+                <span className="text-2xl font-bold">₹{totalPrice.toFixed(0)}</span>
               </div>
-              <motion.button
-                className="w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+              <Link
+                href={restaurantSlug ? `/checkout?restaurant=${encodeURIComponent(restaurantSlug)}` : '/cart'}
+                onClick={onClose}
               >
-                Proceed to Checkout
-              </motion.button>
+                <motion.button
+                  className="w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Proceed to Checkout
+                </motion.button>
+              </Link>
             </div>
           )}
         </div>

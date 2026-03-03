@@ -5,8 +5,10 @@ import { LanguageProvider } from "@/context/LanguageContext";
 import { UserProvider } from "@/context/UserContext";
 import { RestaurantPageProvider } from "@/context/RestaurantPageContext";
 import ConditionalLayout from "@/components/ConditionalLayout";
+import VisitorTracker from "@/components/VisitorTracker";
 import WhatsAppButtonWrapper from "@/components/WhatsAppButtonWrapper";
 import PWAProvider from "@/components/PWAProvider";
+import ChatWidget from "@/components/ChatWidget";
 import { generateMetadata as generateSEOMetadata } from "@/utils/seo";
 import { generateRestaurantSchema } from "@/utils/schema";
 
@@ -49,7 +51,9 @@ export default function RootLayout({
           <LanguageProvider>
             <CartProvider>
               <RestaurantPageProvider>
+                <VisitorTracker />
                 <ConditionalLayout>{children}</ConditionalLayout>
+                <ChatWidget />
                 <WhatsAppButtonWrapper />
                 <PWAProvider />
               </RestaurantPageProvider>

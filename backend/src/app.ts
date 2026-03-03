@@ -22,6 +22,8 @@ import heroImageRoutes from './routes/heroImage.routes';
 import superAdminRoutes from './routes/superAdmin.routes';
 import restaurantRoutes from './routes/restaurant.routes';
 import contactRoutes from './routes/contact.routes';
+import visitorRoutes from './routes/visitor.routes';
+import chatRoutes from './routes/chat.routes';
 import v1Routes from './routes/v1.index';
 import { errorHandler, notFound } from './middleware/error.middleware';
 import { generalRateLimiter, apiRateLimiter, tenantApiRateLimiter } from './middleware/rateLimiter.middleware';
@@ -118,6 +120,8 @@ app.use('/api/billing', billingRoutes);
 app.use('/api/tables', tableRoutes);
 app.use('/api/revenue', revenueRoutes);
 app.use('/api/hero-images', heroImageRoutes);
+app.use('/api/visitors', visitorRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Multi-tenant routes
 app.use('/api/super-admin', superAdminRoutes);   // Super admin panel

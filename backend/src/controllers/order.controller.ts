@@ -16,7 +16,7 @@ export const createOrder = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Items array is required and cannot be empty' });
     }
 
-    // Validate items and calculate total
+    // Validate items and calculate total (items subtotal)
     let total = 0;
     const orderItems = [];
     let orderRestaurantId: mongoose.Types.ObjectId | null = null;
@@ -74,7 +74,17 @@ export const createOrder = async (req: Request, res: Response) => {
       }).sort({ createdAt: -1 }); // Get most recent booking
       
       if (booking && booking.tableCapacity) {
-        const bookingConfig = getBookingConfig(booking.tableCapacity);
+        // Use table's custom offer if set (look up by tableNumber + restaurant)
+        const restaurantIdForTable = booking.restaurantId;
+        let tableDoc: { hourlyRate?: number; discountThreshold?: number; discountAmount?: number } | null = null;
+        if (restaurantIdForTable) {
+          const t = await Table.findOne({
+            tableNumber,
+            restaurantId: restaurantIdForTable,
+          }).select('hourlyRate discountThreshold discountAmount').lean();
+          tableDoc = t;
+        }
+        const bookingConfig = getBookingConfig(booking.tableCapacity, tableDoc);
         
         // Check if order total meets discount threshold
         if (checkDiscountEligibility(total, bookingConfig.discountThreshold)) {
@@ -93,7 +103,9 @@ export const createOrder = async (req: Request, res: Response) => {
       }
     }
     
-    const finalTotal = Math.max(0, total - discountAmount);
+    const clientTotal = typeof req.body.total === 'number' ? req.body.total : undefined;
+    const finalTotal =
+      clientTotal && clientTotal > 0 ? clientTotal : Math.max(0, total - discountAmount);
     if (!orderRestaurantId) {
       return res.status(400).json({ error: 'Could not determine restaurant from order items' });
     }

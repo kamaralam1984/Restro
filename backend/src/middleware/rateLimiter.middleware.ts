@@ -84,4 +84,3 @@ export const tenantApiRateLimiter = (req: Request, res: Response, next: NextFunc
     message: 'Too many requests for this tenant, please try again later.',
   })({ ...req, ip: key } as any, res, next);
 };
-

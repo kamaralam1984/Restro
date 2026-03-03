@@ -8,8 +8,7 @@ import {
   getBookingConfig, 
   validateAdvanceBooking, 
   validateTimeSlot, 
-  calculateEndTime, 
-  calculateBookingAmount 
+  calculateEndTime,
 } from '../utils/booking.utils';
 
 export const createBooking = async (req: Request, res: Response) => {
@@ -149,11 +148,9 @@ export const createBooking = async (req: Request, res: Response) => {
         });
       }
 
-      // Calculate total booking amount based on hours and table capacity
-      totalBookingAmount = calculateBookingAmount(table.capacity, bookingHoursNum);
-      
-      // Calculate advance payment (first hour rate)
-      const bookingConfig = getBookingConfig(table.capacity);
+      // Use table's custom rate/offer if set, else defaults by capacity
+      const bookingConfig = getBookingConfig(table.capacity, table);
+      totalBookingAmount = bookingConfig.hourlyRate * bookingHoursNum;
       advancePaymentAmount = bookingConfig.hourlyRate; // Advance payment is 1 hour rate
 
       // Check if table is already booked for overlapping time slots (same restaurant only)

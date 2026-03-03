@@ -20,9 +20,11 @@ interface MenuItem {
 interface EnhancedMenuCardProps {
   item: MenuItem;
   index?: number;
+  /** Restaurant slug for cart scope; required for add-to-cart to work. */
+  restaurantSlug?: string;
 }
 
-export default function EnhancedMenuCard({ item, index = 0 }: EnhancedMenuCardProps) {
+export default function EnhancedMenuCard({ item, index = 0, restaurantSlug }: EnhancedMenuCardProps) {
   const { addToCart } = useCart();
   const { t } = useLanguage();
   const [showAddOns, setShowAddOns] = useState(false);
@@ -32,6 +34,7 @@ export default function EnhancedMenuCard({ item, index = 0 }: EnhancedMenuCardPr
   const itemId = item._id || item.id || '';
 
   const handleAddToCart = () => {
+    if (!restaurantSlug) return;
     addToCart(
       {
         id: itemId,
@@ -39,6 +42,7 @@ export default function EnhancedMenuCard({ item, index = 0 }: EnhancedMenuCardPr
         price: item.price,
         image: item.image,
       },
+      restaurantSlug,
       selectedAddOns.length > 0 ? selectedAddOns : undefined,
       customizations || undefined
     );

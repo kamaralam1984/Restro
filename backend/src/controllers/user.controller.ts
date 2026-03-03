@@ -184,7 +184,11 @@ export const updateUser = async (req: Request, res: Response) => {
       }
     }
     if (phone) user.phone = phone.trim();
-    if (role && (role === 'customer' || role === 'admin' || role === 'staff')) {
+    if (role) {
+      const allowedRoles = ['customer', 'admin', 'manager', 'staff', 'cashier', 'master_admin', 'super_admin'];
+      if (!allowedRoles.includes(role)) {
+        return res.status(400).json({ error: 'Invalid role' });
+      }
       user.role = role;
     }
     

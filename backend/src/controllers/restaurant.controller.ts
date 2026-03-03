@@ -7,6 +7,7 @@ import { RentalPlan, IRentalPlan } from '../models/RentalPlan.model';
 import { Subscription } from '../models/Subscription.model';
 import { Menu } from '../models/Menu.model';
 import { seedDefaultMenuForRestaurant } from '../services/defaultMenu.service';
+import { createDefaultTablesForRestaurant } from './table.controller';
 import { Order } from '../models/Order.model';
 import { Booking } from '../models/Booking.model';
 
@@ -425,7 +426,8 @@ export const getRestaurantStats = async (req: Request, res: Response) => {
 };
 
 // ─── Super Admin: Update restaurant features ──────────────────────────────────
-
+// Subscription plan sets the DEFAULT features when restaurant is created.
+// After that, Super Admin can override per-restaurant feature toggles here.
 export const updateRestaurantFeatures = async (req: Request, res: Response) => {
   try {
     const { features } = req.body;
@@ -733,9 +735,12 @@ export const restaurantSignup = async (req: Request, res: Response) => {
     await session.commitTransaction();
     session.endSession();
 
-    // Seed default menu items for this restaurant (non-blocking)
+    // Seed default menu and tables for this restaurant (non-blocking)
     seedDefaultMenuForRestaurant(restaurant._id).catch((err) => {
       console.error('Failed to seed default menu for restaurant signup', err);
+    });
+    createDefaultTablesForRestaurant(restaurant._id as mongoose.Types.ObjectId).catch((err) => {
+      console.error('Failed to create default tables for restaurant signup', err);
     });
 
     const baseUrl = (process.env.PUBLIC_APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000')

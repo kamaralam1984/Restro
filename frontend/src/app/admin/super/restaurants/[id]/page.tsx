@@ -106,6 +106,7 @@ export default function RestaurantManagePage() {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [features, setFeatures] = useState<Features>(DEFAULT_FEATURES);
+  const [featuresDirty, setFeaturesDirty] = useState(false);
   const [loading, setLoading] = useState(true);
   const [featureSaving, setFeatureSaving] = useState(false);
   const [statusSaving, setStatusSaving] = useState(false);
@@ -131,6 +132,7 @@ export default function RestaurantManagePage() {
       setRestaurant(restData);
       setStats(statsData);
       setFeatures({ ...DEFAULT_FEATURES, ...(restData.features || {}) });
+      setFeaturesDirty(false);
     } catch (e) {
       console.error(e);
     } finally {
@@ -140,19 +142,9 @@ export default function RestaurantManagePage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const handleFeatureToggle = async (key: keyof Features, val: boolean) => {
-    const updated = { ...features, [key]: val };
-    setFeatures(updated);
-    setFeatureSaving(true);
-    try {
-      await api.patch(`/super-admin/restaurants/${id}/features`, { features: updated }, { headers: headers() });
-      showToast(`${FEATURE_META.find(f => f.key === key)?.label} ${val ? 'enabled' : 'disabled'}`);
-    } catch {
-      setFeatures(features); // revert
-      showToast('Failed to update feature', 'error');
-    } finally {
-      setFeatureSaving(false);
-    }
+  const handleFeatureToggle = (key: keyof Features, val: boolean) => {
+    setFeatures((prev) => ({ ...prev, [key]: val }));
+    setFeaturesDirty(true);
   };
 
   const handleStatusChange = async (status: string) => {
@@ -168,33 +160,28 @@ export default function RestaurantManagePage() {
     }
   };
 
-  const handleDisableAll = async () => {
-    const allOff: Features = {
+  const handleDisableAll = () => {
+    setFeatures({
       onlineOrdering: false, tableBooking: false, billing: false, onlinePayments: false,
       reviews: false, heroImages: false, whatsappNotifications: false,
       analytics: false, staffControl: false, menuManagement: false,
-    };
-    setFeatures(allOff);
-    setFeatureSaving(true);
-    try {
-      await api.patch(`/super-admin/restaurants/${id}/features`, { features: allOff }, { headers: headers() });
-      showToast('All features disabled');
-    } catch {
-      showToast('Failed', 'error');
-    } finally {
-      setFeatureSaving(false);
-    }
+    });
+    setFeaturesDirty(true);
   };
 
-  const handleEnableAll = async () => {
-    const allOn = { ...DEFAULT_FEATURES };
-    setFeatures(allOn);
+  const handleEnableAll = () => {
+    setFeatures({ ...DEFAULT_FEATURES });
+    setFeaturesDirty(true);
+  };
+
+  const handleSaveFeatures = async () => {
     setFeatureSaving(true);
     try {
-      await api.patch(`/super-admin/restaurants/${id}/features`, { features: allOn }, { headers: headers() });
-      showToast('All features enabled');
+      await api.patch(`/super-admin/restaurants/${id}/features`, { features }, { headers: headers() });
+      setFeaturesDirty(false);
+      showToast('Feature controls saved. Subscription plan limits which features can be enabled.');
     } catch {
-      showToast('Failed', 'error');
+      showToast('Failed to save features', 'error');
     } finally {
       setFeatureSaving(false);
     }
@@ -460,12 +447,12 @@ export default function RestaurantManagePage() {
 
       {/* Feature Controls */}
       <div>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
           <div>
             <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Feature Controls</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Enable or disable specific modules for this restaurant</p>
+            <p className="text-xs text-slate-500 mt-0.5">Enable or disable modules as per subscription plan. Click Save to apply changes.</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap items-center">
             <button onClick={handleDisableAll} disabled={featureSaving}
               className="px-3 py-1.5 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white rounded-lg text-xs font-semibold transition-colors disabled:opacity-50">
               Disable All
@@ -473,6 +460,13 @@ export default function RestaurantManagePage() {
             <button onClick={handleEnableAll} disabled={featureSaving}
               className="px-3 py-1.5 bg-green-600/20 text-green-400 hover:bg-green-600 hover:text-white rounded-lg text-xs font-semibold transition-colors disabled:opacity-50">
               Enable All
+            </button>
+            <button
+              onClick={handleSaveFeatures}
+              disabled={!featuresDirty || featureSaving}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {featureSaving ? 'Saving...' : featuresDirty ? 'Save changes' : 'Saved'}
             </button>
           </div>
         </div>

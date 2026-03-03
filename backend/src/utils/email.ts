@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 import { IBill } from '../models/Bill.model';
+import { Restaurant } from '../models/Restaurant.model';
 import { IBooking } from '../models/Booking.model';
 
 dotenv.config();
@@ -29,7 +30,7 @@ const createTransporter = () => {
 };
 
 // Generate HTML bill template
-const generateBillHTML = (bill: IBill): string => {
+const generateBillHTML = (bill: IBill, restaurantName: string): string => {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -60,8 +61,8 @@ const generateBillHTML = (bill: IBill): string => {
 <body>
   <div class="container">
     <div class="header">
-      <h1>🍽️ Silver Plate</h1>
-      <p>Pure & Delicious</p>
+      <h1>🍽️ ${restaurantName}</h1>
+      <p>Thank you for your order</p>
     </div>
     <div class="content">
       <div class="bill-info">
@@ -102,8 +103,14 @@ const generateBillHTML = (bill: IBill): string => {
         </tr>
         ${bill.taxAmount > 0 ? `
         <tr>
-          <td>Tax:</td>
+          <td>GST:</td>
           <td style="text-align: right;">${formatCurrency(bill.taxAmount)}</td>
+        </tr>
+        ` : ''}
+        ${bill.deliveryCharge > 0 ? `
+        <tr>
+          <td>Delivery:</td>
+          <td style="text-align: right;">${formatCurrency(bill.deliveryCharge)}</td>
         </tr>
         ` : ''}
         ${bill.discountAmount > 0 ? `
@@ -120,7 +127,7 @@ const generateBillHTML = (bill: IBill): string => {
 
       <div class="footer">
         <p>Thank you for dining with us!</p>
-        <p>Visit us again at Silver Plate</p>
+        <p>Visit us again at ${restaurantName}</p>
       </div>
     </div>
   </div>
@@ -143,9 +150,25 @@ export const sendBillEmail = async (bill: IBill, customerEmail: string): Promise
       return;
     }
 
-    const htmlContent = generateBillHTML(bill);
+    // Resolve restaurant name from bill -> restaurant
+    let restaurantName = process.env.APP_BRAND_NAME || 'Restro OS';
+    try {
+      const restField: any = (bill as any).restaurantId;
+      if (restField) {
+        if (typeof restField === 'object' && 'name' in restField) {
+          restaurantName = (restField as any).name || restaurantName;
+        } else {
+          const doc = await Restaurant.findById(restField).select('name').lean();
+          if (doc?.name) restaurantName = doc.name;
+        }
+      }
+    } catch {
+      // ignore, fall back to default brand name
+    }
+
+    const htmlContent = generateBillHTML(bill, restaurantName);
     const textContent = `
-Silver Plate - Bill Receipt
+${restaurantName} - Bill Receipt
 
 Bill Number: ${bill.billNumber}
 Customer: ${bill.customerName}
@@ -157,7 +180,8 @@ Items:
 ${bill.items.map(item => `- ${item.name} x${item.quantity} = ₹${item.total}`).join('\n')}
 
 Subtotal: ₹${bill.subtotal}
-${bill.taxAmount > 0 ? `Tax: ₹${bill.taxAmount}\n` : ''}
+${bill.taxAmount > 0 ? `GST: ₹${bill.taxAmount}\n` : ''}
+${bill.deliveryCharge > 0 ? `Delivery: ₹${bill.deliveryCharge}\n` : ''}
 ${bill.discountAmount > 0 ? `Discount: -₹${bill.discountAmount}\n` : ''}
 Grand Total: ₹${bill.grandTotal}
 
@@ -165,7 +189,7 @@ Thank you for dining with us!
     `.trim();
 
     const mailOptions = {
-      from: `"Silver Plate" <${process.env.SMTP_USER}>`,
+      from: `"${restaurantName}" <${process.env.SMTP_USER}>`,
       to: customerEmail,
       subject: `Bill Receipt - ${bill.billNumber}`,
       text: textContent,
@@ -177,6 +201,92 @@ Thank you for dining with us!
   } catch (error: any) {
     console.error('❌ Failed to send bill email:', error);
     // Don't throw error - email failure shouldn't break the payment process
+  }
+};
+
+interface VisitorInfoPayload {
+  name?: string;
+  email: string;
+  country?: string;
+  state?: string;
+  city?: string;
+  lastSeenAt?: Date;
+}
+
+export const sendVisitorInfoEmail = async (visitor: VisitorInfoPayload): Promise<void> => {
+  try {
+    if (!visitor.email) {
+      console.log('⚠️  Visitor email missing. Info email not sent.');
+      return;
+    }
+
+    const transporter = createTransporter();
+    if (!transporter) {
+      console.log('⚠️  Email transporter not configured. Visitor info email not sent.');
+      return;
+    }
+
+    const toName = visitor.name || 'Friend';
+    const when =
+      visitor.lastSeenAt instanceof Date
+        ? visitor.lastSeenAt.toLocaleString('en-IN')
+        : new Date().toLocaleString('en-IN');
+
+    const locationParts = [visitor.city, visitor.state, visitor.country].filter(Boolean);
+    const location = locationParts.length ? locationParts.join(', ') : 'your area';
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charSet="UTF-8" />
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#0f172a; color:#e5e7eb; padding:0; margin:0;}
+    .wrap { max-width:640px; margin:0 auto; padding:24px;}
+    .card { background:#020617; border-radius:16px; padding:24px; border:1px solid #1e293b; }
+    .badge { display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; background:#f97316; color:white; font-weight:600; }
+    .btn { display:inline-block; padding:10px 18px; border-radius:999px; background:#f97316; color:white; text-decoration:none; font-weight:600; margin-top:16px;}
+    h1 { font-size:24px; margin-bottom:8px; color:#e5e7eb;}
+    p { font-size:14px; line-height:1.6; margin:4px 0; color:#cbd5f5;}
+    ul { padding-left:20px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <span class="badge">Welcome to Restro OS</span>
+      <h1>Hi ${toName}, thanks for visiting 👋</h1>
+      <p>We noticed you recently checked out our restaurant management platform from <strong>${location}</strong> on <strong>${when}</strong>.</p>
+      <p>Restro OS helps you manage:</p>
+      <ul>
+        <li>Online & walk-in orders with smart billing</li>
+        <li>Table booking automation (no double bookings)</li>
+        <li>Menu, staff & role control in one dashboard</li>
+        <li>Analytics for peak hours & best-selling items</li>
+      </ul>
+      <p>You can start a free trial any time and set up your first restaurant in a few minutes.</p>
+      <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/restaurant/signup" class="btn">
+        Start Free Trial
+      </a>
+      <p style="margin-top:20px;font-size:12px;color:#64748b;">
+        If you received this email by mistake, you can safely ignore it.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+    `.trim();
+
+    await transporter.sendMail({
+      from: `"Restro OS" <${process.env.SMTP_USER}>`,
+      to: visitor.email,
+      subject: 'Thanks for visiting Restro OS 👋',
+      html,
+    });
+
+    console.log(`✅ Visitor info email sent to ${visitor.email}`);
+  } catch (error: any) {
+    console.error('❌ Failed to send visitor info email:', error?.message || error);
   }
 };
 
@@ -478,4 +588,3 @@ export async function sendContactFormNotification(
 
   await transporter.sendMail(mailOptions);
 }
-

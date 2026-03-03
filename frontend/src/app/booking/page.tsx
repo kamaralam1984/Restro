@@ -14,7 +14,6 @@ import {
   getMinBookingDate, 
   getMinBookingTime,
   BOOKING_TIME_SLOTS,
-  calculateBookingAmount,
   calculateEndTime,
   validateTimeSlot
 } from '@/utils/booking.utils';
@@ -26,6 +25,9 @@ import ServiceSuspendedMessage from '@/components/ServiceSuspendedMessage';
 interface Table {
   tableNumber: string;
   capacity: number;
+  hourlyRate?: number;
+  discountThreshold?: number;
+  discountAmount?: number;
 }
 
 function BookingPageContent() {
@@ -149,11 +151,9 @@ function BookingPageContent() {
 
   useEffect(() => {
     if (selectedTable && selectedTableInfo) {
-      const config = getBookingConfig(selectedTableInfo.capacity);
+      const config = getBookingConfig(selectedTableInfo.capacity, selectedTableInfo);
       setBookingConfig(config);
-      // Calculate total booking amount based on hours
-      const total = calculateBookingAmount(selectedTableInfo.capacity, formData.bookingHours);
-      setTotalBookingAmount(total);
+      setTotalBookingAmount(config.hourlyRate * formData.bookingHours);
     } else {
       setBookingConfig(null);
       setTotalBookingAmount(0);
@@ -184,18 +184,15 @@ function BookingPageContent() {
     }
   }, [formData.date, formData.time, formData.bookingHours]);
 
-  const handleTableSelect = async (tableNumber: string) => {
-    setSelectedTable(tableNumber);
-    try {
-      // Fetch table details to get capacity
-      const tables = await api.get<any[]>('/tables');
-      const table = tables.find((t: any) => t.tableNumber === tableNumber);
-      if (table) {
-        setSelectedTableInfo({ tableNumber: table.tableNumber, capacity: table.capacity });
-      }
-    } catch (error) {
-      console.error('Failed to fetch table details:', error);
-    }
+  const handleTableSelect = (table: { tableNumber: string; capacity: number; hourlyRate?: number; discountThreshold?: number; discountAmount?: number }) => {
+    setSelectedTable(table.tableNumber);
+    setSelectedTableInfo({
+      tableNumber: table.tableNumber,
+      capacity: table.capacity,
+      hourlyRate: table.hourlyRate,
+      discountThreshold: table.discountThreshold,
+      discountAmount: table.discountAmount,
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -532,6 +529,7 @@ function BookingPageContent() {
                     numberOfGuests={formData.numberOfGuests}
                     onTableSelect={handleTableSelect}
                     selectedTable={selectedTable}
+                    restaurantSlug={restaurantSlug || undefined}
                   />
                 </div>
               ) : (
@@ -567,64 +565,70 @@ function BookingPageContent() {
                 Booking Details
               </h3>
 
-              {selectedTable && bookingConfig ? (
-                <div className="space-y-4">
-                  <div className="bg-orange-900/30 border border-orange-500/30 rounded-lg p-4">
-                    <p className="text-sm text-orange-300 mb-1">Selected Table</p>
-                    <p className="text-lg font-bold text-orange-400">{selectedTable}</p>
-                    <p className="text-xs text-orange-300/80 mt-1">Capacity: {selectedTableInfo?.capacity} persons</p>
-                  </div>
+              <div className="space-y-4">
+                {selectedTable && bookingConfig ? (
+                  <>
+                    <div className="bg-orange-900/30 border border-orange-500/30 rounded-lg p-4">
+                      <p className="text-sm text-orange-300 mb-1">Selected Table</p>
+                      <p className="text-lg font-bold text-orange-400">{selectedTable}</p>
+                      <p className="text-xs text-orange-300/80 mt-1">Capacity: {selectedTableInfo?.capacity} persons</p>
+                    </div>
 
-                  <div className="bg-orange-900/40 border border-orange-500/40 rounded-lg p-4">
-                    <p className="text-sm text-orange-300 mb-1">Hourly Rate</p>
-                    <p className="text-lg font-bold text-orange-400">₹{bookingConfig.hourlyRate}/hour</p>
-                    <p className="text-xs text-orange-300/80 mt-1">
-                      {formData.bookingHours} hour{formData.bookingHours > 1 ? 's' : ''} × ₹{bookingConfig.hourlyRate}
-                    </p>
-                  </div>
+                    <div className="bg-orange-900/40 border border-orange-500/40 rounded-lg p-4">
+                      <p className="text-sm text-orange-300 mb-1">Hourly Rate</p>
+                      <p className="text-lg font-bold text-orange-400">₹{bookingConfig.hourlyRate}/hour</p>
+                      <p className="text-xs text-orange-300/80 mt-1">
+                        {formData.bookingHours} hour{formData.bookingHours > 1 ? 's' : ''} × ₹{bookingConfig.hourlyRate}
+                      </p>
+                    </div>
 
-                  <div className="bg-orange-900/50 border border-orange-500/50 rounded-lg p-4">
-                    <p className="text-sm text-orange-300 mb-1">Total Booking Amount</p>
-                    <p className="text-2xl font-bold text-orange-400">₹{totalBookingAmount}</p>
-                    <p className="text-xs text-orange-300/80 mt-1">
-                      Payment required to confirm booking
-                    </p>
-                    <p className="text-xs text-orange-400/70 mt-2">
-                      <Info className="w-3 h-3 inline mr-1" />
-                      Non-refundable
-                    </p>
-                  </div>
+                    <div className="bg-orange-900/50 border border-orange-500/50 rounded-lg p-4">
+                      <p className="text-sm text-orange-300 mb-1">Total Booking Amount</p>
+                      <p className="text-2xl font-bold text-orange-400">₹{totalBookingAmount}</p>
+                      <p className="text-xs text-orange-300/80 mt-1">
+                        Payment required to confirm booking
+                      </p>
+                      <p className="text-xs text-orange-400/70 mt-2">
+                        <Info className="w-3 h-3 inline mr-1" />
+                        Non-refundable
+                      </p>
+                    </div>
 
-                  <div className="bg-green-900/30 border border-green-500/30 rounded-lg p-4">
-                    <p className="text-sm text-green-300 mb-1">Discount Offer</p>
-                    <p className="text-lg font-bold text-green-400">
-                      Get ₹{bookingConfig.discountAmount} OFF
-                    </p>
-                    <p className="text-xs text-green-300/80 mt-1">
-                      When order reaches ₹{bookingConfig.discountThreshold}
-                    </p>
-                    <p className="text-xs text-green-400/80 mt-2 font-semibold">
-                      ⚠️ Important: Only 1 hour discount applies. When you place an order and it reaches the discount threshold, you will get a discount equal to 1 hour booking rate (₹{bookingConfig.discountAmount}) on your order.
-                    </p>
+                    <div className="bg-green-900/30 border border-green-500/30 rounded-lg p-4">
+                      <p className="text-sm text-green-300 mb-1">Discount Offer</p>
+                      <p className="text-lg font-bold text-green-400">
+                        Get ₹{bookingConfig.discountAmount} OFF
+                      </p>
+                      <p className="text-xs text-green-300/80 mt-1">
+                        When order reaches ₹{bookingConfig.discountThreshold}
+                      </p>
+                      <p className="text-sm text-green-200 mt-2 font-medium">
+                        Order ₹{bookingConfig.discountThreshold} or more to get ₹{bookingConfig.discountAmount} discount.
+                      </p>
+                      <p className="text-xs text-green-400/80 mt-2 font-semibold">
+                        ⚠️ Important: Only 1 hour discount applies. When you place an order of ₹{bookingConfig.discountThreshold} or more, you will get ₹{bookingConfig.discountAmount} discount on your order.
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-8 text-orange-400/50">
+                    <Info className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Select a table to see amount and discount details</p>
                   </div>
+                )}
 
-                  <div className="bg-gray-700/50 border border-gray-600/50 rounded-lg p-4">
-                    <p className="text-sm text-gray-300 mb-1">Booking Policy</p>
-                    <ul className="text-xs text-gray-300 space-y-1">
-                      <li>• You need to book at least 2 hours in advance</li>
-                      <li>• Booking hours: {BOOKING_TIME_SLOTS.startTime} - {BOOKING_TIME_SLOTS.endTime}</li>
-                      <li>• Table reserved for {formData.bookingHours} hour{formData.bookingHours > 1 ? 's' : ''}</li>
-                      <li>• Online payment only</li>
-                      <li>• Payment is non-refundable</li>
-                    </ul>
-                  </div>
+                <div className="bg-gray-700/50 border border-gray-600/50 rounded-lg p-4">
+                  <p className="text-sm text-gray-300 mb-1">Booking Rules</p>
+                  <ul className="text-xs text-gray-300 space-y-1 leading-relaxed">
+                    <li>• Please book at least <span className="font-semibold">2 hours in advance</span>.</li>
+                    <li>• Booking hours: <span className="font-semibold">{BOOKING_TIME_SLOTS.startTime} – {BOOKING_TIME_SLOTS.endTime}</span>.</li>
+                    <li>• Your table is reserved for <span className="font-semibold">{formData.bookingHours} hour{formData.bookingHours > 1 ? 's' : ''}</span>. Extra time depends on table availability.</li>
+                    <li>• Please arrive within <span className="font-semibold">15 minutes</span> of your booking time. After that, the table may be released for other guests.</li>
+                    <li>• For groups larger than <span className="font-semibold">10 guests</span>, please call the restaurant to confirm your booking.</li>
+                    <li>• Online advance payment is required to confirm the booking and is generally <span className="font-semibold">non‑refundable</span>. For any change, please contact the restaurant at least 1 hour before your slot.</li>
+                  </ul>
                 </div>
-              ) : (
-                <div className="text-center py-8 text-orange-400/50">
-                  <Info className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Select a table to see booking details</p>
-                </div>
-              )}
+              </div>
             </div>
           </div>
         </div>

@@ -10,6 +10,12 @@ export interface ITable extends Document {
     column: number;
     section: string; // 'window', 'center', 'corner', 'outdoor'
   };
+  /** Per-table booking rate (₹/hour). If set, overrides default-by-capacity. */
+  hourlyRate?: number;
+  /** Offer: order total reaching this amount (₹) makes customer eligible for discountAmount. */
+  discountThreshold?: number;
+  /** Offer: discount amount (₹) when order reaches discountThreshold (e.g. 1 hour free). */
+  discountAmount?: number;
   currentBooking?: mongoose.Types.ObjectId;
   bookedUntil?: Date;
   createdAt: Date;
@@ -48,6 +54,9 @@ const TableSchema = new Schema<ITable>(
         default: 'center',
       },
     },
+    hourlyRate: { type: Number, min: 0 },
+    discountThreshold: { type: Number, min: 0 },
+    discountAmount: { type: Number, min: 0 },
     currentBooking: {
       type: Schema.Types.ObjectId,
       ref: 'Booking',

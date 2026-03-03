@@ -15,13 +15,18 @@ interface MenuItem {
 interface MenuCardProps {
   item: MenuItem;
   index?: number;
+  restaurantSlug?: string;
 }
 
-export default function MenuCard({ item, index = 0 }: MenuCardProps) {
+export default function MenuCard({ item, index = 0, restaurantSlug }: MenuCardProps) {
   const { addToCart } = useCart();
 
   const handleAddToCart = () => {
-    addToCart(item);
+    if (!restaurantSlug) return;
+    addToCart(
+      { id: item.id, name: item.name, price: item.price, image: item.image },
+      restaurantSlug
+    );
   };
 
   return (

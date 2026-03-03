@@ -15,14 +15,20 @@ interface Table {
     column: number;
     section: string;
   };
+  hourlyRate?: number;
+  discountThreshold?: number;
+  discountAmount?: number;
 }
 
 interface TableLayoutProps {
   selectedDate: string;
   selectedTime: string;
   numberOfGuests: number;
-  onTableSelect: (tableNumber: string) => void;
+  /** Called with full table so parent can use rate/offer */
+  onTableSelect: (table: Table) => void;
   selectedTable?: string;
+  /** Restaurant slug for multi-tenant table fetch (required for booking page) */
+  restaurantSlug?: string;
 }
 
 export default function TableLayout({
@@ -31,6 +37,7 @@ export default function TableLayout({
   numberOfGuests,
   onTableSelect,
   selectedTable,
+  restaurantSlug,
 }: TableLayoutProps) {
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,19 +57,20 @@ export default function TableLayout({
       setLoading(true);
       console.log('Loading tables for:', { selectedDate, selectedTime });
       
-      // Try to fetch tables with date and time params
+      const params: Record<string, string> = {
+        date: selectedDate,
+        time: selectedTime,
+      };
+      if (restaurantSlug) params.restaurant = restaurantSlug;
+
       let data;
       try {
-        data = await api.get<Table[]>('/tables', {
-          params: {
-            date: selectedDate,
-            time: selectedTime,
-          },
-        });
+        data = await api.get<Table[]>('/tables', { params });
       } catch (paramError: any) {
-        // If params fail, try without params
         console.warn('Failed with params, trying without:', paramError);
-        data = await api.get<Table[]>('/tables');
+        data = await api.get<Table[]>('/tables', {
+          params: restaurantSlug ? { restaurant: restaurantSlug } : {},
+        });
       }
       
       console.log('Tables loaded:', data);
@@ -188,7 +196,7 @@ export default function TableLayout({
                   key={table._id}
                   type="button"
                   disabled={!isSelectable}
-                  onClick={() => isSelectable && onTableSelect(table.tableNumber)}
+                  onClick={() => isSelectable && onTableSelect(table)}
                   onMouseEnter={() => setHoveredTable(table.tableNumber)}
                   onMouseLeave={() => setHoveredTable(null)}
                   className={`
@@ -228,13 +236,13 @@ export default function TableLayout({
       ))}
 
       {!loading && tables.length === 0 && (
-        <div className="text-center py-8 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-          <p className="font-semibold text-yellow-800 text-lg mb-2">No tables found</p>
-          <p className="text-sm text-yellow-700 mb-4">
-            Tables may not be initialized in the database. Please contact the administrator.
+        <div className="text-center py-8 bg-yellow-50 dark:bg-amber-900/20 border border-yellow-200 dark:border-amber-700/50 rounded-lg p-6">
+          <p className="font-semibold text-yellow-800 dark:text-amber-200 text-lg mb-2">No tables available for booking</p>
+          <p className="text-sm text-yellow-700 dark:text-amber-200/90 mb-2">
+            This restaurant has not set up table booking yet. Please contact the restaurant directly to make a reservation, or try again later.
           </p>
-          <p className="text-xs text-yellow-600">
-            Selected Date: {selectedDate} | Selected Time: {selectedTime}
+          <p className="text-xs text-yellow-600 dark:text-amber-300/70">
+            Selected: {selectedDate} · {selectedTime}
           </p>
         </div>
       )}

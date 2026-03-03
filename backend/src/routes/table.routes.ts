@@ -4,6 +4,7 @@ import {
   getTable,
   checkTableAvailability,
   updateTableStatus,
+  updateTableRateOffer,
   initializeTables,
 } from '../controllers/table.controller';
 import { authenticate, requireAdminOrSuperAdmin } from '../middleware/auth.middleware';
@@ -18,6 +19,7 @@ router.post('/check-availability', checkTableAvailability);
 // Admin routes
 router.post('/initialize', authenticate, requireAdminOrSuperAdmin, initializeTables);
 router.put('/:id/status', authenticate, requireAdminOrSuperAdmin, updateTableStatus);
+router.patch('/:id/rate-offer', authenticate, requireAdminOrSuperAdmin, updateTableRateOffer);
 
 export default router;
 

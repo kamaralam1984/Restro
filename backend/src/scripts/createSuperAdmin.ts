@@ -1,6 +1,9 @@
 /**
  * Run: npm run create-super-admin
- * Creates the platform-level super admin user.
+ * Idempotent helper for the platform-level super admin user.
+ * - If not present, it creates the user.
+ * - If already present, it **resets the password** to SUPER_ADMIN_PASSWORD (or the default)
+ *   and ensures the role/flags are correct.
  */
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
@@ -24,28 +27,38 @@ async function createSuperAdmin() {
   const name = process.env.SUPER_ADMIN_NAME || 'Super Admin';
   const phone = process.env.SUPER_ADMIN_PHONE || '+919999999999';
 
-  const existing = await User.findOne({ email, restaurantId: null });
-  if (existing) {
-    console.log('Super admin already exists:', email);
-    await mongoose.disconnect();
-    return;
-  }
-
   const hashedPassword = await bcrypt.hash(password, 12);
-  await User.create({
-    name,
-    email,
-    phone,
-    role: 'super_admin',
-    password: hashedPassword,
-    restaurantId: null,
-    isActive: true,
-  });
+  const existing = await User.findOne({ email, restaurantId: null });
 
-  console.log('✅ Super admin created successfully');
-  console.log('   Email   :', email);
-  console.log('   Password:', password);
-  console.log('   ⚠️  Change this password immediately after first login!');
+  if (existing) {
+    existing.name = name;
+    existing.phone = phone;
+    existing.role = 'super_admin';
+    existing.password = hashedPassword;
+    existing.restaurantId = null;
+    existing.isActive = true;
+    await existing.save();
+
+    console.log('♻️  Super admin already existed, password has been reset.');
+    console.log('   Email   :', email);
+    console.log('   Password:', password);
+    console.log('   ⚠️  Change this password immediately after next login!');
+  } else {
+    await User.create({
+      name,
+      email,
+      phone,
+      role: 'super_admin',
+      password: hashedPassword,
+      restaurantId: null,
+      isActive: true,
+    });
+
+    console.log('✅ Super admin created successfully');
+    console.log('   Email   :', email);
+    console.log('   Password:', password);
+    console.log('   ⚠️  Change this password immediately after first login!');
+  }
 
   await mongoose.disconnect();
 }
