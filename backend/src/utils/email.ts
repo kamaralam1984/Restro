@@ -509,6 +509,283 @@ For any queries, please contact us.
   }
 };
 
+/** Send OTP email for signup email verification. */
+export async function sendSignupOTPEmail(params: {
+  toEmail: string;
+  restaurantName: string;
+  otp: string;
+}): Promise<void> {
+  const transporter = createTransporter();
+  if (!transporter) return;
+
+  const { toEmail, restaurantName, otp } = params;
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; background: #0f172a; color: #e5e7eb; margin: 0; padding: 0; }
+    .wrap { max-width: 520px; margin: 0 auto; padding: 32px 16px; }
+    .card { background: #1e293b; border-radius: 16px; padding: 32px; border: 1px solid #334155; }
+    .logo { text-align: center; margin-bottom: 24px; }
+    .logo span { font-size: 28px; font-weight: 800; color: #f97316; }
+    h2 { font-size: 20px; color: #f1f5f9; margin: 0 0 8px; }
+    p { font-size: 14px; color: #94a3b8; line-height: 1.6; margin: 0 0 16px; }
+    .otp-box { background: #0f172a; border: 2px dashed #f97316; border-radius: 12px; text-align: center; padding: 24px; margin: 24px 0; }
+    .otp { font-size: 40px; font-weight: 900; letter-spacing: 10px; color: #f97316; }
+    .expiry { font-size: 12px; color: #64748b; margin-top: 8px; }
+    .footer { text-align: center; margin-top: 24px; font-size: 12px; color: #475569; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="logo"><span>Restro OS</span></div>
+      <h2>Verify your email address</h2>
+      <p>Hi there! You're signing up <strong style="color:#f1f5f9;">${restaurantName}</strong> on Restro OS. Enter the OTP below to verify your email address.</p>
+      <div class="otp-box">
+        <div class="otp">${otp}</div>
+        <div class="expiry">Valid for 10 minutes</div>
+      </div>
+      <p>If you did not request this, you can safely ignore this email.</p>
+    </div>
+    <div class="footer">Restro OS &mdash; Restaurant Management Platform</div>
+  </div>
+</body>
+</html>`.trim();
+
+  try {
+    await transporter.sendMail({
+      from: `"Restro OS" <${process.env.SMTP_USER}>`,
+      to: toEmail,
+      subject: `${otp} – Your Restro OS verification code`,
+      html,
+      text: `Your Restro OS verification code for ${restaurantName} is: ${otp}\nValid for 10 minutes.`,
+    });
+    console.log(`✅ OTP email sent to ${toEmail}`);
+  } catch (err: any) {
+    console.error('❌ Failed to send OTP email:', err?.message);
+  }
+}
+
+/** Send trial confirmation email to new restaurant admin. */
+export async function sendTrialConfirmationEmail(params: {
+  toEmail: string;
+  adminName: string;
+  restaurantName: string;
+  slug: string;
+  planName: string;
+  trialDays: number;
+  loginUrl: string;
+  storeLink: string;
+}): Promise<void> {
+  const transporter = createTransporter();
+  if (!transporter) return;
+
+  const { toEmail, adminName, restaurantName, planName, trialDays, loginUrl, storeLink } = params;
+  const trialEndDate = new Date();
+  trialEndDate.setDate(trialEndDate.getDate() + trialDays);
+  const trialEndStr = trialEndDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; background: #0f172a; color: #e5e7eb; margin: 0; padding: 0; }
+    .wrap { max-width: 560px; margin: 0 auto; padding: 32px 16px; }
+    .card { background: #1e293b; border-radius: 16px; overflow: hidden; border: 1px solid #334155; }
+    .header { background: linear-gradient(135deg, #f97316, #ea580c); padding: 32px; text-align: center; }
+    .header h1 { color: white; margin: 0; font-size: 24px; }
+    .header p { color: #fed7aa; margin: 8px 0 0; font-size: 14px; }
+    .body { padding: 32px; }
+    h2 { color: #f1f5f9; font-size: 18px; margin: 0 0 8px; }
+    p { color: #94a3b8; font-size: 14px; line-height: 1.7; margin: 0 0 12px; }
+    .info-box { background: #0f172a; border-radius: 10px; padding: 20px; margin: 20px 0; }
+    .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #1e293b; font-size: 13px; }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: #64748b; }
+    .info-value { color: #f1f5f9; font-weight: 600; }
+    .btn { display: block; text-align: center; background: #f97316; color: white; padding: 14px 24px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 15px; margin: 20px 0 8px; }
+    .btn-outline { display: block; text-align: center; border: 1px solid #334155; color: #94a3b8; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; margin-bottom: 20px; }
+    .footer { text-align: center; padding: 20px; font-size: 12px; color: #475569; }
+    .badge { display: inline-block; background: #052e16; color: #4ade80; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="header">
+        <h1>🎉 Welcome to Restro OS!</h1>
+        <p>Your restaurant is ready</p>
+      </div>
+      <div class="body">
+        <span class="badge">✅ FREE TRIAL ACTIVATED</span>
+        <h2>Hi ${adminName || restaurantName},</h2>
+        <p>Your restaurant <strong style="color:#f97316;">${restaurantName}</strong> has been successfully created on Restro OS. Your free trial is now active!</p>
+        <div class="info-box">
+          <div class="info-row">
+            <span class="info-label">Restaurant</span>
+            <span class="info-value">${restaurantName}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Plan</span>
+            <span class="info-value">${planName}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Trial Period</span>
+            <span class="info-value">${trialDays} days</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Trial Ends On</span>
+            <span class="info-value">${trialEndStr}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Admin Email</span>
+            <span class="info-value">${toEmail}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Store Link</span>
+            <span class="info-value">${storeLink}</span>
+          </div>
+        </div>
+        <a href="${loginUrl}" class="btn">Go to Admin Panel →</a>
+        <a href="${storeLink}" class="btn-outline">View Your Store</a>
+        <p style="font-size:12px;color:#475569;">After your trial ends, upgrade to a paid plan from your admin panel to continue using all features.</p>
+      </div>
+    </div>
+    <div class="footer">Restro OS &mdash; Restaurant Management Platform<br>You received this because you signed up at Restro OS.</div>
+  </div>
+</body>
+</html>`.trim();
+
+  try {
+    await transporter.sendMail({
+      from: `"Restro OS" <${process.env.SMTP_USER}>`,
+      to: toEmail,
+      subject: `🎉 Welcome! ${restaurantName} is live on Restro OS (Free Trial)`,
+      html,
+      text: `Welcome to Restro OS!\n\nYour restaurant "${restaurantName}" is ready.\nPlan: ${planName}\nTrial: ${trialDays} days (ends ${trialEndStr})\n\nLogin: ${loginUrl}\nStore: ${storeLink}`,
+    });
+    console.log(`✅ Trial confirmation email sent to ${toEmail}`);
+  } catch (err: any) {
+    console.error('❌ Failed to send trial confirmation email:', err?.message);
+  }
+}
+
+/** Send paid subscription confirmation email to new restaurant admin. */
+export async function sendPaidSignupConfirmationEmail(params: {
+  toEmail: string;
+  adminName: string;
+  restaurantName: string;
+  slug: string;
+  planName: string;
+  amount: number;
+  paymentId: string;
+  loginUrl: string;
+  storeLink: string;
+}): Promise<void> {
+  const transporter = createTransporter();
+  if (!transporter) return;
+
+  const { toEmail, adminName, restaurantName, planName, amount, paymentId, loginUrl, storeLink } = params;
+  const nextBillingDate = new Date();
+  nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
+  const nextBillingStr = nextBillingDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; background: #0f172a; color: #e5e7eb; margin: 0; padding: 0; }
+    .wrap { max-width: 560px; margin: 0 auto; padding: 32px 16px; }
+    .card { background: #1e293b; border-radius: 16px; overflow: hidden; border: 1px solid #334155; }
+    .header { background: linear-gradient(135deg, #7c3aed, #6d28d9); padding: 32px; text-align: center; }
+    .header h1 { color: white; margin: 0; font-size: 24px; }
+    .header p { color: #ddd6fe; margin: 8px 0 0; font-size: 14px; }
+    .body { padding: 32px; }
+    h2 { color: #f1f5f9; font-size: 18px; margin: 0 0 8px; }
+    p { color: #94a3b8; font-size: 14px; line-height: 1.7; margin: 0 0 12px; }
+    .info-box { background: #0f172a; border-radius: 10px; padding: 20px; margin: 20px 0; }
+    .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #1e293b; font-size: 13px; }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: #64748b; }
+    .info-value { color: #f1f5f9; font-weight: 600; }
+    .btn { display: block; text-align: center; background: #7c3aed; color: white; padding: 14px 24px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 15px; margin: 20px 0 8px; }
+    .btn-outline { display: block; text-align: center; border: 1px solid #334155; color: #94a3b8; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; margin-bottom: 20px; }
+    .footer { text-align: center; padding: 20px; font-size: 12px; color: #475569; }
+    .badge { display: inline-block; background: #1e1b4b; color: #a5b4fc; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="header">
+        <h1>🚀 Subscription Confirmed!</h1>
+        <p>Payment received &amp; restaurant is live</p>
+      </div>
+      <div class="body">
+        <span class="badge">💳 PAID SUBSCRIPTION</span>
+        <h2>Hi ${adminName || restaurantName},</h2>
+        <p>Your payment was successful and <strong style="color:#a78bfa;">${restaurantName}</strong> is now live on Restro OS with a full paid subscription!</p>
+        <div class="info-box">
+          <div class="info-row">
+            <span class="info-label">Restaurant</span>
+            <span class="info-value">${restaurantName}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Plan</span>
+            <span class="info-value">${planName}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Amount Paid</span>
+            <span class="info-value">₹${amount.toLocaleString('en-IN')}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Payment ID</span>
+            <span class="info-value" style="font-size:11px;font-family:monospace;">${paymentId}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Next Billing</span>
+            <span class="info-value">${nextBillingStr}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Admin Email</span>
+            <span class="info-value">${toEmail}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Store Link</span>
+            <span class="info-value">${storeLink}</span>
+          </div>
+        </div>
+        <a href="${loginUrl}" class="btn">Go to Admin Panel →</a>
+        <a href="${storeLink}" class="btn-outline">View Your Store</a>
+        <p style="font-size:12px;color:#475569;">Keep this email as proof of your subscription payment. For support, reply to this email.</p>
+      </div>
+    </div>
+    <div class="footer">Restro OS &mdash; Restaurant Management Platform<br>You received this because you signed up at Restro OS.</div>
+  </div>
+</body>
+</html>`.trim();
+
+  try {
+    await transporter.sendMail({
+      from: `"Restro OS" <${process.env.SMTP_USER}>`,
+      to: toEmail,
+      subject: `🚀 Payment Confirmed – ${restaurantName} is live on Restro OS`,
+      html,
+      text: `Payment Confirmed!\n\nRestaurant: ${restaurantName}\nPlan: ${planName}\nAmount: ₹${amount}\nPayment ID: ${paymentId}\nNext Billing: ${nextBillingStr}\n\nLogin: ${loginUrl}\nStore: ${storeLink}`,
+    });
+    console.log(`✅ Paid signup confirmation email sent to ${toEmail}`);
+  } catch (err: any) {
+    console.error('❌ Failed to send paid signup confirmation email:', err?.message);
+  }
+}
+
 /** Send subscription/trial expiry warning to restaurant owner. */
 export async function sendSubscriptionExpiryWarning(params: {
   toEmail: string;

@@ -12,6 +12,11 @@ import { Order } from '../models/Order.model';
 import { Booking } from '../models/Booking.model';
 import { createRazorpayOrder } from '../config/razorpay';
 import { PendingRestaurantSignup } from '../models/PendingRestaurantSignup.model';
+import {
+  sendSignupOTPEmail,
+  sendTrialConfirmationEmail,
+  sendPaidSignupConfirmationEmail,
+} from '../utils/email';
 
 // ─── Super Admin: Reset restaurant admin password ─────────────────────────────
 
@@ -770,6 +775,237 @@ export const restaurantSignup = async (req: Request, res: Response) => {
   }
 };
 
+// ─── Public: Step 1 – Send OTP to email before signup (trial or paid) ────────
+
+export const restaurantSignupSendOtp = async (req: Request, res: Response) => {
+  try {
+    const { name, slug, email, planId, adminName, adminPassword, adminPhone, signupType = 'trial' } = req.body;
+
+    if (!name || !slug || !email || !planId || !adminPassword || String(adminPassword).length < 8) {
+      return res.status(400).json({ error: 'Name, slug, plan, email and password (min 8 chars) are required' });
+    }
+    if (!['trial', 'paid'].includes(signupType)) {
+      return res.status(400).json({ error: 'Invalid signup type' });
+    }
+
+    const trimmedSlug = String(slug).toLowerCase().trim().replace(/\s+/g, '-');
+    if (!/^[a-z0-9-]+$/.test(trimmedSlug)) {
+      return res.status(400).json({ error: 'Slug can only contain lowercase letters, numbers, and hyphens' });
+    }
+
+    const existing = await Restaurant.findOne({ slug: trimmedSlug }).lean();
+    if (existing) {
+      return res.status(409).json({ error: 'This restaurant URL is already taken. Please choose another slug.' });
+    }
+
+    const plan = await RentalPlan.findById(planId).lean();
+    if (!plan) return res.status(400).json({ error: 'Plan not found' });
+
+    if (signupType === 'paid' && (!plan.price || plan.price <= 0)) {
+      return res.status(400).json({ error: 'Plan price is not configured for online payment' });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const passwordHash = await bcrypt.hash(String(adminPassword), 12);
+
+    // Upsert: if user resends OTP, update the existing pending record
+    const pending = await PendingRestaurantSignup.findOneAndUpdate(
+      { email: String(email).toLowerCase().trim(), status: 'pending' },
+      {
+        name: String(name).trim(),
+        slug: trimmedSlug,
+        email: String(email).toLowerCase().trim(),
+        adminPasswordHash: passwordHash,
+        adminName: adminName ? String(adminName).trim() : undefined,
+        adminPhone: adminPhone ? String(adminPhone).trim() : undefined,
+        planId: plan._id,
+        signupType,
+        emailOtp: otp,
+        emailOtpExpiry: otpExpiry,
+        emailVerified: false,
+        razorpayOrderId: undefined,
+        status: 'pending',
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    // Send OTP (non-blocking on failure, but we await to catch transporter errors silently)
+    await sendSignupOTPEmail({ toEmail: String(email).trim(), restaurantName: String(name).trim(), otp });
+
+    res.json({ pendingId: pending._id, message: 'OTP sent to your email. Please verify to continue.' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to send OTP' });
+  }
+};
+
+// ─── Public: Step 2 – Verify OTP. For trial: create restaurant. For paid: create Razorpay order. ──
+
+export const restaurantSignupVerifyOtp = async (req: Request, res: Response) => {
+  try {
+    const { pendingId, otp } = req.body as { pendingId?: string; otp?: string };
+
+    if (!pendingId || !otp) {
+      return res.status(400).json({ error: 'pendingId and otp are required' });
+    }
+
+    const pending = await PendingRestaurantSignup.findById(pendingId);
+    if (!pending || pending.status !== 'pending') {
+      return res.status(400).json({ error: 'Signup session not found or already completed. Please start over.' });
+    }
+    if (pending.emailVerified) {
+      return res.status(400).json({ error: 'Email already verified. Please proceed.' });
+    }
+    if (new Date() > pending.emailOtpExpiry) {
+      return res.status(400).json({ error: 'OTP has expired. Please request a new one.' });
+    }
+    if (pending.emailOtp !== String(otp).trim()) {
+      return res.status(400).json({ error: 'Invalid OTP. Please check and try again.' });
+    }
+
+    pending.emailVerified = true;
+    await pending.save();
+
+    // ── Trial: create restaurant immediately ──────────────────────────────────
+    if (pending.signupType === 'trial') {
+      const plan = await RentalPlan.findById(pending.planId).lean();
+      if (!plan) return res.status(400).json({ error: 'Plan not found' });
+
+      const session = await mongoose.startSession();
+      session.startTransaction();
+      try {
+        const trialDays = plan.trialDays ?? 14;
+        const startDate = new Date();
+        const trialEnd = new Date();
+        trialEnd.setDate(trialEnd.getDate() + trialDays);
+        const features = planToRestaurantFeatures(plan);
+
+        const [restaurant] = await Restaurant.create(
+          [
+            {
+              name: pending.name,
+              slug: pending.slug,
+              phone: pending.adminPhone || '0000000000',
+              address: 'To be updated',
+              country: 'India',
+              subscriptionStatus: 'trial',
+              trialEndsAt: trialEnd,
+              currentPlanId: plan._id,
+              status: 'active',
+              features,
+            },
+          ],
+          { session }
+        );
+
+        await Subscription.create(
+          [
+            {
+              restaurantId: restaurant._id,
+              planId: plan._id,
+              billingCycle: 'monthly',
+              status: 'active',
+              amount: 0,
+              currency: 'INR',
+              startDate,
+              endDate: trialEnd,
+              paymentMethod: 'cash',
+              autoRenew: false,
+            },
+          ],
+          { session }
+        );
+
+        const [adminUser] = await User.create(
+          [
+            {
+              name: pending.adminName || pending.name,
+              email: pending.email,
+              phone: pending.adminPhone || '0000000000',
+              role: 'admin',
+              password: pending.adminPasswordHash,
+              restaurantId: restaurant._id,
+              isActive: true,
+            },
+          ],
+          { session }
+        );
+
+        restaurant.ownerId = adminUser._id as any;
+        await restaurant.save({ session });
+
+        pending.status = 'completed';
+        await pending.save({ session });
+
+        await session.commitTransaction();
+        session.endSession();
+
+        seedDefaultMenuForRestaurant(restaurant._id).catch((err) => {
+          console.error('Failed to seed default menu for trial signup', err);
+        });
+        createDefaultTablesForRestaurant(restaurant._id as mongoose.Types.ObjectId).catch((err) => {
+          console.error('Failed to create default tables for trial signup', err);
+        });
+
+        const baseUrl = (process.env.PUBLIC_APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+        const storeLink = `${baseUrl}/r/${restaurant.slug}`;
+        const loginUrl = `${baseUrl}/admin/login`;
+
+        // Send trial confirmation email (non-blocking)
+        sendTrialConfirmationEmail({
+          toEmail: pending.email,
+          adminName: pending.adminName || pending.name,
+          restaurantName: pending.name,
+          slug: pending.slug,
+          planName: plan.name,
+          trialDays,
+          loginUrl,
+          storeLink,
+        }).catch(() => {});
+
+        return res.status(201).json({
+          type: 'trial',
+          message: 'Email verified! Restaurant created with free trial. You can now log in.',
+          restaurant: { _id: restaurant._id, name: restaurant.name, slug: restaurant.slug, storeLink },
+          adminUser: { email: adminUser.email, loginUrl },
+        });
+      } catch (err: any) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(500).json({ error: err.message || 'Failed to create restaurant' });
+      }
+    }
+
+    // ── Paid: create Razorpay order ───────────────────────────────────────────
+    const plan = await RentalPlan.findById(pending.planId).lean();
+    if (!plan) return res.status(400).json({ error: 'Plan not found' });
+
+    const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID;
+    const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
+    if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
+      return res.status(500).json({
+        error: 'Razorpay is not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET.',
+      });
+    }
+
+    const order = await createRazorpayOrder(plan.price, 'INR');
+    pending.razorpayOrderId = order.id;
+    await pending.save();
+
+    return res.json({
+      type: 'paid',
+      key: RAZORPAY_KEY_ID,
+      razorpayOrderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      pendingId: pending._id,
+      message: 'Email verified! Complete your payment to activate your subscription.',
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'OTP verification failed' });
+  }
+};
+
 // ─── Public: Paid signup – create Razorpay order and pending signup ────────────
 
 export const restaurantSignupPaymentOrder = async (req: Request, res: Response) => {
@@ -960,6 +1196,20 @@ export const restaurantSignupVerifyPayment = async (req: Request, res: Response)
     const baseUrl = (process.env.PUBLIC_APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
     const storeLink = `${baseUrl}/r/${restaurant.slug}`;
     const loginUrl = `${baseUrl}/admin/login`;
+
+    // Send paid subscription confirmation email (non-blocking)
+    const planDoc = await RentalPlan.findById(pending.planId).lean();
+    sendPaidSignupConfirmationEmail({
+      toEmail: pending.email,
+      adminName: pending.adminName || pending.name,
+      restaurantName: pending.name,
+      slug: pending.slug,
+      planName: planDoc?.name || 'Subscription Plan',
+      amount: planDoc?.price || 0,
+      paymentId,
+      loginUrl,
+      storeLink,
+    }).catch(() => {});
 
     res.status(201).json({
       message: 'Restaurant created with paid subscription. You can now log in.',

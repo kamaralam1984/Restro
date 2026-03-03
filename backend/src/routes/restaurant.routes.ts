@@ -7,6 +7,8 @@ import {
   getRolePermissions,
   updateRolePermissions,
   restaurantSignup,
+  restaurantSignupSendOtp,
+  restaurantSignupVerifyOtp,
   restaurantSignupPaymentOrder,
   restaurantSignupVerifyPayment,
 } from '../controllers/restaurant.controller';
@@ -20,6 +22,8 @@ const router = Router();
 router.get('/by-slug/:slug', getRestaurantBySlug);
 router.get('/plans', getPlans);
 router.post('/signup', restaurantSignup);
+router.post('/signup/send-otp', restaurantSignupSendOtp);
+router.post('/signup/verify-otp', restaurantSignupVerifyOtp);
 router.post('/signup/payment-order', restaurantSignupPaymentOrder);
 router.post('/signup/verify-payment', restaurantSignupVerifyPayment);
 
