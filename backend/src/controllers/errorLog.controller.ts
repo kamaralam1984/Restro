@@ -48,4 +48,3 @@ export const updateErrorLogStatus = async (req: Request, res: Response) => {
     res.status(500).json({ error: err.message || 'Failed to update error log' });
   }
 };
-

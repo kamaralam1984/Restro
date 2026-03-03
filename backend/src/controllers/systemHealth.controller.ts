@@ -46,7 +46,7 @@ export const scanAndRepairSystem = async (req: Request, res: Response) => {
 
       let fixedMenu = false;
       let fixedTables = false;
-      let fixedHeroImages = false;
+      const fixedHeroImages = false;
 
       if (repair) {
         if (menuCount === 0) {
@@ -56,10 +56,6 @@ export const scanAndRepairSystem = async (req: Request, res: Response) => {
         if (tableCount === 0) {
           await createDefaultTablesForRestaurant(restaurantId);
           fixedTables = true;
-        }
-        // For hero images we only log; re-use initialize script manually if needed
-        if (heroImageCount === 0) {
-          fixedHeroImages = false;
         }
       }
 
@@ -85,4 +81,3 @@ export const scanAndRepairSystem = async (req: Request, res: Response) => {
     res.status(500).json({ error: err.message || 'Scan/repair failed' });
   }
 };
-

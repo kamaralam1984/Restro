@@ -46,4 +46,3 @@ ErrorLogSchema.index({ status: 1, createdAt: -1 });
 ErrorLogSchema.index({ restaurantId: 1, createdAt: -1 });
 
 export const ErrorLog = mongoose.model<IErrorLog>('ErrorLog', ErrorLogSchema);
-

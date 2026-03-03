@@ -8,6 +8,7 @@ import {
   Star, BarChart3, Settings, Power, ReceiptIndianRupee, TrendingUp, Image,
   ShieldCheck, IndianRupee, FileText,
   Store, Package, CreditCard, Building2, PieChart, Wallet, ExternalLink, Copy, Check,
+  Database, Bug,
 } from 'lucide-react';
 import api from '@/services/api';
 import type { AdminUser } from './AdminLayout';
@@ -40,8 +41,8 @@ const SUPER_ADMIN_NAV: NavItem[] = [
   { name: 'Visitors',       href: '/admin/super/visitors',       icon: BarChart3 },
   { name: 'Plans',          href: '/admin/super/plans',          icon: Package },
   { name: 'Subscriptions',  href: '/admin/super/subscriptions',  icon: CreditCard },
-  { name: 'Backup & Restore', href: '/admin/super/backup',       icon: FileText },
-  { name: 'Error & Bug Control', href: '/admin/super/errors',    icon: ShieldCheck },
+  { name: 'Backup & Restore', href: '/admin/super/backup',       icon: Database },
+  { name: 'Errors & Bugs',  href: '/admin/super/errors',         icon: Bug },
 ];
 
 const MASTER_ADMIN_NAV: NavItem[] = [

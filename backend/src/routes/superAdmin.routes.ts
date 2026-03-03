@@ -76,9 +76,11 @@ router.get('/visitors-analytics', getVisitorAnalytics);
 router.get('/backup', exportBackup);
 router.post('/backup/import', importBackup);
 
-// ── Error handling / bug control ────────────────────────────────────────────────
+// ── Error Logs ────────────────────────────────────────────────────────────────
 router.get('/error-logs', getErrorLogs);
 router.patch('/error-logs/:id/status', updateErrorLogStatus);
+
+// ── System Health / Auto-repair ───────────────────────────────────────────────
 router.post('/system/scan-repair', scanAndRepairSystem);
 
 export default router;
