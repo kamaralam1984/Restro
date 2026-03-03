@@ -11,97 +11,63 @@ import { Subscription } from '../models/Subscription.model';
 import { RentalPlan } from '../models/RentalPlan.model';
 import { AuditLog } from '../models/AuditLog.model';
 import mongoose from 'mongoose';
-import { BackupSnapshot } from '../models/BackupSnapshot.model';
-import { logger } from '../utils/logger';
 
 type BackupScope = 'all' | 'restaurant';
 
-interface BackupQuery {
+interface BackupPayload {
   scope: BackupScope;
   restaurantId?: string;
-}
-
-export interface BackupData {
-  meta: {
-    createdAt: string;
-    scope: BackupScope;
-    restaurantId: string | null;
-    restaurantCount: number;
-  };
-  restaurants: any[];
-  users: any[];
-  menus: any[];
-  orders: any[];
-  bills: any[];
-  bookings: any[];
-  tables: any[];
-  heroImages: any[];
-  subscriptions: any[];
-  rentalPlans: any[];
-  auditLogs: any[];
-}
-
-export async function buildBackup(scope: BackupScope = 'all', restaurantId?: string): Promise<BackupData> {
-  const filterByRestaurant = (field: string) => {
-    if (scope !== 'restaurant' || !restaurantId || !mongoose.Types.ObjectId.isValid(restaurantId)) {
-      return {};
-    }
-    return { [field]: new mongoose.Types.ObjectId(restaurantId) };
-  };
-
-  const [
-    restaurants,
-    users,
-    menus,
-    orders,
-    bills,
-    bookings,
-    tables,
-    heroImages,
-    subscriptions,
-    rentalPlans,
-    auditLogs,
-  ] = await Promise.all([
-    scope === 'all' ? Restaurant.find({}).lean() : Restaurant.find({ _id: restaurantId }).lean(),
-    User.find(scope === 'all' ? {} : filterByRestaurant('restaurantId')).lean(),
-    Menu.find(scope === 'all' ? {} : filterByRestaurant('restaurantId')).lean(),
-    Order.find(scope === 'all' ? {} : filterByRestaurant('restaurantId')).lean(),
-    Bill.find(scope === 'all' ? {} : filterByRestaurant('restaurantId')).lean(),
-    Booking.find(scope === 'all' ? {} : filterByRestaurant('restaurantId')).lean(),
-    Table.find(scope === 'all' ? {} : filterByRestaurant('restaurantId')).lean(),
-    HeroImage.find(scope === 'all' ? {} : filterByRestaurant('restaurantId')).lean(),
-    Subscription.find(scope === 'all' ? {} : filterByRestaurant('restaurantId')).lean(),
-    RentalPlan.find({}).lean(),
-    AuditLog.find(scope === 'all' ? {} : filterByRestaurant('restaurantId')).limit(5000).lean(),
-  ]);
-
-  return {
-    meta: {
-      createdAt: new Date().toISOString(),
-      scope,
-      restaurantId: restaurantId || null,
-      restaurantCount: restaurants.length,
-    },
-    restaurants,
-    users,
-    menus,
-    orders,
-    bills,
-    bookings,
-    tables,
-    heroImages,
-    subscriptions,
-    rentalPlans,
-    auditLogs,
-  };
 }
 
 // ─── Super Admin: Export backup as JSON ─────────────────────────────────────────
 
 export const exportBackup = async (req: Request, res: Response) => {
   try {
-    const { scope = 'all', restaurantId } = req.query as BackupQuery;
-    const backup = await buildBackup(scope, restaurantId);
+    const { scope = 'all', restaurantId } = req.query as BackupPayload;
+
+    const filterByRestaurant = (field: string) => {
+      if (scope !== 'restaurant' || !restaurantId || !mongoose.Types.ObjectId.isValid(restaurantId)) {
+        return {};
+      }
+      return { [field]: new mongoose.Types.ObjectId(restaurantId) };
+    };
+
+    const [restaurants, users, menus, orders, bills, bookings, tables, heroImages, subscriptions, rentalPlans, auditLogs] =
+      await Promise.all([
+        scope === 'all'
+          ? Restaurant.find({}).lean()
+          : Restaurant.find({ _id: restaurantId }).lean(),
+        User.find(scope === 'all' ? {} : filterByRestaurant('restaurantId')).lean(),
+        Menu.find(scope === 'all' ? {} : filterByRestaurant('restaurantId')).lean(),
+        Order.find(scope === 'all' ? {} : filterByRestaurant('restaurantId')).lean(),
+        Bill.find(scope === 'all' ? {} : filterByRestaurant('restaurantId')).lean(),
+        Booking.find(scope === 'all' ? {} : filterByRestaurant('restaurantId')).lean(),
+        Table.find(scope === 'all' ? {} : filterByRestaurant('restaurantId')).lean(),
+        HeroImage.find(scope === 'all' ? {} : filterByRestaurant('restaurantId')).lean(),
+        Subscription.find(scope === 'all' ? {} : filterByRestaurant('restaurantId')).lean(),
+        RentalPlan.find({}).lean(),
+        AuditLog.find(scope === 'all' ? {} : filterByRestaurant('restaurantId')).limit(5000).lean(),
+      ]);
+
+    const backup = {
+      meta: {
+        createdAt: new Date().toISOString(),
+        scope,
+        restaurantId: restaurantId || null,
+        restaurantCount: restaurants.length,
+      },
+      restaurants,
+      users,
+      menus,
+      orders,
+      bills,
+      bookings,
+      tables,
+      heroImages,
+      subscriptions,
+      rentalPlans,
+      auditLogs,
+    };
 
     res.setHeader('Content-Type', 'application/json');
     res.setHeader(
@@ -194,26 +160,3 @@ export const importBackup = async (req: Request, res: Response) => {
     res.status(500).json({ error: err.message || 'Failed to import backup' });
   }
 };
-
-// Helper used by scheduled jobs: create a full-platform backup snapshot and store in DB.
-export async function createWeeklyPlatformBackupSnapshot() {
-  try {
-    const backup = await buildBackup('all');
-    const expiresAt = new Date();
-    // 6 months ≈ 180 days
-    expiresAt.setDate(expiresAt.getDate() + 180);
-    await BackupSnapshot.create({
-      scope: 'all',
-      restaurantId: null,
-      expiresAt,
-      payload: backup,
-    });
-    logger.info('Weekly platform backup snapshot created', {
-      restaurantCount: backup.meta.restaurantCount,
-    });
-  } catch (err: any) {
-    logger.error('Failed to create weekly platform backup snapshot', { error: err?.message });
-  }
-}
-
-
