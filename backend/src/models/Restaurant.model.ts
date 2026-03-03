@@ -49,6 +49,9 @@ export interface IRestaurant extends Document {
   // Per-restaurant email SMTP config
   emailConfig?: IEmailConfig;
 
+  // Contact email for notifications / receipts
+  notificationEmail?: string;
+
   // Per-restaurant Razorpay keys
   razorpayKeyId?: string;
   razorpayKeySecret?: string;
@@ -75,8 +78,30 @@ export interface IRestaurant extends Document {
   // Super admin feature controls per restaurant
   features: IRestaurantFeatures;
 
+  /** Which sections each staff role can access in the staff panel (admin has full access) */
+  rolePermissions?: IRolePermissions;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/** Permission keys for staff panel sections (dashboard, orders, menu, etc.) */
+export type StaffPermissionKey =
+  | 'dashboard'
+  | 'orders'
+  | 'menu'
+  | 'bookings'
+  | 'heroImages'
+  | 'billing'
+  | 'payments'
+  | 'revenue'
+  | 'customers'
+  | 'reviews'
+  | 'analytics';
+
+export interface IRolePermissions {
+  staff?: StaffPermissionKey[];
+  manager?: StaffPermissionKey[];
+  cashier?: StaffPermissionKey[];
 }
 
 const EmailConfigSchema = new Schema<IEmailConfig>(
@@ -149,6 +174,8 @@ const RestaurantSchema = new Schema<IRestaurant>(
       type: EmailConfigSchema,
     },
 
+    notificationEmail: { type: String, trim: true, lowercase: true },
+
     razorpayKeyId: { type: String, trim: true },
     razorpayKeySecret: { type: String },
 
@@ -158,7 +185,7 @@ const RestaurantSchema = new Schema<IRestaurant>(
 
     taxRate: {
       type: Number,
-      default: 18,
+      default: 5,
       min: 0,
       max: 100,
     },
@@ -206,6 +233,13 @@ const RestaurantSchema = new Schema<IRestaurant>(
         menuManagement:          { type: Boolean, default: true },
       }, { _id: false }),
       default: () => ({}),
+    },
+    rolePermissions: {
+      type: new Schema({
+        staff:   { type: [String], default: ['dashboard', 'orders'] },
+        manager: { type: [String], default: ['dashboard', 'orders', 'menu', 'bookings', 'customers', 'reviews', 'analytics'] },
+        cashier: { type: [String], default: ['dashboard', 'orders', 'billing', 'revenue'] },
+      }, { _id: false }),
     },
   },
   {

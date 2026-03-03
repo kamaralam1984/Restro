@@ -1,11 +1,12 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { Restaurant } from '../models/Restaurant.model';
+import { Restaurant, StaffPermissionKey } from '../models/Restaurant.model';
 import { User } from '../models/User.model';
 import { RentalPlan, IRentalPlan } from '../models/RentalPlan.model';
 import { Subscription } from '../models/Subscription.model';
 import { Menu } from '../models/Menu.model';
+import { seedDefaultMenuForRestaurant } from '../services/defaultMenu.service';
 import { Order } from '../models/Order.model';
 import { Booking } from '../models/Booking.model';
 
@@ -270,7 +271,7 @@ export const createRestaurant = async (req: Request, res: Response) => {
           name, slug, phone, address, city, state,
           country: country || 'India', pincode,
           description, primaryColor, currency,
-          taxRate: taxRate ?? 18,
+          taxRate: taxRate ?? 5,
           serviceCharge: serviceCharge ?? 0,
           subscriptionStatus: 'trial',
           trialEndsAt: trialEnd,
@@ -305,7 +306,13 @@ export const createRestaurant = async (req: Request, res: Response) => {
     await session.commitTransaction();
     session.endSession();
 
-    const baseUrl = (process.env.PUBLIC_APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+    // Seed default menu items for this restaurant (non-blocking for response)
+    seedDefaultMenuForRestaurant(restaurant._id).catch((err) => {
+      console.error('Failed to seed default menu for restaurant', err);
+    });
+
+    const baseUrl = (process.env.PUBLIC_APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000')
+      .replace(/\/$/, '');
     const storeLink = `${baseUrl}/r/${restaurant.slug}`;
 
     const restaurantObj = restaurant.toObject() as unknown as Record<string, unknown>;
@@ -480,6 +487,54 @@ export const updateMyRestaurant = async (req: Request, res: Response) => {
     const { cacheDel, cacheKeyRestaurant } = await import('../utils/cache');
     await cacheDel(cacheKeyRestaurant(restaurant.slug));
     res.json({ message: 'Restaurant settings updated', restaurant });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ─── Role permissions (staff panel access) – admin only can update ───────────
+
+const STAFF_PERMISSION_KEYS: StaffPermissionKey[] = [
+  'dashboard', 'orders', 'menu', 'bookings', 'heroImages', 'billing',
+  'payments', 'revenue', 'customers', 'reviews', 'analytics',
+];
+
+export const getRolePermissions = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.user?.restaurantId;
+    if (!restaurantId) return res.status(400).json({ error: 'No restaurant context' });
+    const restaurant = await Restaurant.findById(restaurantId).select('rolePermissions').lean();
+    if (!restaurant) return res.status(404).json({ error: 'Restaurant not found' });
+    res.json({ rolePermissions: restaurant.rolePermissions || {} });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const updateRolePermissions = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.user?.restaurantId;
+    if (!restaurantId) return res.status(400).json({ error: 'No restaurant context' });
+    const { rolePermissions } = req.body;
+    if (!rolePermissions || typeof rolePermissions !== 'object') {
+      return res.status(400).json({ error: 'rolePermissions object required' });
+    }
+    const sanitized: Record<string, StaffPermissionKey[]> = {};
+    for (const role of ['staff', 'manager', 'cashier']) {
+      const perms = rolePermissions[role];
+      if (Array.isArray(perms)) {
+        sanitized[role] = perms.filter((p: string) =>
+          STAFF_PERMISSION_KEYS.includes(p as StaffPermissionKey)
+        ) as StaffPermissionKey[];
+      }
+    }
+    const restaurant = await Restaurant.findByIdAndUpdate(
+      restaurantId,
+      { $set: { rolePermissions: sanitized } },
+      { new: true }
+    ).select('rolePermissions');
+    if (!restaurant) return res.status(404).json({ error: 'Restaurant not found' });
+    res.json({ message: 'Role permissions updated', rolePermissions: restaurant.rolePermissions });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -678,7 +733,13 @@ export const restaurantSignup = async (req: Request, res: Response) => {
     await session.commitTransaction();
     session.endSession();
 
-    const baseUrl = (process.env.PUBLIC_APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+    // Seed default menu items for this restaurant (non-blocking)
+    seedDefaultMenuForRestaurant(restaurant._id).catch((err) => {
+      console.error('Failed to seed default menu for restaurant signup', err);
+    });
+
+    const baseUrl = (process.env.PUBLIC_APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000')
+      .replace(/\/$/, '');
     const storeLink = `${baseUrl}/r/${restaurant.slug}`;
     const loginUrl = `${baseUrl}/admin/login`;
 

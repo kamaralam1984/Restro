@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Save, Bell, CreditCard, Globe, Shield, Palette, Check, Eye, EyeOff } from 'lucide-react';
+import { Save, Bell, CreditCard, Globe, Shield, Palette, Check, Eye, EyeOff, UserCog } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast, { Toaster } from 'react-hot-toast';
 import api from '@/services/api';
@@ -24,6 +24,7 @@ interface RestaurantSettings {
   razorpayKeyId: string;
   razorpayKeySecret: string;
   whatsappNumber: string;
+  notificationEmail: string;
   enableNotifications?: boolean;
   enableWhatsApp?: boolean;
 }
@@ -36,7 +37,7 @@ const DEFAULT_SETTINGS: RestaurantSettings = {
   state: '',
   pincode: '',
   currency: 'INR',
-  taxRate: 18,
+  taxRate: 5,
   serviceCharge: 0,
   primaryColor: '#ea580c',
   theme: DEFAULT_THEME_ID,
@@ -45,6 +46,7 @@ const DEFAULT_SETTINGS: RestaurantSettings = {
   razorpayKeyId: '',
   razorpayKeySecret: '',
   whatsappNumber: '',
+  notificationEmail: '',
   enableNotifications: true,
   enableWhatsApp: false,
 };
@@ -70,6 +72,10 @@ export default function SettingsPage() {
     try {
       const token = localStorage.getItem('token');
       const data = await api.get<any>('/restaurants/me', { headers: { Authorization: `Bearer ${token}` } });
+      const rolePerms = await api.get<{ rolePermissions?: Record<string, string[]> }>('/restaurants/me/role-permissions', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({} as { rolePermissions?: Record<string, string[]> }));
+      if (rolePerms && 'rolePermissions' in rolePerms && typeof rolePerms.rolePermissions === 'object') {
+        setRolePermissions(rolePerms.rolePermissions);
+      }
       const themeId = data.theme && WEBSITE_THEMES.some((t) => t.id === data.theme) ? data.theme : DEFAULT_THEME_ID;
       const theme = getThemeById(themeId);
       setSettings({
@@ -80,7 +86,7 @@ export default function SettingsPage() {
         state: data.state ?? '',
         pincode: data.pincode ?? '',
         currency: data.currency ?? 'INR',
-        taxRate: data.taxRate ?? 18,
+        taxRate: data.taxRate ?? 5,
         serviceCharge: data.serviceCharge ?? 0,
         primaryColor: data.primaryColor ?? theme?.primary ?? '#ea580c',
         theme: themeId,
@@ -89,6 +95,7 @@ export default function SettingsPage() {
         razorpayKeyId: data.razorpayKeyId ?? '',
         razorpayKeySecret: data.razorpayKeySecret ?? '',
         whatsappNumber: data.whatsappNumber ?? '',
+        notificationEmail: data.notificationEmail ?? '',
         enableNotifications: true,
         enableWhatsApp: !!data.whatsappNumber,
       });
@@ -121,6 +128,7 @@ export default function SettingsPage() {
         razorpayKeyId: settings.razorpayKeyId || undefined,
         razorpayKeySecret: settings.razorpayKeySecret || undefined,
         whatsappNumber: settings.whatsappNumber || undefined,
+        notificationEmail: settings.notificationEmail || undefined,
       };
       await api.put('/restaurants/me', payload, { headers: { Authorization: `Bearer ${token}` } });
       toast.success('Settings saved successfully');
@@ -168,6 +176,7 @@ export default function SettingsPage() {
     { id: 'website', label: 'Website / Front page', icon: Palette },
     { id: 'payment', label: 'Payment', icon: CreditCard },
     { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'staffRoles', label: 'Staff role access', icon: UserCog },
     { id: 'security', label: 'Security', icon: Shield },
   ];
 
@@ -469,18 +478,32 @@ export default function SettingsPage() {
           <h2 className="text-xl font-semibold text-white mb-4">Notification Settings</h2>
           
           <div className="space-y-4">
-            <label className="flex items-center justify-between p-4 bg-slate-800 rounded-lg cursor-pointer">
-              <div>
-                <p className="text-white font-medium">Email Notifications</p>
-                <p className="text-sm text-slate-400">Receive email alerts for new orders</p>
+            <div className="p-4 bg-slate-800 rounded-lg space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-white font-medium">Email Notifications</p>
+                  <p className="text-sm text-slate-400">Receive email alerts for new orders & bills</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={settings.enableNotifications}
+                  onChange={(e) => setSettings({ ...settings, enableNotifications: e.target.checked })}
+                  className="w-5 h-5 rounded"
+                />
               </div>
-              <input
-                type="checkbox"
-                checked={settings.enableNotifications}
-                onChange={(e) => setSettings({ ...settings, enableNotifications: e.target.checked })}
-                className="w-5 h-5 rounded"
-              />
-            </label>
+              <div className="mt-2">
+                <label className="block text-xs font-medium text-slate-400 mb-1">
+                  Notification email (restaurant)
+                </label>
+                <input
+                  type="email"
+                  value={settings.notificationEmail}
+                  onChange={(e) => setSettings({ ...settings, notificationEmail: e.target.value })}
+                  placeholder="owner@yourrestaurant.com"
+                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -496,6 +519,86 @@ export default function SettingsPage() {
               <p className="text-slate-500 text-xs mt-1">For order/booking notifications</p>
             </div>
           </div>
+        </motion.div>
+      )}
+
+      {/* Staff role access — which sections each role can see in Staff Panel */}
+      {activeTab === 'staffRoles' && (
+        <motion.div
+          className="bg-slate-900 rounded-xl p-6 space-y-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h2 className="text-xl font-semibold text-white mb-2">Staff role access</h2>
+          <p className="text-slate-400 text-sm mb-4">
+            Choose which sections each staff role can see in the Staff Panel. Staff, Manager, and Cashier log in to the Staff Panel (not the full Admin Panel). Admin always has full access.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-slate-400 border-b border-slate-700">
+                  <th className="text-left py-3 px-2 font-medium">Section</th>
+                  <th className="text-left py-3 px-2 font-medium">Staff</th>
+                  <th className="text-left py-3 px-2 font-medium">Manager</th>
+                  <th className="text-left py-3 px-2 font-medium">Cashier</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { key: 'dashboard', label: 'Dashboard' },
+                  { key: 'orders', label: 'Orders' },
+                  { key: 'menu', label: 'Menu' },
+                  { key: 'bookings', label: 'Bookings' },
+                  { key: 'heroImages', label: 'Hero Images' },
+                  { key: 'billing', label: 'Billing Panel' },
+                  { key: 'payments', label: 'Payments' },
+                  { key: 'revenue', label: 'Revenue' },
+                  { key: 'customers', label: 'Customers' },
+                  { key: 'reviews', label: 'Reviews' },
+                  { key: 'analytics', label: 'Analytics' },
+                ].map(({ key, label }) => (
+                  <tr key={key} className="border-b border-slate-800 hover:bg-slate-800/50">
+                    <td className="py-3 px-2 text-white">{label}</td>
+                    {(['staff', 'manager', 'cashier'] as const).map((role) => (
+                      <td key={role} className="py-3 px-2">
+                        <input
+                          type="checkbox"
+                          checked={(rolePermissions[role] || []).includes(key)}
+                          onChange={(e) => {
+                            const perms = rolePermissions[role] || [];
+                            const next = e.target.checked
+                              ? [...perms, key]
+                              : perms.filter((p) => p !== key);
+                            setRolePermissions({ ...rolePermissions, [role]: next });
+                          }}
+                          className="w-4 h-4 rounded border-slate-600 text-orange-600 focus:ring-orange-500"
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <button
+            type="button"
+            onClick={async () => {
+              setSavingRolePerms(true);
+              try {
+                const token = localStorage.getItem('token');
+                await api.put('/restaurants/me/role-permissions', { rolePermissions }, { headers: { Authorization: `Bearer ${token}` } });
+                toast.success('Staff role access updated');
+              } catch (e: any) {
+                toast.error(e?.response?.data?.error || e?.message || 'Failed to save');
+              } finally {
+                setSavingRolePerms(false);
+              }
+            }}
+            disabled={savingRolePerms}
+            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+          >
+            {savingRolePerms ? 'Saving...' : 'Save role access'}
+          </button>
         </motion.div>
       )}
 

@@ -53,7 +53,12 @@ export default function AdminLoginPage() {
           }
           localStorage.setItem('token', data.token);
           localStorage.setItem('admin', JSON.stringify(data.admin));
-          router.push('/admin/dashboard');
+          // Restaurant admin → full admin panel; staff/manager/cashier → staff panel
+          if (data.admin.role === 'admin') {
+            router.push('/admin/dashboard');
+          } else {
+            router.push('/staff');
+          }
         } else {
           setError('Invalid response from server');
         }

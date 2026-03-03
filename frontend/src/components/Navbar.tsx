@@ -28,7 +28,8 @@ export default function Navbar() {
       pathname === '/booking' ||
       pathname === '/cart' ||
       pathname?.startsWith('/contact') ||
-      pathname?.startsWith('/admin'));
+      pathname?.startsWith('/admin') ||
+      pathname?.startsWith('/staff'));
   
   // Cart count: when on a restaurant's page, show that restaurant's cart count; otherwise 0
   const itemCount = mounted
