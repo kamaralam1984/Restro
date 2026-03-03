@@ -804,8 +804,7 @@ export const restaurantSignupPaymentOrder = async (req: Request, res: Response) 
     const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
     if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
       return res.status(500).json({
-        error:
-          'Razorpay is not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in environment variables.',
+        error: 'Razorpay is not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in environment variables.',
       });
     }
 
@@ -853,7 +852,6 @@ export const restaurantSignupVerifyPayment = async (req: Request, res: Response)
       return res.status(400).json({ error: 'Missing payment verification fields' });
     }
 
-    // Verify payment signature
     const isValid = await (await import('../config/razorpay')).verifyPayment(
       razorpayOrderId,
       paymentId,
@@ -870,7 +868,6 @@ export const restaurantSignupVerifyPayment = async (req: Request, res: Response)
       return res.status(400).json({ error: 'Pending signup not found or already completed' });
     }
 
-    // Ensure slug still unique
     const existing = await Restaurant.findOne({ slug: pending.slug }).session(session);
     if (existing) {
       await session.abortTransaction();
@@ -953,7 +950,6 @@ export const restaurantSignupVerifyPayment = async (req: Request, res: Response)
     await session.commitTransaction();
     session.endSession();
 
-    // Seed default menu and tables (non-blocking)
     seedDefaultMenuForRestaurant(restaurant._id).catch((err) => {
       console.error('Failed to seed default menu for paid signup', err);
     });
@@ -961,10 +957,7 @@ export const restaurantSignupVerifyPayment = async (req: Request, res: Response)
       console.error('Failed to create default tables for paid signup', err);
     });
 
-    const baseUrl = (process.env.PUBLIC_APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000').replace(
-      /\/$/,
-      ''
-    );
+    const baseUrl = (process.env.PUBLIC_APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
     const storeLink = `${baseUrl}/r/${restaurant.slug}`;
     const loginUrl = `${baseUrl}/admin/login`;
 
@@ -987,4 +980,3 @@ export const restaurantSignupVerifyPayment = async (req: Request, res: Response)
     res.status(500).json({ error: error.message || 'Signup verification failed' });
   }
 };
-

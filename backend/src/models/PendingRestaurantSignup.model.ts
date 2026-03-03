@@ -48,4 +48,3 @@ export const PendingRestaurantSignup = mongoose.model<IPendingRestaurantSignup>(
   'PendingRestaurantSignup',
   PendingRestaurantSignupSchema
 );
-
