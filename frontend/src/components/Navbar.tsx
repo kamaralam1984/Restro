@@ -13,7 +13,7 @@ import LanguageSwitcher from './LanguageSwitcher';
 import api from '@/services/api';
 
 export default function Navbar() {
-  const { cartItems } = useCart();
+  const { getCartCount } = useCart();
   const { user, logout, isAuthenticated } = useUser();
   const { restaurant: restaurantContext } = useRestaurantPage();
   const pathname = usePathname();
@@ -22,10 +22,21 @@ export default function Navbar() {
   const [dbConnected, setDbConnected] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
 
-  const showRestaurantBranding = restaurantContext && (pathname === '/menu' || pathname === '/booking' || pathname?.startsWith('/contact'));
+  const showRestaurantBranding =
+    !!restaurantContext &&
+    (pathname === '/menu' ||
+      pathname === '/booking' ||
+      pathname === '/cart' ||
+      pathname?.startsWith('/contact') ||
+      pathname?.startsWith('/admin'));
   
-  // Prevent hydration mismatch by only calculating after mount
-  const itemCount = mounted ? cartItems.reduce((sum, item) => sum + item.quantity, 0) : 0;
+  // Cart count: when on a restaurant's page, show that restaurant's cart count; otherwise 0
+  const itemCount = mounted
+    ? (showRestaurantBranding && restaurantContext ? getCartCount(restaurantContext.slug) : 0)
+    : 0;
+  const cartHref = showRestaurantBranding && restaurantContext
+    ? `/cart?restaurant=${encodeURIComponent(restaurantContext.slug)}`
+    : '/cart';
 
   useEffect(() => {
     setMounted(true);
@@ -174,7 +185,7 @@ export default function Navbar() {
                   </span>
                 </div>
                 <LanguageSwitcher />
-                <Link href="/cart">
+                <Link href={cartHref}>
                   <motion.div
                     className="relative"
                     whileHover={{ scale: 1.05 }}

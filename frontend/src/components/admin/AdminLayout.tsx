@@ -4,6 +4,8 @@ import { ReactNode, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar, { PanelType } from './Sidebar';
 import { LogOut, Shield, ChefHat } from 'lucide-react';
+import { useRestaurantPage } from '@/context/RestaurantPageContext';
+import api from '@/services/api';
 
 export interface AdminUser {
   name?: string;
@@ -20,7 +22,31 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children, panelType = 'rental' }: AdminLayoutProps) {
   const router = useRouter();
+  const { setRestaurant } = useRestaurantPage();
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
+
+  // When rental admin is in admin panel, set restaurant context so Navbar shows their branding
+  useEffect(() => {
+    if (panelType !== 'rental' || !adminUser) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    api
+      .get<{ slug?: string; name?: string; logo?: string; primaryColor?: string }>('/restaurants/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((data) => {
+        if (data?.slug && data?.name) {
+          setRestaurant({
+            slug: data.slug,
+            name: data.name,
+            logo: data.logo,
+            primaryColor: data.primaryColor,
+          });
+        }
+      })
+      .catch(() => {});
+    return () => setRestaurant(null);
+  }, [panelType, adminUser, setRestaurant]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
