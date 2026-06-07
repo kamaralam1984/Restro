@@ -26,6 +26,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   staff: ['orders:read', 'orders:update'],
   cashier: ['billing:manage', 'orders:read'],
   customer: [],
+  restaurant_owner: ['menu:manage', 'orders:read', 'orders:update', 'orders:manage', 'booking:manage', 'billing:manage', 'analytics:view', 'users:manage', 'tables:manage', 'revenue:view'],
 };
 
 export function hasPermission(role: UserRole, permission: Permission): boolean {

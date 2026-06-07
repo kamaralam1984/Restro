@@ -8,7 +8,9 @@ import {
   Star, BarChart3, Settings, Power, ReceiptIndianRupee, TrendingUp, Image,
   ShieldCheck, IndianRupee, FileText,
   Store, Package, CreditCard, Building2, PieChart, Wallet, ExternalLink, Copy, Check,
-  Database, Bug,
+  Database, Bug, Tag, ChefHat, QrCode, Ticket, Gift,
+  Monitor, Package2, Megaphone, UserCheck, Users2, BadgeIndianRupee,
+  ShoppingCart, Handshake, Brain, GitBranch, Palette, Layers, Sparkles,
 } from 'lucide-react';
 import api from '@/services/api';
 import type { AdminUser } from './AdminLayout';
@@ -56,19 +58,39 @@ const MASTER_ADMIN_NAV: NavItem[] = [
 const ADMIN_NAV: NavItem[] = [
   { name: 'Dashboard',    href: '/admin/dashboard',    icon: LayoutDashboard },
   { name: 'Orders',       href: '/admin/orders',       icon: ShoppingBag,       featureKey: 'onlineOrdering' },
+  { name: 'Kitchen Display', href: '/admin/kds',       icon: ChefHat,           featureKey: 'onlineOrdering' },
+  { name: 'POS Billing',  href: '/admin/pos',          icon: Monitor },
   { name: 'Menu',         href: '/admin/menu',         icon: UtensilsCrossed,   featureKey: 'menuManagement' },
   { name: 'Bookings',     href: '/admin/bookings',     icon: Calendar },
+  { name: 'Tables',       href: '/admin/tables',       icon: LayoutDashboard,    featureKey: 'tableBooking' },
+  { name: 'QR Menu',      href: '/admin/qr-menu',      icon: QrCode },
+  { name: 'Inventory',    href: '/admin/inventory',    icon: Package2 },
   { name: 'Table rates & offers', href: '/admin/table-rates', icon: IndianRupee },
+  { name: 'Offers & Discounts',   href: '/admin/offers',       icon: Tag },
+  { name: 'Coupons',      href: '/admin/coupons',      icon: Ticket },
+  { name: 'Loyalty Program', href: '/admin/loyalty',   icon: Gift },
+  { name: 'Marketing',    href: '/admin/marketing',    icon: Megaphone },
+  { name: 'CRM',          href: '/admin/crm',          icon: UserCheck },
   { name: 'Hero Images',  href: '/admin/hero-images',  icon: Image,             featureKey: 'heroImages' },
   { name: 'Billing Panel', href: '/admin/billing',      icon: ReceiptIndianRupee, featureKey: 'billing' },
   { name: 'Payments',     href: '/admin/payments',     icon: Wallet,            featureKey: 'onlinePayments' },
   { name: 'Revenue',      href: '/admin/revenue',      icon: TrendingUp,        featureKey: 'billing' },
   { name: 'Reports',      href: '/admin/reports',      icon: FileText,          featureKey: 'billing' },
   { name: 'Customers',    href: '/admin/customers',    icon: Users,             featureKey: 'onlineOrdering' },
+  { name: 'Employees',    href: '/admin/employees',    icon: Users2 },
+  { name: 'Wallet',       href: '/admin/wallet',       icon: BadgeIndianRupee },
+  { name: 'Abandoned Cart', href: '/admin/abandoned-cart', icon: ShoppingCart },
+  { name: 'Affiliates',   href: '/admin/affiliates',   icon: Handshake },
   { name: 'Staff & Users', href: '/admin/users',       icon: UserCog,           featureKey: 'staffControl' },
   { name: 'Staff roles',   href: '/admin/staff-roles', icon: ShieldCheck,       featureKey: 'staffControl' },
   { name: 'Reviews',      href: '/admin/reviews',      icon: Star,              featureKey: 'reviews' },
   { name: 'Analytics',    href: '/admin/analytics',    icon: BarChart3,         featureKey: 'analytics' },
+  { name: 'AI Insights',  href: '/admin/ai-insights',  icon: Brain },
+  { name: 'Multi-Branch', href: '/admin/branches',     icon: GitBranch },
+  { name: 'Franchise',    href: '/admin/franchise',    icon: Building2 },
+  { name: 'White Label',  href: '/admin/white-label',  icon: Palette },
+  { name: 'Theme Builder', href: '/admin/website-builder', icon: Layers },
+  { name: 'Theme Market', href: '/admin/themes',       icon: Sparkles },
   { name: 'Settings',     href: '/admin/settings',     icon: Settings },
 ];
 
@@ -151,26 +173,51 @@ export default function Sidebar({ adminUser: adminUserProp, panelType: panelType
 
   const initials = (adminUser.name || 'A').slice(0, 1).toUpperCase();
   const roleLabel = panelType === 'super' ? 'Super Admin' : panelType === 'master' ? 'Master Admin' : 'Rental Admin';
-  const roleBg = panelType === 'super' ? 'bg-purple-600' : panelType === 'master' ? 'bg-amber-600' : 'bg-orange-600';
   const logoutHref = panelType === 'super' ? '/admin/super/login' : panelType === 'master' ? '/admin/master/login' : '/admin/login';
 
+  // Role badge colours — kept subtle with gold tones, differentiated by hue only
+  const roleBadgeStyle: React.CSSProperties =
+    panelType === 'super'
+      ? { background: 'rgba(168,120,200,0.15)', color: '#d4a0f0' }
+      : panelType === 'master'
+        ? { background: 'rgba(200,151,42,0.18)', color: '#f0c060' }
+        : { background: 'rgba(200,151,42,0.12)', color: '#c8972a' };
+
+  // Avatar/icon background per panel type
+  const roleIconStyle: React.CSSProperties =
+    panelType === 'super'
+      ? { background: 'linear-gradient(135deg,#5b2d8a,#9b4dca)' }
+      : panelType === 'master'
+        ? { background: 'linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)' }
+        : { background: 'linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)' };
+
   return (
-    <div className="w-64 bg-slate-900 min-h-screen flex flex-col">
+    <div
+      className="w-64 min-h-screen flex flex-col"
+      style={{ background: '#0d0d0d' }}
+    >
       {/* Logo */}
-      <div className="p-6 border-b border-slate-800">
+      <div
+        className="p-6"
+        style={{ borderBottom: '1px solid rgba(200,151,42,0.15)' }}
+      >
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 ${roleBg} rounded-lg flex items-center justify-center`}>
+          <div
+            className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={roleIconStyle}
+          >
             {isPlatform
-              ? <Building2 className="w-6 h-6 text-white" />
+              ? <Building2 className="w-6 h-6" style={{ color: '#080808' }} />
               : <span className="text-xl">👨‍🍳</span>}
           </div>
           <div>
-            <div className="text-white font-semibold text-sm">
+            <div className="font-semibold text-sm" style={{ color: '#f8f4ed' }}>
               {isPlatform ? 'Restro OS' : 'My Restaurant'}
             </div>
-            <div className={`text-xs font-medium px-2 py-0.5 rounded-full inline-block mt-0.5 ${
-              panelType === 'super' ? 'bg-purple-600/30 text-purple-300' : panelType === 'master' ? 'bg-amber-600/30 text-amber-300' : 'bg-orange-600/30 text-orange-300'
-            }`}>
+            <div
+              className="text-xs font-medium px-2 py-0.5 rounded-full inline-block mt-0.5"
+              style={roleBadgeStyle}
+            >
               {roleLabel}
             </div>
           </div>
@@ -179,17 +226,33 @@ export default function Sidebar({ adminUser: adminUserProp, panelType: panelType
 
       {/* Your store link (rental admin only) */}
       {panelType === 'rental' && storeSlug && (
-        <div className="px-4 py-3 border-b border-slate-800">
-          <p className="text-xs font-medium text-slate-400 mb-2">Your store</p>
+        <div
+          className="px-4 py-3"
+          style={{ borderBottom: '1px solid rgba(200,151,42,0.15)' }}
+        >
+          <p className="text-xs font-medium mb-2" style={{ color: '#a89070' }}>Your store</p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 min-w-0 text-xs text-orange-400 bg-slate-800 px-2 py-1.5 rounded truncate" title={`/r/${storeSlug}`}>
+            <code
+              className="flex-1 min-w-0 text-xs px-2 py-1.5 rounded truncate"
+              style={{ color: '#c8972a', background: '#1c1c1c', border: '1px solid rgba(200,151,42,0.2)' }}
+              title={`/r/${storeSlug}`}
+            >
               /r/{storeSlug}
             </code>
             <a
               href={`/r/${storeSlug}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded"
+              className="p-1.5 rounded transition-colors"
+              style={{ color: '#a89070' }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.color = '#f8f4ed';
+                (e.currentTarget as HTMLElement).style.background = 'rgba(200,151,42,0.1)';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.color = '#a89070';
+                (e.currentTarget as HTMLElement).style.background = 'transparent';
+              }}
               title="Open store"
             >
               <ExternalLink className="w-4 h-4" />
@@ -203,10 +266,21 @@ export default function Sidebar({ adminUser: adminUserProp, panelType: panelType
                   setTimeout(() => setLinkCopied(false), 2000);
                 });
               }}
-              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded"
+              className="p-1.5 rounded transition-colors"
+              style={{ color: '#a89070', background: 'transparent', border: 'none', cursor: 'pointer' }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.color = '#f8f4ed';
+                (e.currentTarget as HTMLElement).style.background = 'rgba(200,151,42,0.1)';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.color = '#a89070';
+                (e.currentTarget as HTMLElement).style.background = 'transparent';
+              }}
               title="Copy link"
             >
-              {linkCopied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+              {linkCopied
+                ? <Check className="w-4 h-4" style={{ color: '#22c55e' }} />
+                : <Copy className="w-4 h-4" />}
             </button>
           </div>
         </div>
@@ -220,20 +294,37 @@ export default function Sidebar({ adminUser: adminUserProp, panelType: panelType
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors ${
+              className="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors"
+              style={
                 isActive
-                  ? panelType === 'super'
-                    ? 'bg-purple-600 text-white'
-                    : panelType === 'master'
-                      ? 'bg-amber-600 text-white'
-                      : 'bg-orange-600 text-white'
-                  : 'text-slate-300 hover:bg-slate-800'
-              }`}
+                  ? {
+                      background: 'linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)',
+                      color: '#080808',
+                    }
+                  : {
+                      color: '#a89070',
+                    }
+              }
+              onMouseEnter={e => {
+                if (!isActive) {
+                  (e.currentTarget as HTMLElement).style.background = 'rgba(200,151,42,0.08)';
+                  (e.currentTarget as HTMLElement).style.color = '#f8f4ed';
+                }
+              }}
+              onMouseLeave={e => {
+                if (!isActive) {
+                  (e.currentTarget as HTMLElement).style.background = 'transparent';
+                  (e.currentTarget as HTMLElement).style.color = '#a89070';
+                }
+              }}
             >
               <item.icon className="w-5 h-5 flex-shrink-0" />
               <span className="flex-1 text-sm">{item.name}</span>
               {item.badge !== undefined && item.badge > 0 && (
-                <span className="bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
+                <span
+                  className="text-xs px-2 py-0.5 rounded-full"
+                  style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e' }}
+                >
                   {item.badge}
                 </span>
               )}
@@ -243,16 +334,22 @@ export default function Sidebar({ adminUser: adminUserProp, panelType: panelType
       </nav>
 
       {/* User Profile */}
-      <div className="p-4 border-t border-slate-800">
+      <div
+        className="p-4"
+        style={{ borderTop: '1px solid rgba(200,151,42,0.15)' }}
+      >
         <div className="flex items-center gap-3 mb-3">
-          <div className={`w-9 h-9 ${roleBg} rounded-full flex items-center justify-center flex-shrink-0`}>
-            <span className="text-white text-sm font-bold">{initials}</span>
+          <div
+            className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+            style={roleIconStyle}
+          >
+            <span className="text-sm font-bold" style={{ color: '#080808' }}>{initials}</span>
           </div>
           <div className="min-w-0">
-            <div className="text-white text-sm font-medium truncate">
+            <div className="text-sm font-medium truncate" style={{ color: '#f8f4ed' }}>
               {adminUser.name || 'Admin'}
             </div>
-            <div className="text-slate-400 text-xs truncate">
+            <div className="text-xs truncate" style={{ color: '#a89070' }}>
               {adminUser.email || ''}
             </div>
           </div>
@@ -263,7 +360,16 @@ export default function Sidebar({ adminUser: adminUserProp, panelType: panelType
             localStorage.removeItem('admin');
             window.location.href = logoutHref;
           }}
-          className="w-full flex items-center gap-3 px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors text-sm"
+          className="w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-sm"
+          style={{ color: '#a89070', background: 'transparent', border: 'none', cursor: 'pointer' }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLElement).style.color = '#f8f4ed';
+            (e.currentTarget as HTMLElement).style.background = 'rgba(200,151,42,0.08)';
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLElement).style.color = '#a89070';
+            (e.currentTarget as HTMLElement).style.background = 'transparent';
+          }}
         >
           <Power className="w-4 h-4" />
           <span>Sign Out</span>

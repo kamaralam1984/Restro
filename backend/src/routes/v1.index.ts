@@ -14,6 +14,13 @@ import revenueRoutes from './revenue.routes';
 import heroImageRoutes from './heroImage.routes';
 import superAdminRoutes from './superAdmin.routes';
 import restaurantRoutes from './restaurant.routes';
+import couponRoutes from './coupon.routes';
+import inventoryRoutes from './inventory.routes';
+import employeeRoutes from './employee.routes';
+import crmRoutes from './crm.routes';
+import abandonedCartRoutes from './abandonedCart.routes';
+import affiliateRoutes from './affiliate.routes';
+import whiteLabelRoutes from './whiteLabel.routes';
 
 const v1 = Router();
 
@@ -32,5 +39,12 @@ v1.use('/revenue', revenueRoutes);
 v1.use('/hero-images', heroImageRoutes);
 v1.use('/super-admin', superAdminRoutes);
 v1.use('/restaurants', restaurantRoutes);
+v1.use('/coupons', couponRoutes);
+v1.use('/inventory', inventoryRoutes);
+v1.use('/employees', employeeRoutes);
+v1.use('/crm', crmRoutes);
+v1.use('/abandoned-cart', abandonedCartRoutes);
+v1.use('/affiliate', affiliateRoutes);
+v1.use('/', whiteLabelRoutes);
 
 export default v1;

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast, { Toaster } from 'react-hot-toast';
 import { useCart, CartAddOn } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -25,13 +26,16 @@ interface EnhancedMenuCardProps {
 }
 
 export default function EnhancedMenuCard({ item, index = 0, restaurantSlug }: EnhancedMenuCardProps) {
-  const { addToCart } = useCart();
+  const { addToCart, getCartItems, openCartDrawer } = useCart();
   const { t } = useLanguage();
   const [showAddOns, setShowAddOns] = useState(false);
   const [selectedAddOns, setSelectedAddOns] = useState<CartAddOn[]>([]);
   const [customizations, setCustomizations] = useState('');
+  const [showInstructions, setShowInstructions] = useState(false);
 
   const itemId = item._id || item.id || '';
+
+  const inCartQty = getCartItems(restaurantSlug).find((i) => i.id === itemId)?.quantity ?? 0;
 
   const handleAddToCart = () => {
     if (!restaurantSlug) return;
@@ -46,6 +50,15 @@ export default function EnhancedMenuCard({ item, index = 0, restaurantSlug }: En
       selectedAddOns.length > 0 ? selectedAddOns : undefined,
       customizations || undefined
     );
+    toast.success(`${item.name} added to cart!`, {
+      duration: 1500,
+      style: {
+        background: '#141414',
+        color: '#f8f4ed',
+        border: '1px solid rgba(200,151,42,0.3)',
+      },
+    });
+    openCartDrawer();
     setSelectedAddOns([]);
     setCustomizations('');
     setShowAddOns(false);
@@ -62,99 +75,176 @@ export default function EnhancedMenuCard({ item, index = 0, restaurantSlug }: En
   };
 
   return (
-    <motion.div
-      className="bg-slate-800 rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-shadow border border-slate-700"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: index * 0.1 }}
-      whileHover={{ scale: 1.02 }}
-    >
-      {item.image && (
-        <motion.img
-          src={item.image}
-          alt={item.name}
-          className="w-full h-48 object-cover"
-          whileHover={{ scale: 1.1 }}
-          transition={{ duration: 0.3 }}
-        />
-      )}
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xl font-semibold text-white">{item.name}</h3>
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-            item.isVeg ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-          }`}>
-            {item.isVeg ? '🟢 ' + t('veg') : '🔴 ' + t('nonVeg')}
-          </span>
-        </div>
-        <p className="text-slate-400 text-sm mb-4">{item.description}</p>
-        
-        {item.addOns && item.addOns.length > 0 && (
-          <button
-            onClick={() => setShowAddOns(!showAddOns)}
-            className="text-orange-600 text-sm mb-2 hover:text-orange-500 transition-colors font-medium"
-          >
-            {showAddOns ? 'Hide' : 'Show'} Add-ons ({item.addOns.length})
-          </button>
-        )}
-
-        <AnimatePresence>
-          {showAddOns && item.addOns && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="mb-4 space-y-2"
-            >
-              {item.addOns.filter(a => a.available).map((addOn) => (
-                <label
-                  key={addOn.name}
-                  className="flex items-center justify-between p-3 border border-slate-700 rounded-lg cursor-pointer hover:bg-slate-700 transition-colors bg-slate-900"
-                >
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedAddOns.some((a) => a.name === addOn.name)}
-                      onChange={() => toggleAddOn(addOn)}
-                      className="mr-3 w-4 h-4 text-orange-600 bg-slate-800 border-slate-600 rounded focus:ring-orange-500"
-                    />
-                    <span className="text-sm text-white">{addOn.name}</span>
-                  </div>
-                  <span className="text-sm font-semibold text-orange-600">+₹{addOn.price.toFixed(0)}</span>
-                </label>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <div className="mb-4">
-          <input
-            type="text"
-            placeholder="Special instructions (optional)"
-            value={customizations}
-            onChange={(e) => setCustomizations(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+    <>
+      <Toaster position="top-right" />
+      <motion.div
+        style={{
+          background: '#141414',
+          border: '1px solid rgba(200,151,42,0.15)',
+          borderRadius: 16,
+          overflow: 'hidden',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+        }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: index * 0.1 }}
+        whileHover={{ scale: 1.02 }}
+      >
+        {item.image && (
+          <motion.img
+            src={item.image}
+            alt={item.name}
+            style={{ width: '100%', height: 192, objectFit: 'cover', display: 'block' }}
+            whileHover={{ scale: 1.1 }}
+            transition={{ duration: 0.3 }}
           />
-        </div>
+        )}
+        <div style={{ padding: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+            <h3 style={{ color: '#f8f4ed', fontWeight: 700, fontSize: '1.2rem', margin: 0 }}>{item.name}</h3>
+            <span
+              style={{
+                background: item.isVeg ? '#16a34a' : '#dc2626',
+                color: '#fff',
+                padding: '2px 12px',
+                borderRadius: 999,
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {item.isVeg ? '🟢 ' + t('veg') : '🔴 ' + t('nonVeg')}
+            </span>
+          </div>
 
-        <div className="flex justify-between items-center">
-          <div>
-            <span className="text-3xl font-bold text-orange-600">
+          <p style={{ color: '#a89070', fontSize: '0.875rem', marginBottom: '1rem' }}>{item.description}</p>
+
+          {item.addOns && item.addOns.length > 0 && (
+            <button
+              onClick={() => setShowAddOns(!showAddOns)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#c8972a',
+                fontSize: '0.875rem',
+                marginBottom: '0.5rem',
+                cursor: 'pointer',
+                fontWeight: 600,
+                padding: 0,
+              }}
+            >
+              {showAddOns ? 'Hide' : 'Show'} Add-ons ({item.addOns.length})
+            </button>
+          )}
+
+          <AnimatePresence>
+            {showAddOns && item.addOns && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', overflow: 'hidden' }}
+              >
+                {item.addOns.filter((a) => a.available).map((addOn) => (
+                  <label
+                    key={addOn.name}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.75rem',
+                      border: '1px solid rgba(200,151,42,0.2)',
+                      borderRadius: 8,
+                      cursor: 'pointer',
+                      background: '#1c1c1c',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedAddOns.some((a) => a.name === addOn.name)}
+                        onChange={() => toggleAddOn(addOn)}
+                        style={{ marginRight: '0.75rem', width: 16, height: 16, accentColor: '#c8972a' }}
+                      />
+                      <span style={{ fontSize: '0.875rem', color: '#f8f4ed' }}>{addOn.name}</span>
+                    </div>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#c8972a' }}>+₹{addOn.price.toFixed(0)}</span>
+                  </label>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div style={{ marginBottom: '0.5rem' }}>
+            <button
+              onClick={() => setShowInstructions(!showInstructions)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#a89070',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                padding: 0,
+                fontWeight: 500,
+              }}
+            >
+              {showInstructions ? '▲ Hide' : '▼ Special instructions'}
+            </button>
+          </div>
+
+          <AnimatePresence>
+            {showInstructions && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                style={{ overflow: 'hidden', marginBottom: '1rem' }}
+              >
+                <input
+                  type="text"
+                  placeholder="Special instructions (optional)"
+                  value={customizations}
+                  onChange={(e) => setCustomizations(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem 0.75rem',
+                    background: '#1c1c1c',
+                    border: '1px solid rgba(200,151,42,0.2)',
+                    borderRadius: 8,
+                    fontSize: '0.875rem',
+                    color: '#f8f4ed',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ color: '#c8972a', fontWeight: 800, fontSize: '1.75rem' }}>
               ₹{item.price.toFixed(0)}
             </span>
-            <span className="text-slate-500 text-sm ml-2">/ 2 pcs</span>
+            <motion.button
+              onClick={handleAddToCart}
+              style={{
+                background: 'linear-gradient(135deg, #8b5a00, #c8972a, #f0c060)',
+                color: '#080808',
+                padding: '0.5rem 1.5rem',
+                borderRadius: 8,
+                fontWeight: 800,
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+              }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              {inCartQty > 0 ? `Add More (${inCartQty})` : t('addToCart')}
+            </motion.button>
           </div>
-          <motion.button
-            onClick={handleAddToCart}
-            className="bg-orange-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-orange-700 transition-colors"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            {t('addToCart')}
-          </motion.button>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </>
   );
 }
-

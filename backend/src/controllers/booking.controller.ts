@@ -121,7 +121,7 @@ export const createBooking = async (req: Request, res: Response) => {
     let tableCapacity = null;
     let advancePaymentAmount = 0;
     let totalBookingAmount = 0;
-    let table: { restaurantId?: mongoose.Types.ObjectId } | null = null;
+    let table: InstanceType<typeof Table> | null = null;
 
     if (req.body.tableNumber) {
       selectedTableNumber = req.body.tableNumber;
@@ -154,8 +154,9 @@ export const createBooking = async (req: Request, res: Response) => {
       advancePaymentAmount = bookingConfig.hourlyRate; // Advance payment is 1 hour rate
 
       // Check if table is already booked for overlapping time slots (same restaurant only)
-      const sameRestaurantBookings = table?.restaurantId
-        ? existingBookings.filter((b: any) => b.restaurantId?.toString() === table.restaurantId?.toString())
+      const tableRestaurantId = table?.restaurantId;
+      const sameRestaurantBookings = tableRestaurantId
+        ? existingBookings.filter((b: any) => b.restaurantId?.toString() === tableRestaurantId.toString())
         : existingBookings;
       const tableBookings = sameRestaurantBookings.filter((b: any) => b.tableNumber === selectedTableNumber!);
       for (const existingBooking of tableBookings) {

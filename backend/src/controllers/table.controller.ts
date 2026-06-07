@@ -266,6 +266,139 @@ export const updateTableRateOffer = async (req: Request, res: Response) => {
   }
 };
 
+const VALID_CAPACITIES = [2, 4, 6, 12];
+
+// Create a new table (admin only)
+export const createTable = async (req: Request, res: Response) => {
+  try {
+    const { tableNumber, capacity, section, row, column, hourlyRate, restaurant: restaurantParam } = req.body;
+
+    if (!tableNumber) {
+      return res.status(400).json({ error: 'tableNumber is required' });
+    }
+    if (capacity === undefined || capacity === null) {
+      return res.status(400).json({ error: 'capacity is required' });
+    }
+    if (!VALID_CAPACITIES.includes(Number(capacity))) {
+      return res.status(400).json({ error: 'capacity must be one of 2, 4, 6, or 12' });
+    }
+    if (!row || !column) {
+      return res.status(400).json({ error: 'row and column are required' });
+    }
+
+    const restaurantId = await resolveRestaurantId(restaurantParam, req);
+    if (!restaurantId) {
+      return res.status(400).json({ error: 'Restaurant context required. Login as restaurant admin.' });
+    }
+
+    // Check for duplicate tableNumber per restaurant
+    const existing = await Table.findOne({ restaurantId, tableNumber: tableNumber.trim() });
+    if (existing) {
+      return res.status(400).json({ error: `Table number '${tableNumber}' already exists for this restaurant` });
+    }
+
+    const tableData: any = {
+      restaurantId,
+      tableNumber: tableNumber.trim(),
+      capacity: Number(capacity),
+      status: 'available',
+      location: {
+        row: Number(row),
+        column: Number(column),
+        section: section || 'center',
+      },
+    };
+    if (hourlyRate !== undefined && hourlyRate !== null && hourlyRate !== '') {
+      tableData.hourlyRate = Number(hourlyRate);
+    }
+
+    const table = await Table.create(tableData);
+    return res.status(201).json(table);
+  } catch (error: any) {
+    console.error('Error creating table:', error);
+    res.status(500).json({ error: error.message || 'Failed to create table' });
+  }
+};
+
+// Update a table (admin only)
+export const updateTable = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { tableNumber, capacity, section, row, column, hourlyRate, isActive } = req.body;
+
+    const table = await getTableForAdmin(id, req);
+    if (!table) {
+      return res.status(404).json({ error: 'Table not found' });
+    }
+
+    if (capacity !== undefined && capacity !== null) {
+      if (!VALID_CAPACITIES.includes(Number(capacity))) {
+        return res.status(400).json({ error: 'capacity must be one of 2, 4, 6, or 12' });
+      }
+    }
+
+    const updateData: any = {};
+    if (tableNumber !== undefined) updateData.tableNumber = tableNumber.trim();
+    if (capacity !== undefined) updateData.capacity = Number(capacity);
+    if (section !== undefined) updateData['location.section'] = section;
+    if (row !== undefined) updateData['location.row'] = Number(row);
+    if (column !== undefined) updateData['location.column'] = Number(column);
+    if (hourlyRate !== undefined) {
+      if (hourlyRate === null || hourlyRate === '') {
+        // handled via $unset below — skip for now, assign null to trigger unset
+        updateData.hourlyRate = undefined;
+      } else {
+        updateData.hourlyRate = Number(hourlyRate);
+      }
+    }
+    if (isActive !== undefined) updateData.isActive = Boolean(isActive);
+
+    const updated = await Table.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ error: 'Table not found' });
+    }
+
+    return res.json(updated);
+  } catch (error: any) {
+    console.error('Error updating table:', error);
+    res.status(400).json({ error: error.message || 'Failed to update table' });
+  }
+};
+
+// Delete a table (admin only)
+export const deleteTable = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const table = await getTableForAdmin(id, req);
+    if (!table) {
+      return res.status(404).json({ error: 'Table not found' });
+    }
+
+    // Check for active bookings on this table
+    const activeBooking = await Booking.findOne({
+      restaurantId: table.restaurantId,
+      tableNumber: table.tableNumber,
+      status: { $in: ['pending', 'confirmed'] },
+    });
+
+    if (activeBooking) {
+      return res.status(400).json({ error: 'Table has active bookings, cancel them first' });
+    }
+
+    await Table.findByIdAndDelete(id);
+    return res.json({ message: 'Table deleted successfully' });
+  } catch (error: any) {
+    console.error('Error deleting table:', error);
+    res.status(500).json({ error: error.message || 'Failed to delete table' });
+  }
+};
+
 const TABLE_SECTIONS = ['window', 'center', 'corner', 'outdoor'];
 const TABLE_CAPACITIES = [2, 4, 4, 6, 6, 8, 8, 10, 4, 4, 2, 4, 6, 6, 8, 4, 4, 6, 8, 10];
 

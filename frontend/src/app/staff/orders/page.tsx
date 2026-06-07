@@ -56,66 +56,161 @@ export default function StaffOrdersPage() {
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
 
+  const getStatusBadgeStyle = (status: Order['status']): React.CSSProperties => {
+    if (status === 'completed') return { background: 'rgba(34,197,94,0.1)', color: '#22c55e' };
+    if (status === 'cancelled') return { background: 'rgba(239,68,68,0.1)', color: '#ef4444' };
+    if (status === 'preparing') return { background: 'rgba(200,151,42,0.15)', color: '#f0c060' };
+    if (status === 'ready') return { background: 'rgba(96,165,250,0.1)', color: '#60a5fa' };
+    // pending / confirmed
+    return { background: 'rgba(240,192,96,0.1)', color: '#f0c060' };
+  };
+
+  const getPaymentBadgeStyle = (ps: Order['paymentStatus']): React.CSSProperties => {
+    if (ps === 'paid') return { background: 'rgba(34,197,94,0.1)', color: '#22c55e' };
+    if (ps === 'failed' || ps === 'refunded') return { background: 'rgba(239,68,68,0.1)', color: '#ef4444' };
+    return { background: 'rgba(240,192,96,0.1)', color: '#f0c060' };
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-white">Orders</h1>
+        <h1 className="text-2xl font-bold" style={{ color: '#f8f4ed' }}>Orders</h1>
         <div className="flex gap-2">
           {(['all', 'pending', 'paid'] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-2 rounded ${filter === f ? 'bg-orange-600 text-white' : 'bg-slate-800 text-slate-300'}`}
+              className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+              style={
+                filter === f
+                  ? {
+                      background: 'linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)',
+                      color: '#080808',
+                      border: 'none',
+                    }
+                  : {
+                      background: '#1c1c1c',
+                      color: '#a89070',
+                      border: '1px solid rgba(200,151,42,0.15)',
+                    }
+              }
             >
               {f === 'all' ? 'All' : f === 'pending' ? 'Pending' : 'Paid'}
             </button>
           ))}
         </div>
       </div>
-      <div className="bg-slate-900 rounded-xl p-6">
+
+      <div
+        className="rounded-xl p-6"
+        style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.13)', borderRadius: '16px' }}
+      >
         {loading ? (
-          <div className="text-center py-8 text-slate-400">Loading...</div>
+          <div className="text-center py-8" style={{ color: '#a89070' }}>Loading...</div>
         ) : orders.length === 0 ? (
-          <div className="text-center py-8 text-slate-400">No orders found</div>
+          <div className="text-center py-8" style={{ color: '#a89070' }}>No orders found</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-slate-400 border-b border-slate-800">
-                  <th className="text-left py-3 px-4">Order ID</th>
-                  <th className="text-left py-3 px-4">Customer</th>
-                  <th className="text-left py-3 px-4">Items</th>
-                  <th className="text-left py-3 px-4">Total</th>
-                  <th className="text-left py-3 px-4">Payment</th>
-                  <th className="text-left py-3 px-4">Status</th>
-                  <th className="text-left py-3 px-4">Actions</th>
+                <tr style={{ background: '#1c1c1c', borderBottom: '1px solid rgba(200,151,42,0.15)' }}>
+                  <th
+                    className="text-left py-3 px-4"
+                    style={{ color: '#a89070', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}
+                  >
+                    Order ID
+                  </th>
+                  <th
+                    className="text-left py-3 px-4"
+                    style={{ color: '#a89070', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}
+                  >
+                    Customer
+                  </th>
+                  <th
+                    className="text-left py-3 px-4"
+                    style={{ color: '#a89070', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}
+                  >
+                    Items
+                  </th>
+                  <th
+                    className="text-left py-3 px-4"
+                    style={{ color: '#a89070', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}
+                  >
+                    Total
+                  </th>
+                  <th
+                    className="text-left py-3 px-4"
+                    style={{ color: '#a89070', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}
+                  >
+                    Payment
+                  </th>
+                  <th
+                    className="text-left py-3 px-4"
+                    style={{ color: '#a89070', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}
+                  >
+                    Status
+                  </th>
+                  <th
+                    className="text-left py-3 px-4"
+                    style={{ color: '#a89070', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}
+                  >
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {orders.map((order) => (
-                  <tr key={order._id} className="border-b border-slate-800 hover:bg-slate-800">
-                    <td className="py-4 px-4 text-white font-mono">#{order.orderNumber}</td>
-                    <td className="py-4 px-4 text-white">
+                  <tr
+                    key={order._id}
+                    style={{ background: '#141414', borderBottom: '1px solid rgba(200,151,42,0.07)' }}
+                    onMouseEnter={(e: React.MouseEvent<HTMLTableRowElement>) => {
+                      (e.currentTarget as HTMLElement).style.background = '#1c1c1c';
+                    }}
+                    onMouseLeave={(e: React.MouseEvent<HTMLTableRowElement>) => {
+                      (e.currentTarget as HTMLElement).style.background = '#141414';
+                    }}
+                  >
+                    <td className="py-4 px-4 font-mono" style={{ color: '#f0c060' }}>#{order.orderNumber}</td>
+                    <td className="py-4 px-4" style={{ color: '#f8f4ed' }}>
                       <div>{order.customerName}</div>
-                      <div className="text-xs text-slate-400">{order.customerPhone}</div>
+                      <div className="text-xs" style={{ color: '#a89070' }}>{order.customerPhone}</div>
                     </td>
-                    <td className="py-4 px-4 text-slate-300">{order.items.length} items</td>
-                    <td className="py-4 px-4 text-white font-semibold">{formatCurrency(order.total)}</td>
+                    <td className="py-4 px-4" style={{ color: '#a89070' }}>{order.items.length} items</td>
+                    <td className="py-4 px-4 font-semibold" style={{ color: '#f8f4ed' }}>{formatCurrency(order.total)}</td>
                     <td className="py-4 px-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${order.paymentStatus === 'paid' ? 'bg-green-600 text-white' : 'bg-orange-600 text-white'}`}>
-                        {order.paymentStatus === 'paid' ? '✓ Paid' : 'Pending'}
+                      <span
+                        className="px-3 py-1 rounded-full text-xs font-semibold"
+                        style={getPaymentBadgeStyle(order.paymentStatus)}
+                      >
+                        {order.paymentStatus === 'paid' ? '✓ Paid' : order.paymentStatus}
                       </span>
                     </td>
                     <td className="py-4 px-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold text-white ${
-                        order.status === 'completed' ? 'bg-green-600' : order.status === 'preparing' ? 'bg-orange-600' : 'bg-yellow-600'
-                      }`}>{order.status}</span>
+                      <span
+                        className="px-3 py-1 rounded-full text-xs font-semibold"
+                        style={getStatusBadgeStyle(order.status)}
+                      >
+                        {order.status}
+                      </span>
                     </td>
                     <td className="py-4 px-4">
                       <select
-                        className="bg-slate-800 text-white text-xs px-3 py-1 rounded border border-slate-700"
+                        className="text-xs px-3 py-1 rounded"
+                        style={{
+                          background: '#1c1c1c',
+                          color: '#f8f4ed',
+                          border: '1px solid rgba(200,151,42,0.2)',
+                          borderRadius: '8px',
+                          outline: 'none',
+                        }}
                         value={order.status}
                         onChange={(e) => updateOrderStatus(order._id, e.target.value)}
+                        onFocus={(e: React.FocusEvent<HTMLSelectElement>) => {
+                          (e.currentTarget as HTMLElement).style.borderColor = '#c8972a';
+                        }}
+                        onBlur={(e: React.FocusEvent<HTMLSelectElement>) => {
+                          (e.currentTarget as HTMLElement).style.borderColor = 'rgba(200,151,42,0.2)';
+                        }}
                       >
                         <option value="pending">Pending</option>
                         <option value="confirmed">Confirmed</option>

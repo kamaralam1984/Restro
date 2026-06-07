@@ -50,12 +50,21 @@ interface CartContextType {
   removeFromCart: (id: string, restaurantSlug: string) => void;
   updateQuantity: (id: string, quantity: number, restaurantSlug: string) => void;
   clearCart: (restaurantSlug: string) => void;
+  isCartDrawerOpen: boolean;
+  openCartDrawer: () => void;
+  closeCartDrawer: () => void;
+  /** The last restaurant slug that had items added — used by CartDrawer when no slug in context */
+  activeCartSlug: string | undefined;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cartsByRestaurant, setCartsByRestaurant] = useState<CartsByRestaurant>(loadCartsFromStorage);
+  const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
+  const [activeCartSlug, setActiveCartSlug] = useState<string | undefined>(undefined);
+  const openCartDrawer = useCallback(() => setIsCartDrawerOpen(true), []);
+  const closeCartDrawer = useCallback(() => setIsCartDrawerOpen(false), []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -97,6 +106,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       customizations?: string
     ) => {
       if (!restaurantSlug) return;
+      setActiveCartSlug(restaurantSlug);
       setCartsByRestaurant((prev) => {
         const list = prev[restaurantSlug] ?? [];
         const existing = list.find(
@@ -166,6 +176,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         removeFromCart,
         updateQuantity,
         clearCart,
+        isCartDrawerOpen,
+        openCartDrawer,
+        closeCartDrawer,
+        activeCartSlug,
       }}
     >
       {children}

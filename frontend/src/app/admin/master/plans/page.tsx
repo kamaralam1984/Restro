@@ -53,30 +53,39 @@ export default function MasterAdminPlansPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center py-20">
-      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-600" />
+      <div
+        className="animate-spin rounded-full h-10 w-10"
+        style={{ border: '3px solid rgba(200,151,42,0.2)', borderTopColor: '#c8972a' }}
+      />
     </div>
   );
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Subscription Plans</h1>
-        <p className="text-slate-400 text-sm mt-1">Platform-level pricing plans</p>
+        <h1 className="text-2xl font-bold" style={{ color: '#f8f4ed' }}>Subscription Plans</h1>
+        <p className="text-sm mt-1" style={{ color: '#a89070' }}>Platform-level pricing plans</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {plans.sort((a, b) => a.sortOrder - b.sortOrder).map((plan, i) => (
           <motion.div
             key={plan._id}
-            className={`bg-slate-900 rounded-2xl overflow-hidden border-2 transition-all ${
-              plan.isPopular ? 'border-amber-600' : 'border-slate-800'
-            } ${!plan.isActive ? 'opacity-60' : ''}`}
+            className="rounded-2xl overflow-hidden transition-all"
+            style={{
+              background: '#141414',
+              border: plan.isPopular ? '2px solid #c8972a' : '2px solid rgba(200,151,42,0.15)',
+              opacity: plan.isActive ? 1 : 0.6,
+            }}
             initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={{ opacity: plan.isActive ? 1 : 0.6, y: 0 }}
             transition={{ delay: i * 0.1 }}
           >
             {plan.isPopular && (
-              <div className="bg-amber-600 text-white text-xs font-bold text-center py-1.5 flex items-center justify-center gap-1">
+              <div
+                className="text-xs font-bold text-center py-1.5 flex items-center justify-center gap-1"
+                style={{ background: 'linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)', color: '#080808' }}
+              >
                 <Star className="w-3.5 h-3.5" /> MOST POPULAR
               </div>
             )}
@@ -84,40 +93,44 @@ export default function MasterAdminPlansPage() {
             <div className="p-6">
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-amber-600/20 rounded-lg flex items-center justify-center">
-                    <Package className="w-4 h-4 text-amber-400" />
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center"
+                    style={{ background: 'rgba(200,151,42,0.15)' }}
+                  >
+                    <Package className="w-4 h-4" style={{ color: '#f0c060' }} />
                   </div>
-                  <h3 className="text-white font-bold text-lg">{plan.name}</h3>
+                  <h3 className="font-bold text-lg" style={{ color: '#f8f4ed' }}>{plan.name}</h3>
                 </div>
                 <button
                   onClick={() => toggleActive(plan._id, plan.isActive)}
-                  className={`text-xs px-2.5 py-1 rounded-full font-semibold transition-colors ${
+                  className="text-xs px-2.5 py-1 rounded-full font-semibold transition-colors"
+                  style={
                     plan.isActive
-                      ? 'bg-green-600/20 text-green-400 hover:bg-red-600/20 hover:text-red-400'
-                      : 'bg-red-600/20 text-red-400 hover:bg-green-600/20 hover:text-green-400'
-                  }`}
+                      ? { background: 'rgba(34,197,94,0.1)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.25)' }
+                      : { background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)' }
+                  }
                 >
                   {plan.isActive ? 'Active' : 'Inactive'}
                 </button>
               </div>
-              <p className="text-slate-400 text-xs mb-4">{plan.description}</p>
+              <p className="text-xs mb-4" style={{ color: '#a89070' }}>{plan.description}</p>
 
               <div className="mb-4">
-                <span className="text-3xl font-bold text-white">₹{plan.price}</span>
-                <span className="text-slate-400 text-sm">/month</span>
-                <div className="text-slate-500 text-xs mt-0.5">₹{plan.yearlyPrice}/year • {plan.trialDays} day trial</div>
+                <span className="text-3xl font-bold" style={{ color: '#f8f4ed' }}>₹{plan.price}</span>
+                <span className="text-sm" style={{ color: '#a89070' }}>/month</span>
+                <div className="text-xs mt-0.5" style={{ color: '#6b5040' }}>₹{plan.yearlyPrice}/year • {plan.trialDays} day trial</div>
               </div>
 
               <div className="space-y-2">
                 {featureRows(plan.features).map((row) => (
                   <div key={row.label} className="flex items-center justify-between text-sm">
-                    <span className="text-slate-400">{row.label}</span>
+                    <span style={{ color: '#a89070' }}>{row.label}</span>
                     {typeof row.value === 'boolean' ? (
-                      <span className={row.value ? 'text-green-400' : 'text-red-400'}>
+                      <span style={row.value ? { color: '#22c55e' } : { color: '#ef4444' }}>
                         {row.value ? <Check className="w-4 h-4" /> : '✕'}
                       </span>
                     ) : (
-                      <span className="text-white font-medium">{row.value}</span>
+                      <span className="font-medium" style={{ color: '#f8f4ed' }}>{row.value}</span>
                     )}
                   </div>
                 ))}

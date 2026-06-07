@@ -11,8 +11,9 @@ import Footer from '@/components/Footer';
 export default function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isRestaurantStorefront = pathname?.startsWith('/r/');
+  const isAuthPage = pathname === '/login' || pathname === '/signup';
 
-  if (isRestaurantStorefront) {
+  if (isRestaurantStorefront || isAuthPage) {
     return <>{children}</>;
   }
 

@@ -94,22 +94,21 @@ export default function ReviewsPage() {
     return Array.from({ length: 5 }).map((_, i) => (
       <Star
         key={i}
-        className={`w-5 h-5 ${
-          i < rating ? 'text-yellow-400 fill-yellow-400' : 'text-slate-600'
-        }`}
+        className="w-5 h-5"
+        style={{ color: i < rating ? '#f0c060' : '#6b5040', fill: i < rating ? '#f0c060' : 'none' }}
       />
     ));
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ background: '#080808', minHeight: '100vh', padding: '24px' }}>
       <Toaster position="top-right" />
-      
+
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-white">Reviews</h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <h1 className="text-2xl font-bold" style={{ color: '#f8f4ed' }}>Reviews</h1>
+          <p className="text-sm mt-1" style={{ color: '#a89070' }}>
             Total Reviews: {reviews.length} | Average Rating: {
               reviews.length > 0
                 ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
@@ -120,24 +119,48 @@ export default function ReviewsPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-slate-900 rounded-xl p-4 space-y-4">
+      <div
+        className="rounded-xl p-4 space-y-4"
+        style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.13)' }}
+      >
         <div className="flex flex-wrap gap-4">
           <div className="flex-1 min-w-[200px]">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+              <Search
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5"
+                style={{ color: '#a89070' }}
+              />
               <input
                 type="text"
                 placeholder="Search reviews..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full pl-10 pr-4 py-2"
+                style={{
+                  background: '#1c1c1c',
+                  border: '1px solid rgba(200,151,42,0.2)',
+                  borderRadius: '10px',
+                  color: '#f8f4ed',
+                  outline: 'none',
+                }}
+                onFocus={(e) => (e.currentTarget.style.borderColor = '#c8972a')}
+                onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(200,151,42,0.2)')}
               />
             </div>
           </div>
           <select
             value={ratingFilter}
             onChange={(e) => setRatingFilter(e.target.value as any)}
-            className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="px-4 py-2"
+            style={{
+              background: '#1c1c1c',
+              border: '1px solid rgba(200,151,42,0.2)',
+              borderRadius: '10px',
+              color: '#f8f4ed',
+              outline: 'none',
+            }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = '#c8972a')}
+            onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(200,151,42,0.2)')}
           >
             <option value="all">All Ratings</option>
             <option value="5">5 Stars</option>
@@ -149,7 +172,16 @@ export default function ReviewsPage() {
           <select
             value={verifiedFilter}
             onChange={(e) => setVerifiedFilter(e.target.value as any)}
-            className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="px-4 py-2"
+            style={{
+              background: '#1c1c1c',
+              border: '1px solid rgba(200,151,42,0.2)',
+              borderRadius: '10px',
+              color: '#f8f4ed',
+              outline: 'none',
+            }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = '#c8972a')}
+            onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(200,151,42,0.2)')}
           >
             <option value="all">All Reviews</option>
             <option value="verified">Verified Only</option>
@@ -160,9 +192,9 @@ export default function ReviewsPage() {
 
       {/* Reviews List */}
       {loading ? (
-        <div className="text-center py-12 text-slate-400">Loading...</div>
+        <div className="text-center py-12" style={{ color: '#a89070' }}>Loading...</div>
       ) : filteredReviews.length === 0 ? (
-        <div className="text-center py-12 text-slate-400">
+        <div className="text-center py-12" style={{ color: '#a89070' }}>
           {reviews.length === 0 ? 'No reviews yet' : 'No reviews match your filters'}
         </div>
       ) : (
@@ -170,56 +202,77 @@ export default function ReviewsPage() {
           {filteredReviews.map((review) => (
             <motion.div
               key={review._id}
-              className="bg-slate-900 rounded-xl p-6 border border-slate-800 hover:border-orange-600 transition-colors"
+              className="rounded-xl p-6 transition-colors"
+              style={{
+                background: '#141414',
+                border: '1px solid rgba(200,151,42,0.13)',
+                borderRadius: '16px',
+              }}
+              onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => (e.currentTarget.style.borderColor = 'rgba(200,151,42,0.35)')}
+              onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => (e.currentTarget.style.borderColor = 'rgba(200,151,42,0.13)')}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
             >
               <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 bg-orange-600 rounded-full flex items-center justify-center text-white font-semibold">
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center font-semibold"
+                      style={{
+                        background: 'linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)',
+                        color: '#080808',
+                      }}
+                    >
                       {review.customerName.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <p className="text-white font-semibold">{review.customerName}</p>
+                      <p className="font-semibold" style={{ color: '#f8f4ed' }}>{review.customerName}</p>
                       {review.customerEmail && (
-                        <p className="text-xs text-slate-400">{review.customerEmail}</p>
+                        <p className="text-xs" style={{ color: '#a89070' }}>{review.customerEmail}</p>
                       )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mb-2">
                     {renderStars(review.rating)}
-                    <span className="text-slate-400 text-sm ml-2">
+                    <span className="text-sm ml-2" style={{ color: '#a89070' }}>
                       {new Date(review.createdAt).toLocaleDateString()}
                     </span>
                     {review.verified && (
-                      <span className="px-2 py-1 bg-green-600 text-white text-xs rounded">
+                      <span
+                        className="px-2 py-1 text-xs rounded"
+                        style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e' }}
+                      >
                         Verified
                       </span>
                     )}
                   </div>
                   {review.comment && (
-                    <p className="text-slate-300 mt-2">{review.comment}</p>
+                    <p className="mt-2" style={{ color: '#a89070' }}>{review.comment}</p>
                   )}
                 </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => toggleVerification(review._id, review.verified)}
-                    className={`p-2 rounded transition-colors ${
+                    className="p-2 rounded transition-colors"
+                    style={
                       review.verified
-                        ? 'bg-green-600 hover:bg-green-700'
-                        : 'bg-slate-800 hover:bg-slate-700'
-                    }`}
+                        ? { background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)' }
+                        : { background: '#1c1c1c', border: '1px solid rgba(200,151,42,0.15)' }
+                    }
                     title={review.verified ? 'Unverify' : 'Verify'}
                   >
-                    <CheckCircle className="w-5 h-5 text-white" />
+                    <CheckCircle
+                      className="w-5 h-5"
+                      style={{ color: review.verified ? '#22c55e' : '#a89070' }}
+                    />
                   </button>
                   <button
                     onClick={() => deleteReview(review._id)}
-                    className="p-2 rounded bg-red-600 hover:bg-red-700 transition-colors"
+                    className="p-2 rounded transition-colors"
+                    style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)' }}
                     title="Delete"
                   >
-                    <XCircle className="w-5 h-5 text-white" />
+                    <XCircle className="w-5 h-5" style={{ color: '#ef4444' }} />
                   </button>
                 </div>
               </div>

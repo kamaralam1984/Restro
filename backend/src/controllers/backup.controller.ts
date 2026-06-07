@@ -23,7 +23,7 @@ interface BackupPayload {
 
 export const exportBackup = async (req: Request, res: Response) => {
   try {
-    const { scope = 'all', restaurantId } = req.query as BackupPayload;
+    const { scope = 'all', restaurantId } = req.query as unknown as BackupPayload;
 
     const filterByRestaurant = (field: string) => {
       if (scope !== 'restaurant' || !restaurantId || !mongoose.Types.ObjectId.isValid(restaurantId)) {

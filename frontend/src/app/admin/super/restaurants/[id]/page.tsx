@@ -73,26 +73,38 @@ function FeatureToggle({
   enabled: boolean; saving: boolean; onChange: (val: boolean) => void;
 }) {
   return (
-    <div className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
-      enabled ? 'bg-slate-800/60 border-slate-700' : 'bg-slate-900 border-slate-800 opacity-70'
-    }`}>
+    <div
+      className="flex items-center justify-between p-4 rounded-xl border transition-all"
+      style={{
+        background: enabled ? 'rgba(200,151,42,0.08)' : '#141414',
+        borderColor: enabled ? 'rgba(200,151,42,0.35)' : 'rgba(200,151,42,0.15)',
+        opacity: enabled ? 1 : 0.7,
+      }}
+    >
       <div className="flex items-center gap-3">
         <span className="text-2xl">{icon}</span>
         <div>
-          <div className="text-white text-sm font-semibold">{label}</div>
-          <div className="text-slate-400 text-xs mt-0.5">{desc}</div>
+          <div className="text-sm font-semibold" style={{ color: '#f8f4ed' }}>{label}</div>
+          <div className="text-xs mt-0.5" style={{ color: '#a89070' }}>{desc}</div>
         </div>
       </div>
       <button
         disabled={saving}
         onClick={() => onChange(!enabled)}
-        className={`relative w-12 h-6 rounded-full transition-colors duration-200 flex-shrink-0 ${
-          enabled ? 'bg-green-500' : 'bg-slate-600'
-        } ${saving ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+        className="relative w-12 h-6 rounded-full transition-colors duration-200 flex-shrink-0"
+        style={{
+          background: enabled ? '#22c55e' : 'rgba(200,151,42,0.2)',
+          opacity: saving ? 0.5 : 1,
+          cursor: saving ? 'not-allowed' : 'pointer',
+        }}
       >
-        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${
-          enabled ? 'translate-x-6' : 'translate-x-0.5'
-        }`} />
+        <span
+          className="absolute top-0.5 w-5 h-5 rounded-full shadow transition-transform duration-200"
+          style={{
+            background: '#f8f4ed',
+            transform: enabled ? 'translateX(1.5rem)' : 'translateX(0.125rem)',
+          }}
+        />
       </button>
     </div>
   );
@@ -211,22 +223,25 @@ export default function RestaurantManagePage() {
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[400px]">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600" />
+      <div
+        className="animate-spin rounded-full h-12 w-12"
+        style={{ border: '2px solid rgba(200,151,42,0.2)', borderTopColor: '#c8972a' }}
+      />
     </div>
   );
 
   if (!restaurant) return (
-    <div className="text-center py-20 text-slate-400">Restaurant not found</div>
+    <div className="text-center py-20" style={{ color: '#a89070' }}>Restaurant not found</div>
   );
 
   const isActive = restaurant.status === 'active';
 
   const statCards = stats ? [
-    { label: 'Total Orders',    value: stats.totalOrders,   sub: `${stats.todayOrders} today`,      icon: ShoppingBag,    color: 'text-orange-400' },
-    { label: 'Total Revenue',   value: `₹${stats.totalRevenue.toLocaleString('en-IN')}`, sub: `₹${stats.todayRevenue.toLocaleString('en-IN')} today`, icon: IndianRupee, color: 'text-green-400' },
-    { label: 'Menu Items',      value: stats.menuItems,     sub: 'active items',                    icon: UtensilsCrossed, color: 'text-blue-400' },
-    { label: 'Staff Members',   value: stats.staffCount,    sub: 'admin + staff',                   icon: Users,           color: 'text-purple-400' },
-    { label: 'Total Bookings',  value: stats.bookingsTotal, sub: `${stats.bookingsToday} today`,    icon: Calendar,        color: 'text-cyan-400' },
+    { label: 'Total Orders',    value: stats.totalOrders,   sub: `${stats.todayOrders} today`,      icon: ShoppingBag,    color: '#c8972a' },
+    { label: 'Total Revenue',   value: `₹${stats.totalRevenue.toLocaleString('en-IN')}`, sub: `₹${stats.todayRevenue.toLocaleString('en-IN')} today`, icon: IndianRupee, color: '#22c55e' },
+    { label: 'Menu Items',      value: stats.menuItems,     sub: 'active items',                    icon: UtensilsCrossed, color: '#f0c060' },
+    { label: 'Staff Members',   value: stats.staffCount,    sub: 'admin + staff',                   icon: Users,           color: '#c8972a' },
+    { label: 'Total Bookings',  value: stats.bookingsTotal, sub: `${stats.bookingsToday} today`,    icon: Calendar,        color: '#f0c060' },
   ] : [];
 
   return (
@@ -237,9 +252,12 @@ export default function RestaurantManagePage() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0 }}
-          className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl text-sm font-semibold shadow-xl flex items-center gap-2 ${
-            toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-          }`}
+          className="fixed top-6 right-6 z-50 px-5 py-3 rounded-xl text-sm font-semibold shadow-xl flex items-center gap-2"
+          style={{
+            background: toast.type === 'success' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
+            color: toast.type === 'success' ? '#22c55e' : '#ef4444',
+            border: `1px solid ${toast.type === 'success' ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
+          }}
         >
           {toast.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
           {toast.msg}
@@ -248,21 +266,31 @@ export default function RestaurantManagePage() {
 
       {/* Back + header */}
       <div className="flex items-center gap-4">
-        <Link href="/admin/super/restaurants"
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm">
+        <Link
+          href="/admin/super/restaurants"
+          className="flex items-center gap-2 transition-colors text-sm"
+          style={{ color: '#a89070' }}
+        >
           <ArrowLeft className="w-4 h-4" /> Back
         </Link>
-        <div className="h-4 w-px bg-slate-700" />
+        <div className="h-4 w-px" style={{ background: 'rgba(200,151,42,0.2)' }} />
         <div className="flex items-center gap-3 flex-1">
-          <div className="w-10 h-10 bg-purple-600/20 rounded-xl flex items-center justify-center">
-            <Store className="w-5 h-5 text-purple-400" />
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ background: 'rgba(200,151,42,0.12)' }}
+          >
+            <Store className="w-5 h-5" style={{ color: '#c8972a' }} />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">{restaurant.name}</h1>
-            <p className="text-slate-400 text-xs">/{restaurant.slug} · {restaurant.city}, {restaurant.state}</p>
+            <h1 className="text-xl font-bold" style={{ color: '#f8f4ed' }}>{restaurant.name}</h1>
+            <p className="text-xs" style={{ color: '#a89070' }}>/{restaurant.slug} · {restaurant.city}, {restaurant.state}</p>
           </div>
         </div>
-        <button onClick={loadData} className="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800">
+        <button
+          onClick={loadData}
+          className="p-2 rounded-lg transition-colors"
+          style={{ color: '#a89070' }}
+        >
           <RefreshCw className="w-4 h-4" />
         </button>
       </div>
@@ -270,8 +298,11 @@ export default function RestaurantManagePage() {
       {/* Status + Info strip */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Restaurant Info */}
-        <div className="lg:col-span-2 bg-slate-900 rounded-xl p-5 border border-slate-800">
-          <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Restaurant Info</h2>
+        <div
+          className="lg:col-span-2 rounded-xl p-5"
+          style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.15)' }}
+        >
+          <h2 className="text-sm font-semibold uppercase tracking-wider mb-4" style={{ color: '#a89070' }}>Restaurant Info</h2>
           <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             {[
               { label: 'Owner', value: restaurant.ownerId?.name || '—' },
@@ -285,14 +316,17 @@ export default function RestaurantManagePage() {
               { label: 'Joined', value: new Date(restaurant.createdAt).toLocaleDateString('en-IN') },
             ].map((row) => (
               <div key={row.label}>
-                <div className="text-slate-500 text-xs">{row.label}</div>
-                <div className="text-white mt-0.5 truncate">{row.value}</div>
+                <div className="text-xs" style={{ color: '#6b5040' }}>{row.label}</div>
+                <div className="mt-0.5 truncate" style={{ color: '#f8f4ed' }}>{row.value}</div>
               </div>
             ))}
             <div className="col-span-2">
-              <div className="text-slate-500 text-xs mb-1">Store link</div>
+              <div className="text-xs mb-1" style={{ color: '#6b5040' }}>Store link</div>
               <div className="flex items-center gap-2 flex-wrap">
-                <code className="text-sm text-slate-300 bg-slate-800 px-2 py-1 rounded truncate max-w-[200px]">
+                <code
+                  className="text-sm px-2 py-1 rounded truncate max-w-[200px]"
+                  style={{ color: '#f0c060', background: '#1c1c1c' }}
+                >
                   {getRestaurantPublicLink(restaurant.slug)}
                 </code>
                 <button
@@ -301,7 +335,8 @@ export default function RestaurantManagePage() {
                     navigator.clipboard.writeText(getRestaurantPublicLink(restaurant.slug));
                     showToast('Link copied');
                   }}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700"
+                  className="p-1.5 rounded-lg transition-colors"
+                  style={{ color: '#a89070' }}
                   title="Copy"
                 >
                   <Copy className="w-4 h-4" />
@@ -310,7 +345,8 @@ export default function RestaurantManagePage() {
                   href={getRestaurantPublicLink(restaurant.slug)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700"
+                  className="p-1.5 rounded-lg transition-colors"
+                  style={{ color: '#a89070' }}
                   title="Open store"
                 >
                   <ExternalLink className="w-4 h-4" />
@@ -321,48 +357,99 @@ export default function RestaurantManagePage() {
         </div>
 
         {/* Status Control */}
-        <div className="bg-slate-900 rounded-xl p-5 border border-slate-800 flex flex-col">
-          <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Status Control</h2>
+        <div
+          className="rounded-xl p-5 flex flex-col"
+          style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.15)' }}
+        >
+          <h2 className="text-sm font-semibold uppercase tracking-wider mb-4" style={{ color: '#a89070' }}>Status Control</h2>
 
           <div className="flex items-center gap-3 mb-5">
-            <div className={`w-3 h-3 rounded-full ${
-              restaurant.status === 'active' ? 'bg-green-500' :
-              restaurant.status === 'suspended' ? 'bg-yellow-500' : 'bg-red-500'
-            }`} />
-            <span className={`text-sm font-semibold capitalize ${
-              restaurant.status === 'active' ? 'text-green-400' :
-              restaurant.status === 'suspended' ? 'text-yellow-400' : 'text-red-400'
-            }`}>{restaurant.status}</span>
+            <div
+              className="w-3 h-3 rounded-full"
+              style={{
+                background:
+                  restaurant.status === 'active' ? '#22c55e' :
+                  restaurant.status === 'suspended' ? '#f0c060' : '#ef4444',
+              }}
+            />
+            <span
+              className="text-sm font-semibold capitalize"
+              style={{
+                color:
+                  restaurant.status === 'active' ? '#22c55e' :
+                  restaurant.status === 'suspended' ? '#f0c060' : '#ef4444',
+              }}
+            >
+              {restaurant.status}
+            </span>
           </div>
 
           <div className="space-y-2 flex-1">
-            <button disabled={statusSaving || restaurant.status === 'active'}
+            <button
+              disabled={statusSaving || restaurant.status === 'active'}
               onClick={() => handleStatusChange('active')}
-              className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors bg-green-600/20 text-green-400 hover:bg-green-600 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed">
+              className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:cursor-not-allowed"
+              style={{
+                background: 'rgba(34,197,94,0.1)',
+                color: '#22c55e',
+                border: '1px solid rgba(34,197,94,0.2)',
+                opacity: (statusSaving || restaurant.status === 'active') ? 0.4 : 1,
+              }}
+            >
               <CheckCircle className="w-4 h-4" /> Activate
             </button>
-            <button disabled={statusSaving || restaurant.status === 'suspended'}
+            <button
+              disabled={statusSaving || restaurant.status === 'suspended'}
               onClick={() => handleStatusChange('suspended')}
-              className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed">
+              className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:cursor-not-allowed"
+              style={{
+                background: 'rgba(240,192,96,0.1)',
+                color: '#f0c060',
+                border: '1px solid rgba(240,192,96,0.2)',
+                opacity: (statusSaving || restaurant.status === 'suspended') ? 0.4 : 1,
+              }}
+            >
               <AlertTriangle className="w-4 h-4" /> Suspend
             </button>
-            <button disabled={statusSaving || restaurant.status === 'inactive'}
+            <button
+              disabled={statusSaving || restaurant.status === 'inactive'}
               onClick={() => handleStatusChange('inactive')}
-              className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed">
+              className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:cursor-not-allowed"
+              style={{
+                background: 'rgba(239,68,68,0.1)',
+                color: '#ef4444',
+                border: '1px solid rgba(239,68,68,0.2)',
+                opacity: (statusSaving || restaurant.status === 'inactive') ? 0.4 : 1,
+              }}
+            >
               <Power className="w-4 h-4" /> Deactivate
             </button>
           </div>
 
-          <div className="mt-4 pt-4 border-t border-slate-800 space-y-2">
+          <div
+            className="mt-4 pt-4 space-y-2"
+            style={{ borderTop: '1px solid rgba(200,151,42,0.15)' }}
+          >
             <Link
               href={`/admin/super/subscriptions?restaurantId=${id}`}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors bg-orange-600/20 text-orange-400 hover:bg-orange-600 hover:text-white"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+              style={{
+                background: 'rgba(200,151,42,0.1)',
+                color: '#c8972a',
+                border: '1px solid rgba(200,151,42,0.3)',
+              }}
             >
               <RefreshCw className="w-4 h-4" /> Renew subscription
             </Link>
             <button
               onClick={() => setShowResetModal(true)}
-              className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white">
+              className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+              style={{
+                background: '#1c1c1c',
+                color: '#a89070',
+                border: '1px solid rgba(200,151,42,0.15)',
+              }}
+            >
               <KeyRound className="w-4 h-4" /> Reset Admin Password
             </button>
           </div>
@@ -375,19 +462,26 @@ export default function RestaurantManagePage() {
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl"
+            className="rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl"
+            style={{
+              background: '#141414',
+              border: '1px solid rgba(200,151,42,0.2)',
+            }}
           >
             <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 bg-purple-600/20 rounded-xl flex items-center justify-center">
-                <KeyRound className="w-5 h-5 text-purple-400" />
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{ background: 'rgba(200,151,42,0.12)' }}
+              >
+                <KeyRound className="w-5 h-5" style={{ color: '#c8972a' }} />
               </div>
               <div>
-                <h3 className="text-white font-semibold">Reset Admin Password</h3>
-                <p className="text-slate-400 text-xs mt-0.5">{restaurant.name}</p>
+                <h3 className="font-semibold" style={{ color: '#f8f4ed' }}>Reset Admin Password</h3>
+                <p className="text-xs mt-0.5" style={{ color: '#a89070' }}>{restaurant.name}</p>
               </div>
             </div>
 
-            <p className="text-slate-400 text-sm mb-4">
+            <p className="text-sm mb-4" style={{ color: '#a89070' }}>
               This will reset the password for the restaurant&apos;s admin account. Share the new password securely.
             </p>
 
@@ -397,12 +491,22 @@ export default function RestaurantManagePage() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="New password (min 8 chars)"
-                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 pr-10"
+                className="w-full pr-10"
+                style={{
+                  background: '#1c1c1c',
+                  border: '1px solid rgba(200,151,42,0.2)',
+                  borderRadius: 10,
+                  padding: '10px 14px',
+                  color: '#f8f4ed',
+                  outline: 'none',
+                  fontSize: '0.875rem',
+                }}
               />
               <button
                 type="button"
                 onClick={() => setShowPwd(!showPwd)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                style={{ color: '#a89070' }}
               >
                 {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -411,14 +515,25 @@ export default function RestaurantManagePage() {
             <div className="flex gap-3">
               <button
                 onClick={() => { setShowResetModal(false); setNewPassword(''); }}
-                className="flex-1 px-4 py-2.5 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-lg text-sm font-semibold transition-colors"
+                className="flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+                style={{
+                  background: '#1c1c1c',
+                  color: '#a89070',
+                  border: '1px solid rgba(200,151,42,0.15)',
+                }}
               >
                 Cancel
               </button>
               <button
                 onClick={handleResetPassword}
                 disabled={resetSaving || newPassword.length < 8}
-                className="flex-1 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:cursor-not-allowed"
+                style={{
+                  background: 'linear-gradient(135deg, #8b5a00, #c8972a, #f0c060)',
+                  color: '#080808',
+                  border: 'none',
+                  opacity: (resetSaving || newPassword.length < 8) ? 0.5 : 1,
+                }}
               >
                 {resetSaving ? 'Resetting...' : 'Reset Password'}
               </button>
@@ -429,17 +544,23 @@ export default function RestaurantManagePage() {
 
       {/* Live Stats */}
       <div>
-        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Live Statistics</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: '#a89070' }}>Live Statistics</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {statCards.map((card, i) => (
-            <motion.div key={i} className="bg-slate-900 border border-slate-800 rounded-xl p-4"
-              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+            <motion.div
+              key={i}
+              className="rounded-xl p-4"
+              style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.15)' }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+            >
               <div className="flex items-center gap-2 mb-2">
-                <card.icon className={`w-4 h-4 ${card.color}`} />
-                <span className="text-xs text-slate-400">{card.label}</span>
+                <card.icon className="w-4 h-4" style={{ color: card.color }} />
+                <span className="text-xs" style={{ color: '#a89070' }}>{card.label}</span>
               </div>
-              <div className={`text-xl font-bold ${card.color}`}>{card.value}</div>
-              <div className="text-xs text-slate-500 mt-0.5">{card.sub}</div>
+              <div className="text-xl font-bold" style={{ color: card.color }}>{card.value}</div>
+              <div className="text-xs mt-0.5" style={{ color: '#6b5040' }}>{card.sub}</div>
             </motion.div>
           ))}
         </div>
@@ -449,22 +570,46 @@ export default function RestaurantManagePage() {
       <div>
         <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
           <div>
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Feature Controls</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Enable or disable modules as per subscription plan. Click Save to apply changes.</p>
+            <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: '#a89070' }}>Feature Controls</h2>
+            <p className="text-xs mt-0.5" style={{ color: '#6b5040' }}>Enable or disable modules as per subscription plan. Click Save to apply changes.</p>
           </div>
           <div className="flex gap-2 flex-wrap items-center">
-            <button onClick={handleDisableAll} disabled={featureSaving}
-              className="px-3 py-1.5 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white rounded-lg text-xs font-semibold transition-colors disabled:opacity-50">
+            <button
+              onClick={handleDisableAll}
+              disabled={featureSaving}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+              style={{
+                background: 'rgba(239,68,68,0.1)',
+                color: '#ef4444',
+                border: '1px solid rgba(239,68,68,0.2)',
+                opacity: featureSaving ? 0.5 : 1,
+              }}
+            >
               Disable All
             </button>
-            <button onClick={handleEnableAll} disabled={featureSaving}
-              className="px-3 py-1.5 bg-green-600/20 text-green-400 hover:bg-green-600 hover:text-white rounded-lg text-xs font-semibold transition-colors disabled:opacity-50">
+            <button
+              onClick={handleEnableAll}
+              disabled={featureSaving}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+              style={{
+                background: 'rgba(34,197,94,0.1)',
+                color: '#22c55e',
+                border: '1px solid rgba(34,197,94,0.2)',
+                opacity: featureSaving ? 0.5 : 1,
+              }}
+            >
               Enable All
             </button>
             <button
               onClick={handleSaveFeatures}
               disabled={!featuresDirty || featureSaving}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:cursor-not-allowed"
+              style={{
+                background: 'linear-gradient(135deg, #8b5a00, #c8972a, #f0c060)',
+                color: '#080808',
+                border: 'none',
+                opacity: (!featuresDirty || featureSaving) ? 0.5 : 1,
+              }}
             >
               {featureSaving ? 'Saving...' : featuresDirty ? 'Save changes' : 'Saved'}
             </button>
@@ -488,7 +633,14 @@ export default function RestaurantManagePage() {
 
       {/* Warning when suspended */}
       {!isActive && (
-        <div className="flex items-center gap-3 bg-yellow-600/10 border border-yellow-600/30 rounded-xl p-4 text-yellow-400 text-sm">
+        <div
+          className="flex items-center gap-3 rounded-xl p-4 text-sm"
+          style={{
+            background: 'rgba(240,192,96,0.08)',
+            border: '1px solid rgba(240,192,96,0.25)',
+            color: '#f0c060',
+          }}
+        >
           <AlertTriangle className="w-5 h-5 flex-shrink-0" />
           <div>
             <span className="font-semibold">Restaurant is {restaurant.status}.</span>

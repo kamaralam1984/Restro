@@ -80,50 +80,61 @@ export default function SuperAdminVisitorsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Visitors</h1>
-        <p className="text-slate-400 text-sm mt-1">
+        <h1 className="text-2xl font-bold" style={{ color: '#f8f4ed' }}>Visitors</h1>
+        <p className="text-sm mt-1" style={{ color: '#a89070' }}>
           See who is visiting the platform, from where, and how long they stay.
         </p>
       </div>
 
       <div className="flex gap-4 flex-wrap">
         <div className="flex-1 min-w-[220px] relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#a89070' }} />
           <input
             type="text"
             placeholder="Search by name, email, city..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-purple-500"
+            className="w-full pl-10 pr-4 py-2 rounded-lg"
+            style={{
+              background: '#1c1c1c',
+              border: '1px solid rgba(200,151,42,0.2)',
+              borderRadius: '10px',
+              padding: '10px 14px 10px 40px',
+              color: '#f8f4ed',
+              outline: 'none',
+            }}
           />
         </div>
       </div>
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-purple-600 border-t-transparent" />
+          <div
+            className="animate-spin rounded-full h-10 w-10 border-2"
+            style={{ borderColor: 'rgba(200,151,42,0.2)', borderTopColor: '#c8972a' }}
+          />
         </div>
       ) : (
-        <div className="bg-slate-900 rounded-xl overflow-hidden">
+        <div className="rounded-xl overflow-hidden" style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.15)' }}>
           <table className="w-full text-sm">
-            <thead className="bg-slate-800 text-left">
+            <thead className="text-left" style={{ background: '#1c1c1c' }}>
               <tr>
-                <th className="py-4 px-5 text-slate-300 font-semibold">Visitor</th>
-                <th className="py-4 px-5 text-slate-300 font-semibold">Location</th>
-                <th className="py-4 px-5 text-slate-300 font-semibold">Activity</th>
-                <th className="py-4 px-5 text-slate-300 font-semibold">Last Seen</th>
-                <th className="py-4 px-5 text-slate-300 font-semibold text-right">Actions</th>
+                <th className="py-4 px-5 font-semibold" style={{ color: '#a89070' }}>Visitor</th>
+                <th className="py-4 px-5 font-semibold" style={{ color: '#a89070' }}>Location</th>
+                <th className="py-4 px-5 font-semibold" style={{ color: '#a89070' }}>Activity</th>
+                <th className="py-4 px-5 font-semibold" style={{ color: '#a89070' }}>Last Seen</th>
+                <th className="py-4 px-5 font-semibold text-right" style={{ color: '#a89070' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {visitors.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-400">
+                  <td colSpan={5} className="py-12 text-center" style={{ color: '#a89070' }}>
                     No visitors tracked yet.
                   </td>
                 </tr>
               ) : (
-                visitors.map((v) => {
+                visitors.map((v, idx) => {
                   const pages = v.pageViews || [];
                   const pagesCount = pages.length;
                   const topPage = pages.sort(
@@ -132,31 +143,49 @@ export default function SuperAdminVisitorsPage() {
                   const location = [v.city, v.state, v.country].filter(Boolean).join(', ') || 'Unknown';
 
                   return (
-                    <tr key={v._id} className="border-t border-slate-800 hover:bg-slate-800/50">
+                    <tr
+                      key={v._id}
+                      style={{
+                        background: idx % 2 === 0 ? '#141414' : '#1a1a1a',
+                        borderBottom: '1px solid rgba(200,151,42,0.08)',
+                      }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(200,151,42,0.05)';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLTableRowElement).style.background = idx % 2 === 0 ? '#141414' : '#1a1a1a';
+                      }}
+                    >
                       <td className="py-4 px-5">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 bg-purple-600/20 rounded-full flex items-center justify-center text-purple-300 font-semibold">
+                          <div
+                            className="w-9 h-9 rounded-full flex items-center justify-center font-semibold"
+                            style={{
+                              background: 'rgba(200,151,42,0.15)',
+                              color: '#c8972a',
+                            }}
+                          >
                             {(v.name || 'V').charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <div className="text-white font-medium">
+                            <div className="font-medium" style={{ color: '#f8f4ed' }}>
                               {v.name || v.email || v.sessionId.slice(0, 8)}
                             </div>
-                            <div className="text-slate-500 text-xs">
+                            <div className="text-xs" style={{ color: '#6b5040' }}>
                               {v.email || `ID: ${v.sessionId.slice(0, 10)}…`}
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="py-4 px-5 text-slate-300 text-xs">{location}</td>
-                      <td className="py-4 px-5 text-slate-300 text-xs">
+                      <td className="py-4 px-5 text-xs" style={{ color: '#a89070' }}>{location}</td>
+                      <td className="py-4 px-5 text-xs" style={{ color: '#a89070' }}>
                         <div>Total time: {formatDuration(v.totalDurationSec)}</div>
                         <div>
                           Pages: {pagesCount}
                           {topPage ? ` • Top: ${topPage.path}` : ''}
                         </div>
                       </td>
-                      <td className="py-4 px-5 text-slate-400 text-xs">
+                      <td className="py-4 px-5 text-xs" style={{ color: '#6b5040' }}>
                         {new Date(v.lastSeenAt).toLocaleString('en-IN')}
                         {v.timezone ? ` • ${v.timezone}` : ''}
                       </td>
@@ -165,7 +194,26 @@ export default function SuperAdminVisitorsPage() {
                           type="button"
                           disabled={!v.email || sendingId === v._id}
                           onClick={() => handleSendInfo(v._id)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 text-slate-100 text-xs hover:bg-purple-600/80 hover:text-white disabled:opacity-40 transition-colors"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs transition-colors"
+                          style={{
+                            background: '#1c1c1c',
+                            color: '#c8972a',
+                            border: '1px solid rgba(200,151,42,0.3)',
+                            opacity: (!v.email || sendingId === v._id) ? 0.4 : 1,
+                            cursor: (!v.email || sendingId === v._id) ? 'not-allowed' : 'pointer',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (v.email && sendingId !== v._id) {
+                              (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)';
+                              (e.currentTarget as HTMLButtonElement).style.color = '#080808';
+                              (e.currentTarget as HTMLButtonElement).style.border = 'none';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            (e.currentTarget as HTMLButtonElement).style.background = '#1c1c1c';
+                            (e.currentTarget as HTMLButtonElement).style.color = '#c8972a';
+                            (e.currentTarget as HTMLButtonElement).style.border = '1px solid rgba(200,151,42,0.3)';
+                          }}
                         >
                           <Mail className="w-3 h-3" />
                           {sendingId === v._id ? 'Sending…' : 'Send Info'}
@@ -182,4 +230,3 @@ export default function SuperAdminVisitorsPage() {
     </div>
   );
 }
-

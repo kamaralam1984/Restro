@@ -129,46 +129,74 @@ export default function SuperBackupPage() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Database className="w-6 h-6 text-purple-400" />
+          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: '#f8f4ed' }}>
+            <Database className="w-6 h-6" style={{ color: '#c8972a' }} />
             Backup & Restore
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="text-sm mt-1" style={{ color: '#a89070' }}>
             Super Admin tools to export full platform backups or restore from JSON. Use carefully.
           </p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-900/30 border border-purple-700/60 text-xs text-purple-200">
+        <div
+          className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs"
+          style={{
+            background: 'rgba(200,151,42,0.08)',
+            border: '1px solid rgba(200,151,42,0.3)',
+            color: '#f0c060',
+          }}
+        >
           <Shield className="w-3.5 h-3.5" />
           Super Admin only
         </div>
       </div>
 
       {/* Export section */}
-      <div className="bg-slate-900 rounded-xl border border-slate-800 p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-slate-200 mb-1">Export backup</h2>
-        <p className="text-xs text-slate-400 mb-2">
+      <div
+        className="rounded-xl p-5 space-y-4"
+        style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.15)' }}
+      >
+        <h2 className="text-sm font-semibold mb-1" style={{ color: '#f8f4ed' }}>Export backup</h2>
+        <p className="text-xs mb-2" style={{ color: '#a89070' }}>
           Choose whether you want a full platform backup or a single restaurant backup.
         </p>
         <div className="flex flex-wrap gap-3 items-center">
           <button
             type="button"
             onClick={() => setScope('all')}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
+            className="px-3 py-1.5 rounded-full text-xs font-semibold"
+            style={
               scope === 'all'
-                ? 'bg-purple-600 text-white'
-                : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
-            }`}
+                ? {
+                    background: 'linear-gradient(135deg, #8b5a00, #c8972a, #f0c060)',
+                    color: '#080808',
+                    border: 'none',
+                  }
+                : {
+                    background: '#1c1c1c',
+                    color: '#f8f4ed',
+                    border: '1px solid rgba(200,151,42,0.2)',
+                  }
+            }
           >
             Full platform
           </button>
           <button
             type="button"
             onClick={() => setScope('restaurant')}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
+            className="px-3 py-1.5 rounded-full text-xs font-semibold"
+            style={
               scope === 'restaurant'
-                ? 'bg-purple-600 text-white'
-                : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
-            }`}
+                ? {
+                    background: 'linear-gradient(135deg, #8b5a00, #c8972a, #f0c060)',
+                    color: '#080808',
+                    border: 'none',
+                  }
+                : {
+                    background: '#1c1c1c',
+                    color: '#f8f4ed',
+                    border: '1px solid rgba(200,151,42,0.2)',
+                  }
+            }
           >
             Single restaurant
           </button>
@@ -179,7 +207,15 @@ export default function SuperBackupPage() {
               value={restaurantId}
               onChange={(e) => setRestaurantId(e.target.value)}
               placeholder="Restaurant ID (Mongo ObjectId)"
-              className="px-3 py-1.5 bg-slate-800 text-white rounded border border-slate-700 text-xs min-w-[260px]"
+              className="text-xs min-w-[260px]"
+              style={{
+                background: '#1c1c1c',
+                border: '1px solid rgba(200,151,42,0.2)',
+                borderRadius: '10px',
+                padding: '10px 14px',
+                color: '#f8f4ed',
+                outline: 'none',
+              }}
             />
           )}
 
@@ -187,7 +223,12 @@ export default function SuperBackupPage() {
             type="button"
             onClick={handleDownload}
             disabled={downloading || (scope === 'restaurant' && !restaurantId)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold disabled:opacity-60 disabled:cursor-not-allowed ml-auto"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold disabled:opacity-60 disabled:cursor-not-allowed ml-auto"
+            style={{
+              background: 'linear-gradient(135deg, #8b5a00, #c8972a, #f0c060)',
+              color: '#080808',
+              border: 'none',
+            }}
           >
             <Download className="w-4 h-4" />
             {downloading ? 'Exporting...' : 'Download backup JSON'}
@@ -196,16 +237,27 @@ export default function SuperBackupPage() {
       </div>
 
       {/* Import section */}
-      <div className="bg-slate-900 rounded-xl border border-red-800/60 p-5 space-y-4">
+      <div
+        className="rounded-xl p-5 space-y-4"
+        style={{ background: '#141414', border: '1px solid rgba(239,68,68,0.3)' }}
+      >
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold text-slate-200">Import / Restore backup</h2>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-600/20 text-red-300 text-[10px] font-semibold border border-red-700/70">
+          <h2 className="text-sm font-semibold" style={{ color: '#f8f4ed' }}>Import / Restore backup</h2>
+          <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+            style={{
+              background: 'rgba(239,68,68,0.1)',
+              color: '#ef4444',
+              border: '1px solid rgba(239,68,68,0.3)',
+            }}
+          >
             <AlertTriangle className="w-3 h-3" />
             Dangerous
           </span>
         </div>
-        <p className="text-xs text-slate-400">
-          Use this only when you are sure. Start with a <span className="font-semibold text-red-300">dry run</span>{' '}
+        <p className="text-xs" style={{ color: '#a89070' }}>
+          Use this only when you are sure. Start with a{' '}
+          <span className="font-semibold" style={{ color: '#ef4444' }}>dry run</span>{' '}
           to validate the file before actually writing to the database.
         </p>
 
@@ -214,10 +266,11 @@ export default function SuperBackupPage() {
             type="file"
             accept="application/json"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="text-xs text-slate-200"
+            className="text-xs"
+            style={{ color: '#f8f4ed' }}
           />
 
-          <label className="flex items-center gap-1 text-xs text-slate-300 cursor-pointer">
+          <label className="flex items-center gap-1 text-xs cursor-pointer" style={{ color: '#a89070' }}>
             <input
               type="checkbox"
               checked={dryRun}
@@ -231,7 +284,12 @@ export default function SuperBackupPage() {
             type="button"
             onClick={handleImport}
             disabled={importing || !file}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold disabled:opacity-60 disabled:cursor-not-allowed ml-auto"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold disabled:opacity-60 disabled:cursor-not-allowed ml-auto"
+            style={{
+              background: 'rgba(239,68,68,0.15)',
+              color: '#ef4444',
+              border: '1px solid rgba(239,68,68,0.4)',
+            }}
           >
             <Upload className="w-4 h-4" />
             {importing ? (dryRun ? 'Simulating...' : 'Restoring...') : dryRun ? 'Run dry import' : 'Restore backup'}
@@ -240,36 +298,45 @@ export default function SuperBackupPage() {
       </div>
 
       {/* Restaurant IDs helper grid */}
-      <div className="bg-slate-900 rounded-xl border border-slate-800 p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-slate-200">Restaurants &amp; IDs (for backup / restore)</h2>
-        <p className="text-xs text-slate-400">
+      <div
+        className="rounded-xl p-5 space-y-3"
+        style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.15)' }}
+      >
+        <h2 className="text-sm font-semibold" style={{ color: '#f8f4ed' }}>Restaurants &amp; IDs (for backup / restore)</h2>
+        <p className="text-xs" style={{ color: '#a89070' }}>
           Use this table to quickly copy a restaurant&apos;s ID. Click &quot;Use for backup&quot; to fill the ID above.
         </p>
         {loadingRestaurants ? (
-          <div className="py-6 text-slate-400 text-sm">Loading restaurants…</div>
+          <div className="py-6 text-sm" style={{ color: '#a89070' }}>Loading restaurants…</div>
         ) : restaurants.length === 0 ? (
-          <div className="py-6 text-slate-400 text-sm">No restaurants found.</div>
+          <div className="py-6 text-sm" style={{ color: '#a89070' }}>No restaurants found.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-xs">
-              <thead className="bg-slate-800">
+              <thead style={{ background: '#1c1c1c' }}>
                 <tr>
-                  <th className="px-3 py-2 text-left text-slate-300">Name</th>
-                  <th className="px-3 py-2 text-left text-slate-300">Slug</th>
-                  <th className="px-3 py-2 text-left text-slate-300">Restaurant ID</th>
-                  <th className="px-3 py-2 text-left text-slate-300">Status</th>
-                  <th className="px-3 py-2 text-left text-slate-300">Subscription</th>
-                  <th className="px-3 py-2 text-left text-slate-300">Actions</th>
+                  <th className="px-3 py-2 text-left" style={{ color: '#a89070' }}>Name</th>
+                  <th className="px-3 py-2 text-left" style={{ color: '#a89070' }}>Slug</th>
+                  <th className="px-3 py-2 text-left" style={{ color: '#a89070' }}>Restaurant ID</th>
+                  <th className="px-3 py-2 text-left" style={{ color: '#a89070' }}>Status</th>
+                  <th className="px-3 py-2 text-left" style={{ color: '#a89070' }}>Subscription</th>
+                  <th className="px-3 py-2 text-left" style={{ color: '#a89070' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {restaurants.map((r) => (
-                  <tr key={r._id} className="border-b border-slate-800 hover:bg-slate-800/40">
-                    <td className="px-3 py-2 text-slate-100">{r.name}</td>
-                    <td className="px-3 py-2 text-slate-300">/{r.slug}</td>
-                    <td className="px-3 py-2 font-mono text-[11px] text-slate-200">{r._id}</td>
-                    <td className="px-3 py-2 text-slate-200 capitalize">{r.status}</td>
-                    <td className="px-3 py-2 text-slate-200 capitalize">{r.subscriptionStatus}</td>
+                {restaurants.map((r, idx) => (
+                  <tr
+                    key={r._id}
+                    style={{
+                      background: idx % 2 === 0 ? '#141414' : '#1a1a1a',
+                      borderBottom: '1px solid rgba(200,151,42,0.08)',
+                    }}
+                  >
+                    <td className="px-3 py-2" style={{ color: '#f8f4ed' }}>{r.name}</td>
+                    <td className="px-3 py-2" style={{ color: '#a89070' }}>/{r.slug}</td>
+                    <td className="px-3 py-2 font-mono text-[11px]" style={{ color: '#f8f4ed' }}>{r._id}</td>
+                    <td className="px-3 py-2 capitalize" style={{ color: '#f8f4ed' }}>{r.status}</td>
+                    <td className="px-3 py-2 capitalize" style={{ color: '#f8f4ed' }}>{r.subscriptionStatus}</td>
                     <td className="px-3 py-2 flex flex-wrap gap-2">
                       <button
                         type="button"
@@ -282,7 +349,12 @@ export default function SuperBackupPage() {
                             })
                             .catch(() => {});
                         }}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-full"
+                        style={{
+                          background: '#1c1c1c',
+                          color: '#f8f4ed',
+                          border: '1px solid rgba(200,151,42,0.2)',
+                        }}
                       >
                         <Copy className="w-3 h-3" />
                         {copiedId === r._id ? 'Copied' : 'Copy ID'}
@@ -294,7 +366,12 @@ export default function SuperBackupPage() {
                           setRestaurantId(r._id);
                           toast.success('Restaurant ID selected for backup');
                         }}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-[11px]"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px]"
+                        style={{
+                          background: 'linear-gradient(135deg, #8b5a00, #c8972a, #f0c060)',
+                          color: '#080808',
+                          border: 'none',
+                        }}
                       >
                         Use for backup
                       </button>
@@ -309,4 +386,3 @@ export default function SuperBackupPage() {
     </div>
   );
 }
-

@@ -159,10 +159,34 @@ export default function SuperAdminPlansPage() {
     }
   };
 
+  const inputStyle = {
+    background: '#1c1c1c',
+    border: '1px solid rgba(200,151,42,0.2)',
+    borderRadius: '10px',
+    padding: '10px 14px',
+    color: '#f8f4ed',
+    outline: 'none',
+    width: '100%',
+  } as React.CSSProperties;
+
+  const inputSmallStyle = {
+    background: '#1c1c1c',
+    border: '1px solid rgba(200,151,42,0.2)',
+    borderRadius: '8px',
+    padding: '6px 10px',
+    color: '#f8f4ed',
+    outline: 'none',
+    width: '100%',
+    fontSize: '12px',
+  } as React.CSSProperties;
+
   if (loading)
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600" />
+        <div
+          className="animate-spin rounded-full h-10 w-10 border-b-2"
+          style={{ borderTopColor: '#c8972a', borderColor: 'transparent', borderTopWidth: '2px', borderStyle: 'solid' }}
+        />
       </div>
     );
 
@@ -170,15 +194,20 @@ export default function SuperAdminPlansPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Subscription Plans</h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <h1 className="text-2xl font-bold" style={{ color: '#f8f4ed' }}>Subscription Plans</h1>
+          <p className="text-sm mt-1" style={{ color: '#a89070' }}>
             Platform-level pricing plans — control what each restaurant gets.
           </p>
         </div>
         <button
           type="button"
           onClick={openNew}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-500 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+          style={{
+            background: 'linear-gradient(135deg, #8b5a00, #c8972a, #f0c060)',
+            color: '#080808',
+            border: 'none',
+          }}
         >
           <Plus className="w-4 h-4" />
           Add Plan
@@ -189,68 +218,92 @@ export default function SuperAdminPlansPage() {
         {plans.sort((a, b) => a.sortOrder - b.sortOrder).map((plan, i) => (
           <motion.div
             key={plan._id}
-            className={`bg-slate-900 rounded-2xl overflow-hidden border-2 transition-all ${
-              plan.isPopular ? 'border-purple-600' : 'border-slate-800'
-            } ${!plan.isActive ? 'opacity-60' : ''}`}
+            className="rounded-2xl overflow-hidden transition-all"
+            style={{
+              background: '#141414',
+              border: plan.isPopular
+                ? '2px solid rgba(200,151,42,0.6)'
+                : '2px solid rgba(200,151,42,0.15)',
+              opacity: !plan.isActive ? 0.6 : 1,
+            }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
           >
             {plan.isPopular && (
-              <div className="bg-purple-600 text-white text-xs font-bold text-center py-1.5 flex items-center justify-center gap-1">
+              <div
+                className="text-xs font-bold text-center py-1.5 flex items-center justify-center gap-1"
+                style={{
+                  background: 'linear-gradient(135deg, #8b5a00, #c8972a, #f0c060)',
+                  color: '#080808',
+                }}
+              >
                 <Star className="w-3.5 h-3.5" /> MOST POPULAR
               </div>
             )}
 
             <div className="p-6">
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-purple-600/20 rounded-lg flex items-center justify-center">
-                      <Package className="w-4 h-4 text-purple-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-white font-bold text-lg">{plan.name}</h3>
-                      <p className="text-[11px] text-slate-500">Sort order: {plan.sortOrder}</p>
-                    </div>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center"
+                    style={{ background: 'rgba(200,151,42,0.12)' }}
+                  >
+                    <Package className="w-4 h-4" style={{ color: '#c8972a' }} />
                   </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <button
-                      onClick={() => toggleActive(plan._id, plan.isActive)}
-                      className={`text-xs px-2.5 py-1 rounded-full font-semibold transition-colors ${
-                        plan.isActive
-                          ? 'bg-green-600/20 text-green-400 hover:bg-red-600/20 hover:text-red-400'
-                          : 'bg-red-600/20 text-red-400 hover:bg-green-600/20 hover:text-green-400'
-                      }`}
-                    >
-                      {plan.isActive ? 'Active' : 'Inactive'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openEdit(plan)}
-                      className="text-[11px] px-2 py-1 rounded-lg bg-slate-800 text-slate-200 hover:bg-purple-600/80 hover:text-white transition-colors"
-                    >
-                      Edit
-                    </button>
+                  <div>
+                    <h3 className="font-bold text-lg" style={{ color: '#f8f4ed' }}>{plan.name}</h3>
+                    <p className="text-[11px]" style={{ color: '#6b5040' }}>Sort order: {plan.sortOrder}</p>
                   </div>
                 </div>
-              <p className="text-slate-400 text-xs mb-4">{plan.description}</p>
+                <div className="flex flex-col items-end gap-1">
+                  <button
+                    onClick={() => toggleActive(plan._id, plan.isActive)}
+                    className="text-xs px-2.5 py-1 rounded-full font-semibold transition-colors"
+                    style={
+                      plan.isActive
+                        ? { background: 'rgba(34,197,94,0.1)', color: '#22c55e' }
+                        : { background: 'rgba(239,68,68,0.1)', color: '#ef4444' }
+                    }
+                  >
+                    {plan.isActive ? 'Active' : 'Inactive'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openEdit(plan)}
+                    className="text-[11px] px-2 py-1 rounded-lg transition-colors"
+                    style={{
+                      background: '#1c1c1c',
+                      color: '#c8972a',
+                      border: '1px solid rgba(200,151,42,0.3)',
+                    }}
+                  >
+                    Edit
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs mb-4" style={{ color: '#a89070' }}>{plan.description}</p>
 
               <div className="mb-4">
-                <span className="text-3xl font-bold text-white">₹{plan.price}</span>
-                <span className="text-slate-400 text-sm">/month</span>
-                <div className="text-slate-500 text-xs mt-0.5">₹{plan.yearlyPrice}/year • {plan.trialDays} day trial</div>
+                <span className="text-3xl font-bold" style={{ color: '#f8f4ed' }}>₹{plan.price}</span>
+                <span className="text-sm" style={{ color: '#a89070' }}>/month</span>
+                <div className="text-xs mt-0.5" style={{ color: '#6b5040' }}>₹{plan.yearlyPrice}/year • {plan.trialDays} day trial</div>
               </div>
 
               <div className="space-y-2">
                 {featureRows(plan.features).map((row) => (
-                  <div key={row.label} className="flex items-center justify-between text-sm">
-                    <span className="text-slate-400">{row.label}</span>
+                  <div
+                    key={row.label}
+                    className="flex items-center justify-between text-sm"
+                    style={{ borderBottom: '1px solid rgba(200,151,42,0.08)', paddingBottom: '4px' }}
+                  >
+                    <span style={{ color: '#a89070' }}>{row.label}</span>
                     {typeof row.value === 'boolean' ? (
-                      <span className={row.value ? 'text-green-400' : 'text-red-400'}>
+                      <span style={{ color: row.value ? '#22c55e' : '#ef4444' }}>
                         {row.value ? <Check className="w-4 h-4" /> : '✕'}
                       </span>
                     ) : (
-                      <span className="text-white font-medium">{row.value}</span>
+                      <span className="font-medium" style={{ color: '#f8f4ed' }}>{row.value}</span>
                     )}
                   </div>
                 ))}
@@ -262,21 +315,28 @@ export default function SuperAdminPlansPage() {
 
       {editing || isNew ? (
         <div
-          className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-4"
+          className="fixed inset-0 z-40 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.75)' }}
           onClick={() => !saving && (setEditing(null), setIsNew(false))}
         >
           <div
-            className="bg-slate-900 rounded-xl border border-slate-700 w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl"
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl"
+            style={{
+              background: '#141414',
+              border: '1px solid rgba(200,151,42,0.2)',
+              borderRadius: '18px',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-white">
+              <h2 className="text-xl font-semibold" style={{ color: '#f8f4ed' }}>
                 {isNew ? 'Add Plan' : 'Edit Plan'}
               </h2>
               <button
                 type="button"
                 onClick={() => !saving && (setEditing(null), setIsNew(false))}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                className="p-1 rounded-lg transition-colors"
+                style={{ color: '#a89070', background: 'transparent' }}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -285,36 +345,36 @@ export default function SuperAdminPlansPage() {
             <div className="grid md:grid-cols-2 gap-4 text-sm">
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Name</label>
+                  <label className="block text-xs mb-1" style={{ color: '#a89070' }}>Name</label>
                   <input
                     type="text"
                     value={form.name}
                     onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                    style={inputStyle}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Description</label>
+                  <label className="block text-xs mb-1" style={{ color: '#a89070' }}>Description</label>
                   <input
                     type="text"
                     value={form.description}
                     onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                    style={inputStyle}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Price/month (₹)</label>
+                    <label className="block text-xs mb-1" style={{ color: '#a89070' }}>Price/month (₹)</label>
                     <input
                       type="number"
                       min={0}
                       value={form.price}
                       onChange={(e) => setForm((s) => ({ ...s, price: Number(e.target.value) || 0 }))}
-                      className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                      style={inputStyle}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Price/year (₹)</label>
+                    <label className="block text-xs mb-1" style={{ color: '#a89070' }}>Price/year (₹)</label>
                     <input
                       type="number"
                       min={0}
@@ -322,13 +382,13 @@ export default function SuperAdminPlansPage() {
                       onChange={(e) =>
                         setForm((s) => ({ ...s, yearlyPrice: Number(e.target.value) || 0 }))
                       }
-                      className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                      style={inputStyle}
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Trial days</label>
+                    <label className="block text-xs mb-1" style={{ color: '#a89070' }}>Trial days</label>
                     <input
                       type="number"
                       min={0}
@@ -336,37 +396,39 @@ export default function SuperAdminPlansPage() {
                       onChange={(e) =>
                         setForm((s) => ({ ...s, trialDays: Number(e.target.value) || 0 }))
                       }
-                      className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                      style={inputStyle}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Sort order</label>
+                    <label className="block text-xs mb-1" style={{ color: '#a89070' }}>Sort order</label>
                     <input
                       type="number"
                       value={form.sortOrder}
                       onChange={(e) =>
                         setForm((s) => ({ ...s, sortOrder: Number(e.target.value) || 0 }))
                       }
-                      className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white"
+                      style={inputStyle}
                     />
                   </div>
                 </div>
                 <div className="flex items-center gap-4 mt-2">
-                  <label className="flex items-center gap-2 text-slate-300 text-xs cursor-pointer">
+                  <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: '#a89070' }}>
                     <input
                       type="checkbox"
                       checked={form.isPopular}
                       onChange={(e) => setForm((s) => ({ ...s, isPopular: e.target.checked }))}
-                      className="rounded border-slate-600 bg-slate-800"
+                      className="rounded"
+                      style={{ accentColor: '#c8972a' }}
                     />
                     Most popular badge
                   </label>
-                  <label className="flex items-center gap-2 text-slate-300 text-xs cursor-pointer">
+                  <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: '#a89070' }}>
                     <input
                       type="checkbox"
                       checked={form.isActive}
                       onChange={(e) => setForm((s) => ({ ...s, isActive: e.target.checked }))}
-                      className="rounded border-slate-600 bg-slate-800"
+                      className="rounded"
+                      style={{ accentColor: '#c8972a' }}
                     />
                     Active (visible)
                   </label>
@@ -374,7 +436,7 @@ export default function SuperAdminPlansPage() {
               </div>
 
               <div className="space-y-3">
-                <p className="text-xs text-slate-400 mb-1">Features</p>
+                <p className="text-xs mb-1" style={{ color: '#a89070' }}>Features</p>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   {[
                     { key: 'onlineOrdering' as const, label: 'Online Ordering' },
@@ -389,7 +451,8 @@ export default function SuperAdminPlansPage() {
                   ].map(({ key, label }) => (
                     <label
                       key={key}
-                      className="flex items-center gap-2 text-slate-300 cursor-pointer"
+                      className="flex items-center gap-2 cursor-pointer"
+                      style={{ color: '#a89070' }}
                     >
                       <input
                         type="checkbox"
@@ -400,7 +463,8 @@ export default function SuperAdminPlansPage() {
                             features: { ...s.features, [key]: e.target.checked },
                           }))
                         }
-                        className="rounded border-slate-600 bg-slate-800"
+                        className="rounded"
+                        style={{ accentColor: '#c8972a' }}
                       />
                       {label}
                     </label>
@@ -408,7 +472,7 @@ export default function SuperAdminPlansPage() {
                 </div>
                 <div className="grid grid-cols-3 gap-2 mt-2">
                   <div>
-                    <label className="block text-[11px] text-slate-400 mb-1">Menu items</label>
+                    <label className="block text-[11px] mb-1" style={{ color: '#a89070' }}>Menu items</label>
                     <input
                       type="number"
                       value={form.features.maxMenuItems}
@@ -421,11 +485,11 @@ export default function SuperAdminPlansPage() {
                           },
                         }))
                       }
-                      className="w-full px-2 py-1 rounded bg-slate-800 border border-slate-700 text-white text-xs"
+                      style={inputSmallStyle}
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] text-slate-400 mb-1">Staff</label>
+                    <label className="block text-[11px] mb-1" style={{ color: '#a89070' }}>Staff</label>
                     <input
                       type="number"
                       value={form.features.maxStaff}
@@ -435,11 +499,11 @@ export default function SuperAdminPlansPage() {
                           features: { ...s.features, maxStaff: Number(e.target.value) || 0 },
                         }))
                       }
-                      className="w-full px-2 py-1 rounded bg-slate-800 border border-slate-700 text-white text-xs"
+                      style={inputSmallStyle}
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] text-slate-400 mb-1">Tables</label>
+                    <label className="block text-[11px] mb-1" style={{ color: '#a89070' }}>Tables</label>
                     <input
                       type="number"
                       value={form.features.maxTables}
@@ -449,7 +513,7 @@ export default function SuperAdminPlansPage() {
                           features: { ...s.features, maxTables: Number(e.target.value) || 0 },
                         }))
                       }
-                      className="w-full px-2 py-1 rounded bg-slate-800 border border-slate-700 text-white text-xs"
+                      style={inputSmallStyle}
                     />
                   </div>
                 </div>
@@ -464,7 +528,12 @@ export default function SuperAdminPlansPage() {
                   setEditing(null);
                   setIsNew(false);
                 }}
-                className="px-4 py-2 rounded-lg bg-slate-800 text-slate-200 text-sm hover:bg-slate-700 disabled:opacity-50"
+                className="px-4 py-2 rounded-lg text-sm disabled:opacity-50 transition-colors"
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(200,151,42,0.3)',
+                  color: '#c8972a',
+                }}
               >
                 Cancel
               </button>
@@ -472,7 +541,12 @@ export default function SuperAdminPlansPage() {
                 type="button"
                 disabled={saving}
                 onClick={handleSave}
-                className="px-4 py-2 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-500 disabled:opacity-50"
+                className="px-4 py-2 rounded-lg text-sm disabled:opacity-50 transition-colors"
+                style={{
+                  background: 'linear-gradient(135deg, #8b5a00, #c8972a, #f0c060)',
+                  color: '#080808',
+                  border: 'none',
+                }}
               >
                 {saving ? 'Saving...' : 'Save plan'}
               </button>

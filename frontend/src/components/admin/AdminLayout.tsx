@@ -85,45 +85,64 @@ export default function AdminLayout({ children, panelType = 'rental' }: AdminLay
 
   if (adminUser === null) {
     return (
-      <div className="flex min-h-screen bg-slate-950 items-center justify-center">
+      <div
+        className="flex min-h-screen items-center justify-center"
+        style={{ background: '#080808' }}
+      >
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-2 border-purple-500 border-t-transparent mx-auto mb-4" />
-          <p className="text-slate-400">Loading...</p>
+          <div
+            className="animate-spin rounded-full h-12 w-12 border-2 mx-auto mb-4"
+            style={{ borderColor: 'rgba(200,151,42,0.3)', borderTopColor: '#c8972a' }}
+          />
+          <p style={{ color: '#a89070' }}>Loading...</p>
         </div>
       </div>
     );
   }
 
   const title = panelType === 'super' ? 'Super Admin Panel' : panelType === 'master' ? 'Master Admin Panel' : 'Rental Admin Panel';
-  const headerBorder = panelType === 'super' ? 'border-purple-900/50' : panelType === 'master' ? 'border-amber-900/50' : 'border-slate-800';
-  const badgeClass = panelType === 'super'
-    ? 'bg-purple-600/20 text-purple-300 border border-purple-600/30'
+
+  const badgeStyle: React.CSSProperties = panelType === 'super'
+    ? { background: 'rgba(200,151,42,0.12)', color: '#f0c060', border: '1px solid rgba(200,151,42,0.3)' }
     : panelType === 'master'
-      ? 'bg-amber-600/20 text-amber-300 border border-amber-600/30'
-      : 'bg-orange-600/20 text-orange-300 border border-orange-600/30';
+      ? { background: 'rgba(200,151,42,0.15)', color: '#c8972a', border: '1px solid rgba(200,151,42,0.35)' }
+      : { background: 'rgba(200,151,42,0.1)', color: '#c8972a', border: '1px solid rgba(200,151,42,0.25)' };
+
   const logoutHref = panelType === 'super' ? '/admin/super/login' : panelType === 'master' ? '/admin/master/login' : '/admin/login';
 
   return (
-    <div className="flex min-h-screen bg-slate-950">
+    <div className="flex min-h-screen" style={{ background: '#080808' }}>
       <Sidebar adminUser={adminUser} panelType={panelType} />
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className={`border-b px-6 py-4 flex-shrink-0 bg-slate-900 ${headerBorder}`}>
+        <header
+          className="px-6 py-4 flex-shrink-0"
+          style={{
+            background: '#0d0d0d',
+            borderBottom: '1px solid rgba(200,151,42,0.2)',
+          }}
+        >
           <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold text-white">{title}</h1>
+            <h1 className="text-lg font-semibold" style={{ color: '#f8f4ed' }}>{title}</h1>
             <div className="flex items-center gap-4">
-              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold ${badgeClass}`}>
+              <div
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold"
+                style={badgeStyle}
+              >
                 {panelType === 'rental' ? <ChefHat className="w-3.5 h-3.5" /> : <Shield className="w-3.5 h-3.5" />}
                 {panelType === 'super' ? 'Super Admin' : panelType === 'master' ? 'Master Admin' : 'Rental Admin'}
               </div>
-              <span className="text-slate-300 text-sm font-medium">{adminUser.name || 'Admin'}</span>
+              <span className="text-sm font-medium" style={{ color: '#a89070' }}>{adminUser.name || 'Admin'}</span>
               <button
                 onClick={() => {
                   localStorage.removeItem('token');
                   localStorage.removeItem('admin');
                   window.location.href = logoutHref;
                 }}
-                className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm"
+                className="flex items-center gap-2 transition-colors text-sm"
+                style={{ color: '#6b5040' }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#f8f4ed')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#6b5040')}
               >
                 <LogOut className="w-4 h-4" />
                 <span>Log Out</span>

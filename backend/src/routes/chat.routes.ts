@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { chatWithBot } from '../controllers/chat.controller';
+import { chatWithBot, chatWithRestaurantBot } from '../controllers/chat.controller';
 
 const router = Router();
 
-// Public chatbot endpoint (rate-limited by general /api limiter)
 router.post('/', chatWithBot);
+router.post('/restaurant', chatWithRestaurantBot);
 
 export default router;
 

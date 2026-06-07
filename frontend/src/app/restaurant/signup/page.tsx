@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ChefHat, Rocket, Mail, RefreshCcw, ArrowLeft } from 'lucide-react';
 import api from '@/services/api';
@@ -21,6 +21,10 @@ type Step = 'form' | 'otp';
 
 export default function RestaurantSignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlPlanId = searchParams.get('plan') || '';
+  const urlBilling = (searchParams.get('billing') as 'monthly' | 'yearly') || 'monthly';
+
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<Step>('form');
@@ -41,8 +45,17 @@ export default function RestaurantSignupPage() {
   });
 
   useEffect(() => {
-    api.get<Plan[]>('/restaurants/plans').then(setPlans).catch(() => setPlans([]));
-  }, []);
+    api.get<Plan[]>('/restaurants/plans').then((fetchedPlans) => {
+      setPlans(fetchedPlans);
+      // Auto-select plan from URL query param once plans are loaded
+      if (urlPlanId) {
+        const matched = fetchedPlans.find((p) => p._id === urlPlanId);
+        if (matched) {
+          setFormData((prev) => ({ ...prev, planId: matched._id }));
+        }
+      }
+    }).catch(() => setPlans([]));
+  }, [urlPlanId]);
 
   // Countdown timer for OTP resend cooldown
   useEffect(() => {
@@ -233,6 +246,21 @@ export default function RestaurantSignupPage() {
     }
   };
 
+  // Derive selected plan object for the summary card
+  const selectedPlan = plans.find((p) => p._id === formData.planId) ?? null;
+  const isPreselected = !!urlPlanId && !!selectedPlan;
+  const isDemo = selectedPlan?.price === 0;
+
+  const displayPrice = () => {
+    if (!selectedPlan) return null;
+    if (isDemo) return null;
+    if (urlBilling === 'yearly') {
+      const yearly = Math.round(selectedPlan.price * 12 * 0.8); // assume 20% yearly discount
+      return `₹${yearly}/yr`;
+    }
+    return `₹${selectedPlan.price}/mo`;
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 py-12">
       <Toaster position="top-right" />
@@ -256,6 +284,61 @@ export default function RestaurantSignupPage() {
                 </h1>
                 <p className="text-slate-400 text-sm">Create your restaurant and admin account</p>
               </div>
+
+              {/* ── Selected Plan Summary Card (shown when plan is pre-selected from URL) ── */}
+              {isPreselected && selectedPlan && (
+                <div
+                  style={{
+                    background: 'rgba(200,151,42,0.08)',
+                    border: '1px solid rgba(200,151,42,0.3)',
+                    borderRadius: 12,
+                    padding: 16,
+                    marginBottom: 20,
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <p className="text-xs text-slate-400 mb-1 uppercase tracking-wide font-medium">Selected Plan</p>
+                      <p style={{ color: '#C8972A', fontWeight: 700, fontSize: 18 }}>{selectedPlan.name}</p>
+                      {isDemo ? (
+                        <p style={{ color: '#C8972A', fontWeight: 600, fontSize: 14, marginTop: 4 }}>
+                          FREE — No credit card required
+                        </p>
+                      ) : (
+                        <div className="flex items-center gap-2 mt-1">
+                          <p style={{ color: '#C8972A', fontWeight: 600, fontSize: 14 }}>{displayPrice()}</p>
+                          {urlBilling === 'yearly' && (
+                            <span
+                              style={{
+                                background: 'rgba(200,151,42,0.2)',
+                                color: '#C8972A',
+                                fontSize: 11,
+                                padding: '2px 6px',
+                                borderRadius: 4,
+                                fontWeight: 600,
+                              }}
+                            >
+                              YEARLY
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {selectedPlan.trialDays && selectedPlan.trialDays > 0 && (
+                        <p className="text-slate-400 text-xs mt-1">
+                          Includes {selectedPlan.trialDays}-day free trial
+                        </p>
+                      )}
+                    </div>
+                    <Link
+                      href="/pricing"
+                      style={{ color: 'rgba(200,151,42,0.7)', fontSize: 12, whiteSpace: 'nowrap', marginTop: 2 }}
+                      className="hover:opacity-100 transition-opacity"
+                    >
+                      Change plan →
+                    </Link>
+                  </div>
+                </div>
+              )}
 
               <form onSubmit={handleSendOtp} className="space-y-5">
                 <div>

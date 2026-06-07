@@ -23,6 +23,8 @@ export interface IOrder extends Document {
   paymentMethod?: 'cash' | 'card' | 'online';
   paymentId?: string;
   notes?: string;
+  orderType?: 'delivery' | 'dinein' | 'takeaway';
+  deliveryAddress?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -79,6 +81,8 @@ const OrderSchema = new Schema<IOrder>(
     },
     paymentId: { type: String },
     notes: { type: String },
+    orderType: { type: String, enum: ['delivery', 'dinein', 'takeaway'], default: 'delivery' },
+    deliveryAddress: { type: String, trim: true },
   },
   { timestamps: true }
 );

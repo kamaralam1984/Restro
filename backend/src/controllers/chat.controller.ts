@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { RentalPlan } from '../models/RentalPlan.model';
+import { Restaurant } from '../models/Restaurant.model';
+import { Menu } from '../models/Menu.model';
 
 // Chatbot controller: tries Gemini first; falls back to internal rule-based replies.
 
@@ -239,6 +241,165 @@ ${planSummary || 'لا توجد بيانات باقات محملة حالياً.
       selectedLang
     );
     return res.json({ reply: fallback });
+  }
+};
+
+// ─── Restaurant-specific AI assistant ────────────────────────────────────────
+
+type RestaurantChatBody = {
+  message?: string;
+  restaurantId?: string;
+  restaurantSlug?: string;
+};
+
+const buildRestaurantFallback = (text: string, restaurantName: string, menuCategories: string[], phone?: string): string => {
+  const t = text.toLowerCase();
+
+  if (t.includes('menu') || t.includes('kya hai') || t.includes('categories') || t.includes('category')) {
+    const cats = menuCategories.length > 0 ? menuCategories.join(', ') : 'Burgers, Pizza, Biryani, Chicken, Starters, Desserts, Drinks';
+    return `${restaurantName} mein ye categories available hain: ${cats}. Kisi bhi dish ke baare mein detail poochh sakte ho! 😊`;
+  }
+  if (t.includes('deal') || t.includes('offer') || t.includes('discount') || t.includes('sasta')) {
+    return `Aaj ke hot deals dekhne ke liye upar "Deals" section mein jaao! Humari best deals daily update hoti hain. 🔥`;
+  }
+  if (t.includes('book') || t.includes('table') || t.includes('reservation') || t.includes('seat')) {
+    return `Table book karne ke liye "Book Table" button use karo ya "Book a Table" section mein jaao. Date, time aur guests select karo — confirm ho jaayega! 📅`;
+  }
+  if (t.includes('time') || t.includes('hours') || t.includes('open') || t.includes('close') || t.includes('kab')) {
+    return `${restaurantName} ke opening hours ke liye navbar mein "Contact" section dekho ya neeche footer mein. Hum aapke liye available hain! ⏰`;
+  }
+  if (t.includes('order') || t.includes('delivery') || t.includes('home') || t.includes('deliver')) {
+    return `Online order ya home delivery ke liye "Order Now" button press karo! Fast delivery guaranteed. 🚀`;
+  }
+  if (t.includes('price') || t.includes('rate') || t.includes('kitna') || t.includes('cost')) {
+    return `Prices dekhne ke liye Menu section mein jaao — har dish ka price clearly mention hai. Best value meals bhi available hain! 💰`;
+  }
+  if (t.includes('call') || t.includes('phone') || t.includes('contact') || t.includes('number')) {
+    const phoneText = phone ? `Call kar sakte ho: ${phone}` : 'Contact section mein phone number mil jaayega.';
+    return `${phoneText} Ya WhatsApp button bhi use kar sakte ho! 📞`;
+  }
+  if (t.includes('location') || t.includes('address') || t.includes('kahan') || t.includes('where')) {
+    return `${restaurantName} ka address footer mein ya Contact section mein diya gaya hai. Google Maps se directions bhi le sakte ho! 📍`;
+  }
+  if (t.includes('veg') || t.includes('non-veg') || t.includes('vegetarian')) {
+    return `${restaurantName} mein dono veg aur non-veg options available hain! Menu mein green dot = veg, red dot = non-veg. 🌿🍗`;
+  }
+  return `Namaste! ${restaurantName} mein aapka swagat hai. Main aapki help kar sakta hoon menu, deals, table booking, delivery, ya kisi bhi cheez mein. Kya jaanna chahte ho? 🙏`;
+};
+
+export const chatWithRestaurantBot = async (req: Request, res: Response) => {
+  try {
+    const { message, restaurantId, restaurantSlug } = req.body as RestaurantChatBody;
+    const text = (message || '').trim();
+
+    if (!text) return res.status(400).json({ reply: 'Kuch poochho, main yahan hoon! 🙂' });
+
+    // Fetch restaurant + menu data for context
+    let restaurantName = 'Restaurant';
+    let restaurantInfo = '';
+    let menuSummary = '';
+    let menuCategories: string[] = [];
+    let phone = '';
+
+    try {
+      const query = restaurantId
+        ? { _id: restaurantId }
+        : restaurantSlug
+        ? { slug: restaurantSlug }
+        : null;
+
+      if (query) {
+        const rest = await (Restaurant as any).findOne(query).lean() as any;
+        if (rest) {
+          restaurantName = rest.name || 'Restaurant';
+          phone = rest.phone || '';
+          const location = [rest.city, rest.state].filter(Boolean).join(', ');
+          restaurantInfo = `
+Restaurant Name: ${restaurantName}
+Location: ${location || 'Not specified'}
+Phone: ${phone || 'Not specified'}
+Opening Hours: ${rest.openingTime || '?'} - ${rest.closingTime || '?'}
+Description: ${rest.description || 'A great dining experience'}
+          `.trim();
+
+          // Fetch menu
+          const menuItems = await (Menu as any)
+            .find({ restaurantId: rest._id, isAvailable: true })
+            .sort({ category: 1, price: 1 })
+            .limit(60)
+            .lean() as any[];
+
+          if (menuItems.length > 0) {
+            const catMap: Record<string, { name: string; price: number }[]> = {};
+            for (const item of menuItems) {
+              const cat = item.category || 'Other';
+              if (!catMap[cat]) catMap[cat] = [];
+              catMap[cat].push({ name: item.name, price: item.price });
+            }
+            menuCategories = Object.keys(catMap);
+            const lines: string[] = [];
+            for (const [cat, items] of Object.entries(catMap)) {
+              const topItems = items.slice(0, 4).map(i => `${i.name} (₹${i.price})`).join(', ');
+              lines.push(`${cat}: ${topItems}${items.length > 4 ? ` +${items.length - 4} more` : ''}`);
+            }
+            menuSummary = lines.join('\n');
+          }
+        }
+      }
+    } catch (_) { /* continue with defaults */ }
+
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+
+    if (!apiKey) {
+      const fallback = buildRestaurantFallback(text, restaurantName, menuCategories, phone);
+      return res.json({ reply: fallback });
+    }
+
+    const systemPrompt = `
+You are the AI assistant for "${restaurantName}", a restaurant. You speak in friendly Hinglish (mix of Hindi + English) to help customers.
+
+RESTAURANT INFO:
+${restaurantInfo}
+
+MENU (available items):
+${menuSummary || 'Menu data loading...'}
+
+YOUR ROLE:
+- Help customers with menu questions, dish recommendations, pricing, ingredients
+- Guide them to book tables, place orders, find deals
+- Answer questions about location, hours, delivery, veg/non-veg options
+- Be warm, helpful and enthusiastic like a great restaurant host
+- Use emojis naturally, keep responses concise (2-4 sentences max)
+- Speak in Hinglish: friendly Hindi + English mix (e.g., "Bilkul try karein! It's our best seller 😊")
+- If asked about something you don't know, suggest they call or visit
+
+NEVER say you are an AI or chatbot. Just be the restaurant's helpful assistant.
+`.trim();
+
+    const body = {
+      contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\nCustomer says: ${text}` }] }],
+      generationConfig: { temperature: 0.75, maxOutputTokens: 256 },
+    };
+
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+    );
+
+    if (!resp.ok) {
+      return res.json({ reply: buildRestaurantFallback(text, restaurantName, menuCategories, phone) });
+    }
+
+    const json: any = await resp.json();
+    const replyText = (json.candidates?.[0]?.content?.parts || []).map((p: any) => p.text).join(' ').trim();
+
+    if (!replyText) {
+      return res.json({ reply: buildRestaurantFallback(text, restaurantName, menuCategories, phone) });
+    }
+
+    return res.json({ reply: replyText });
+  } catch {
+    return res.json({ reply: 'Thodi der mein try karein. Humara system busy hai. 🙏' });
   }
 };
 

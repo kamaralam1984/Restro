@@ -5,10 +5,22 @@ import Link from 'next/link';
 export default function StaffHeroImagesPage() {
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-white">Hero Images</h1>
-      <div className="bg-slate-900 rounded-xl p-6 text-slate-400">
+      <h1 className="text-2xl font-bold" style={{ color: '#f8f4ed' }}>Hero Images</h1>
+      <div
+        className="rounded-xl p-6"
+        style={{
+          background: '#141414',
+          border: '1px solid rgba(200,151,42,0.13)',
+          borderRadius: '16px',
+          color: '#a89070',
+        }}
+      >
         <p>Hero images section for staff.</p>
-        <Link href="/staff" className="text-orange-400 hover:text-orange-300 text-sm mt-2 inline-block">← Back to dashboard</Link>
+        <Link
+          href="/staff"
+          className="text-sm mt-2 inline-block"
+          style={{ color: '#c8972a' }}
+        >← Back to dashboard</Link>
       </div>
     </div>
   );

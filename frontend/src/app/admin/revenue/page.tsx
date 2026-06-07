@@ -134,30 +134,37 @@ export default function RevenuePage() {
 
   if (loading && !stats) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-slate-400">Loading revenue statistics...</div>
+      <div className="flex items-center justify-center h-screen" style={{ background: '#080808' }}>
+        <div style={{ color: '#a89070' }}>Loading revenue statistics...</div>
       </div>
     );
   }
 
   if (!stats) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-red-400">Failed to load revenue statistics</div>
+      <div className="flex items-center justify-center h-screen" style={{ background: '#080808' }}>
+        <div style={{ color: '#ef4444' }}>Failed to load revenue statistics</div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ background: '#080808', minHeight: '100vh', padding: '24px' }}>
       <Toaster position="top-right" />
-      
+
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-white">Revenue Management</h1>
+        <h1 className="text-2xl font-bold" style={{ color: '#f8f4ed', fontWeight: 800 }}>Revenue Management</h1>
         <button
           onClick={exportToCSV}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
+          style={{
+            background: 'rgba(34,197,94,0.1)',
+            color: '#22c55e',
+            border: '1px solid rgba(34,197,94,0.3)',
+            borderRadius: '10px',
+            fontWeight: 700,
+          }}
         >
           <Download className="w-4 h-4" />
           Export Report
@@ -165,11 +172,14 @@ export default function RevenuePage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-slate-900 rounded-xl p-4">
+      <div
+        className="rounded-xl p-4"
+        style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.13)', borderRadius: '16px' }}
+      >
         <div className="flex flex-wrap gap-4 items-end">
           <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-slate-400" />
-            <span className="text-slate-300 text-sm">Period:</span>
+            <Filter className="w-5 h-5" style={{ color: '#a89070' }} />
+            <span className="text-sm" style={{ color: '#a89070' }}>Period:</span>
           </div>
           {(['all', 'today', 'week', 'month', 'year'] as const).map((p) => (
             <button
@@ -179,11 +189,23 @@ export default function RevenuePage() {
                 setStartDate('');
                 setEndDate('');
               }}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+              style={
                 period === p
-                  ? 'bg-orange-600 text-white'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-              }`}
+                  ? {
+                      background: 'linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)',
+                      color: '#080808',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontWeight: 700,
+                    }
+                  : {
+                      background: '#1c1c1c',
+                      color: '#a89070',
+                      border: '1px solid rgba(200,151,42,0.15)',
+                      borderRadius: '10px',
+                    }
+              }
             >
               {p.charAt(0).toUpperCase() + p.slice(1)}
             </button>
@@ -193,15 +215,31 @@ export default function RevenuePage() {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="px-3 py-2 bg-slate-800 text-white rounded border border-slate-700 text-sm"
+              className="text-sm"
+              style={{
+                padding: '10px 14px',
+                background: '#1c1c1c',
+                color: '#f8f4ed',
+                border: '1px solid rgba(200,151,42,0.2)',
+                borderRadius: '10px',
+                outline: 'none',
+              }}
               placeholder="Start Date"
             />
-            <span className="text-slate-400">to</span>
+            <span style={{ color: '#a89070' }}>to</span>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="px-3 py-2 bg-slate-800 text-white rounded border border-slate-700 text-sm"
+              className="text-sm"
+              style={{
+                padding: '10px 14px',
+                background: '#1c1c1c',
+                color: '#f8f4ed',
+                border: '1px solid rgba(200,151,42,0.2)',
+                borderRadius: '10px',
+                outline: 'none',
+              }}
               placeholder="End Date"
             />
           </div>
@@ -209,24 +247,26 @@ export default function RevenuePage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-slate-800">
+      <div className="flex gap-2" style={{ borderBottom: '1px solid rgba(200,151,42,0.15)' }}>
         <button
           onClick={() => setActiveTab('overview')}
-          className={`px-4 py-2 font-semibold transition-colors ${
+          className="px-4 py-2 font-semibold transition-colors"
+          style={
             activeTab === 'overview'
-              ? 'text-orange-600 border-b-2 border-orange-600'
-              : 'text-slate-400 hover:text-white'
-          }`}
+              ? { color: '#c8972a', borderBottom: '2px solid #c8972a', background: 'transparent' }
+              : { color: '#a89070', background: 'transparent', border: 'none' }
+          }
         >
           Overview
         </button>
         <button
           onClick={() => setActiveTab('customers')}
-          className={`px-4 py-2 font-semibold transition-colors ${
+          className="px-4 py-2 font-semibold transition-colors"
+          style={
             activeTab === 'customers'
-              ? 'text-orange-600 border-b-2 border-orange-600'
-              : 'text-slate-400 hover:text-white'
-          }`}
+              ? { color: '#c8972a', borderBottom: '2px solid #c8972a', background: 'transparent' }
+              : { color: '#a89070', background: 'transparent', border: 'none' }
+          }
         >
           Customers
         </button>
@@ -236,106 +276,143 @@ export default function RevenuePage() {
         <>
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-xl p-6 text-white">
+            <div
+              className="rounded-xl p-6"
+              style={{
+                background: 'linear-gradient(135deg, rgba(34,197,94,0.15), rgba(34,197,94,0.08))',
+                border: '1px solid rgba(34,197,94,0.25)',
+                borderRadius: '16px',
+              }}
+            >
               <div className="flex items-center justify-between mb-2">
-                <DollarSign className="w-8 h-8 opacity-80" />
-                <TrendingUp className="w-5 h-5" />
+                <DollarSign className="w-8 h-8" style={{ color: '#22c55e', opacity: 0.8 }} />
+                <TrendingUp className="w-5 h-5" style={{ color: '#22c55e' }} />
               </div>
-              <div className="text-2xl font-bold">{formatCurrency(stats.summary.totalRevenue)}</div>
-              <div className="text-sm opacity-90">Total Revenue</div>
+              <div className="text-2xl font-bold" style={{ color: '#f0c060', fontWeight: 900 }}>{formatCurrency(stats.summary.totalRevenue)}</div>
+              <div className="text-sm" style={{ color: '#a89070' }}>Total Revenue</div>
             </div>
 
-            <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-6 text-white">
+            <div
+              className="rounded-xl p-6"
+              style={{
+                background: 'linear-gradient(135deg, rgba(96,165,250,0.15), rgba(96,165,250,0.08))',
+                border: '1px solid rgba(96,165,250,0.25)',
+                borderRadius: '16px',
+              }}
+            >
               <div className="flex items-center justify-between mb-2">
-                <Users className="w-8 h-8 opacity-80" />
-                <TrendingUp className="w-5 h-5" />
+                <Users className="w-8 h-8" style={{ color: '#60a5fa', opacity: 0.8 }} />
+                <TrendingUp className="w-5 h-5" style={{ color: '#60a5fa' }} />
               </div>
-              <div className="text-2xl font-bold">{stats.summary.totalCustomers}</div>
-              <div className="text-sm opacity-90">Total Customers</div>
+              <div className="text-2xl font-bold" style={{ color: '#f0c060', fontWeight: 900 }}>{stats.summary.totalCustomers}</div>
+              <div className="text-sm" style={{ color: '#a89070' }}>Total Customers</div>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl p-6 text-white">
+            <div
+              className="rounded-xl p-6"
+              style={{
+                background: 'linear-gradient(135deg, rgba(168,85,247,0.15), rgba(168,85,247,0.08))',
+                border: '1px solid rgba(168,85,247,0.25)',
+                borderRadius: '16px',
+              }}
+            >
               <div className="flex items-center justify-between mb-2">
-                <ShoppingBag className="w-8 h-8 opacity-80" />
-                <TrendingUp className="w-5 h-5" />
+                <ShoppingBag className="w-8 h-8" style={{ color: '#c084fc', opacity: 0.8 }} />
+                <TrendingUp className="w-5 h-5" style={{ color: '#c084fc' }} />
               </div>
-              <div className="text-2xl font-bold">{stats.summary.totalOrders}</div>
-              <div className="text-sm opacity-90">Total Orders</div>
+              <div className="text-2xl font-bold" style={{ color: '#f0c060', fontWeight: 900 }}>{stats.summary.totalOrders}</div>
+              <div className="text-sm" style={{ color: '#a89070' }}>Total Orders</div>
             </div>
 
-            <div className="bg-gradient-to-br from-orange-600 to-orange-700 rounded-xl p-6 text-white">
+            <div
+              className="rounded-xl p-6"
+              style={{
+                background: 'linear-gradient(135deg, rgba(200,151,42,0.15), rgba(200,151,42,0.08))',
+                border: '1px solid rgba(200,151,42,0.25)',
+                borderRadius: '16px',
+              }}
+            >
               <div className="flex items-center justify-between mb-2">
-                <Receipt className="w-8 h-8 opacity-80" />
-                <TrendingUp className="w-5 h-5" />
+                <Receipt className="w-8 h-8" style={{ color: '#c8972a', opacity: 0.8 }} />
+                <TrendingUp className="w-5 h-5" style={{ color: '#c8972a' }} />
               </div>
-              <div className="text-2xl font-bold">{stats.summary.totalBills}</div>
-              <div className="text-sm opacity-90">Total Bills</div>
+              <div className="text-2xl font-bold" style={{ color: '#f0c060', fontWeight: 900 }}>{stats.summary.totalBills}</div>
+              <div className="text-sm" style={{ color: '#a89070' }}>Total Bills</div>
             </div>
           </div>
 
           {/* Detailed Stats */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Revenue Breakdown */}
-            <div className="bg-slate-900 rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-white mb-4">Revenue Breakdown</h2>
+            <div
+              className="rounded-xl p-6"
+              style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.13)', borderRadius: '16px' }}
+            >
+              <h2 className="text-lg font-semibold mb-4" style={{ color: '#f8f4ed', fontWeight: 800 }}>Revenue Breakdown</h2>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-300">Order Revenue</span>
-                  <span className="text-white font-semibold">{formatCurrency(stats.summary.orderRevenue)}</span>
+                  <span style={{ color: '#a89070' }}>Order Revenue</span>
+                  <span className="font-semibold" style={{ color: '#f8f4ed' }}>{formatCurrency(stats.summary.orderRevenue)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-300">Bill Revenue</span>
-                  <span className="text-white font-semibold">{formatCurrency(stats.summary.billRevenue)}</span>
+                  <span style={{ color: '#a89070' }}>Bill Revenue</span>
+                  <span className="font-semibold" style={{ color: '#f8f4ed' }}>{formatCurrency(stats.summary.billRevenue)}</span>
                 </div>
-                <div className="border-t border-slate-800 pt-4 flex justify-between items-center">
-                  <span className="text-white font-semibold">Total Revenue</span>
-                  <span className="text-orange-600 font-bold text-xl">{formatCurrency(stats.summary.totalRevenue)}</span>
+                <div className="pt-4 flex justify-between items-center" style={{ borderTop: '1px solid rgba(200,151,42,0.15)' }}>
+                  <span className="font-semibold" style={{ color: '#f8f4ed' }}>Total Revenue</span>
+                  <span className="font-bold text-xl" style={{ color: '#f0c060' }}>{formatCurrency(stats.summary.totalRevenue)}</span>
                 </div>
               </div>
             </div>
 
             {/* Payment Methods */}
-            <div className="bg-slate-900 rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-white mb-4">Payment Methods</h2>
+            <div
+              className="rounded-xl p-6"
+              style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.13)', borderRadius: '16px' }}
+            >
+              <h2 className="text-lg font-semibold mb-4" style={{ color: '#f8f4ed', fontWeight: 800 }}>Payment Methods</h2>
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-slate-300">Cash</span>
-                    <span className="text-white font-semibold">{formatCurrency(stats.paymentMethods.cash)}</span>
+                    <span style={{ color: '#a89070' }}>Cash</span>
+                    <span className="font-semibold" style={{ color: '#f8f4ed' }}>{formatCurrency(stats.paymentMethods.cash)}</span>
                   </div>
-                  <div className="w-full bg-slate-800 rounded-full h-2">
+                  <div className="w-full rounded-full h-2" style={{ background: '#1c1c1c' }}>
                     <div
-                      className="bg-green-600 h-2 rounded-full"
+                      className="h-2 rounded-full"
                       style={{
                         width: `${(stats.paymentMethods.cash / stats.summary.totalRevenue) * 100}%`,
+                        background: '#22c55e',
                       }}
                     />
                   </div>
                 </div>
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-slate-300">Card</span>
-                    <span className="text-white font-semibold">{formatCurrency(stats.paymentMethods.card)}</span>
+                    <span style={{ color: '#a89070' }}>Card</span>
+                    <span className="font-semibold" style={{ color: '#f8f4ed' }}>{formatCurrency(stats.paymentMethods.card)}</span>
                   </div>
-                  <div className="w-full bg-slate-800 rounded-full h-2">
+                  <div className="w-full rounded-full h-2" style={{ background: '#1c1c1c' }}>
                     <div
-                      className="bg-blue-600 h-2 rounded-full"
+                      className="h-2 rounded-full"
                       style={{
                         width: `${(stats.paymentMethods.card / stats.summary.totalRevenue) * 100}%`,
+                        background: '#60a5fa',
                       }}
                     />
                   </div>
                 </div>
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-slate-300">Online</span>
-                    <span className="text-white font-semibold">{formatCurrency(stats.paymentMethods.online)}</span>
+                    <span style={{ color: '#a89070' }}>Online</span>
+                    <span className="font-semibold" style={{ color: '#f8f4ed' }}>{formatCurrency(stats.paymentMethods.online)}</span>
                   </div>
-                  <div className="w-full bg-slate-800 rounded-full h-2">
+                  <div className="w-full rounded-full h-2" style={{ background: '#1c1c1c' }}>
                     <div
-                      className="bg-purple-600 h-2 rounded-full"
+                      className="h-2 rounded-full"
                       style={{
                         width: `${(stats.paymentMethods.online / stats.summary.totalRevenue) * 100}%`,
+                        background: '#c084fc',
                       }}
                     />
                   </div>
@@ -344,51 +421,60 @@ export default function RevenuePage() {
             </div>
 
             {/* Average Values */}
-            <div className="bg-slate-900 rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-white mb-4">Average Values</h2>
+            <div
+              className="rounded-xl p-6"
+              style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.13)', borderRadius: '16px' }}
+            >
+              <h2 className="text-lg font-semibold mb-4" style={{ color: '#f8f4ed', fontWeight: 800 }}>Average Values</h2>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-300">Avg Order Value</span>
-                  <span className="text-white font-semibold">{formatCurrency(stats.summary.avgOrderValue)}</span>
+                  <span style={{ color: '#a89070' }}>Avg Order Value</span>
+                  <span className="font-semibold" style={{ color: '#f8f4ed' }}>{formatCurrency(stats.summary.avgOrderValue)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-300">Avg Bill Value</span>
-                  <span className="text-white font-semibold">{formatCurrency(stats.summary.avgBillValue)}</span>
+                  <span style={{ color: '#a89070' }}>Avg Bill Value</span>
+                  <span className="font-semibold" style={{ color: '#f8f4ed' }}>{formatCurrency(stats.summary.avgBillValue)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-300">Avg Transaction Value</span>
-                  <span className="text-orange-600 font-semibold">{formatCurrency(stats.summary.avgTransactionValue)}</span>
+                  <span style={{ color: '#a89070' }}>Avg Transaction Value</span>
+                  <span className="font-semibold" style={{ color: '#c8972a' }}>{formatCurrency(stats.summary.avgTransactionValue)}</span>
                 </div>
               </div>
             </div>
 
             {/* Order Status */}
-            <div className="bg-slate-900 rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-white mb-4">Order Status</h2>
+            <div
+              className="rounded-xl p-6"
+              style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.13)', borderRadius: '16px' }}
+            >
+              <h2 className="text-lg font-semibold mb-4" style={{ color: '#f8f4ed', fontWeight: 800 }}>Order Status</h2>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-300">Paid Orders</span>
-                  <span className="text-green-600 font-semibold">{stats.summary.paidOrdersCount}</span>
+                  <span style={{ color: '#a89070' }}>Paid Orders</span>
+                  <span className="font-semibold" style={{ color: '#22c55e' }}>{stats.summary.paidOrdersCount}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-300">Pending Orders</span>
-                  <span className="text-yellow-600 font-semibold">{stats.summary.pendingOrdersCount}</span>
+                  <span style={{ color: '#a89070' }}>Pending Orders</span>
+                  <span className="font-semibold" style={{ color: '#f0c060' }}>{stats.summary.pendingOrdersCount}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-300">Paid Bills</span>
-                  <span className="text-green-600 font-semibold">{stats.summary.paidBillsCount}</span>
+                  <span style={{ color: '#a89070' }}>Paid Bills</span>
+                  <span className="font-semibold" style={{ color: '#22c55e' }}>{stats.summary.paidBillsCount}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-300">Unpaid Bills</span>
-                  <span className="text-red-600 font-semibold">{stats.summary.unpaidBillsCount}</span>
+                  <span style={{ color: '#a89070' }}>Unpaid Bills</span>
+                  <span className="font-semibold" style={{ color: '#ef4444' }}>{stats.summary.unpaidBillsCount}</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Daily Revenue Chart */}
-          <div className="bg-slate-900 rounded-xl p-6">
-            <h2 className="text-lg font-semibold text-white mb-4">Daily Revenue Trend (Last 30 Days)</h2>
+          <div
+            className="rounded-xl p-6"
+            style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.13)', borderRadius: '16px' }}
+          >
+            <h2 className="text-lg font-semibold mb-4" style={{ color: '#f8f4ed', fontWeight: 800 }}>Daily Revenue Trend (Last 30 Days)</h2>
             <div className="h-64 flex items-end justify-between gap-1">
               {stats.dailyRevenue.map((day, index) => {
                 const maxRevenue = Math.max(...stats.dailyRevenue.map(d => d.revenue));
@@ -396,12 +482,16 @@ export default function RevenuePage() {
                 return (
                   <div key={index} className="flex-1 flex flex-col items-center gap-2">
                     <div
-                      className="w-full bg-gradient-to-t from-orange-600 to-orange-500 rounded-t transition-all hover:from-orange-500 hover:to-orange-400"
-                      style={{ height: `${height}%`, minHeight: height > 0 ? '4px' : '0' }}
+                      className="w-full rounded-t transition-all"
+                      style={{
+                        height: `${height}%`,
+                        minHeight: height > 0 ? '4px' : '0',
+                        background: 'linear-gradient(to top, #8b5a00, #c8972a)',
+                      }}
                       title={`${formatDate(day.date)}: ${formatCurrency(day.revenue)}`}
                     />
                     {index % 5 === 0 && (
-                      <span className="text-xs text-slate-400 transform -rotate-45 origin-top-left">
+                      <span className="text-xs transform -rotate-45 origin-top-left" style={{ color: '#6b5040' }}>
                         {formatDate(day.date)}
                       </span>
                     )}
@@ -412,25 +502,33 @@ export default function RevenuePage() {
           </div>
 
           {/* Top Selling Items */}
-          <div className="bg-slate-900 rounded-xl p-6">
-            <h2 className="text-lg font-semibold text-white mb-4">Top Selling Items</h2>
+          <div
+            className="rounded-xl p-6"
+            style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.13)', borderRadius: '16px' }}
+          >
+            <h2 className="text-lg font-semibold mb-4" style={{ color: '#f8f4ed', fontWeight: 800 }}>Top Selling Items</h2>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-slate-400 border-b border-slate-800">
-                    <th className="text-left py-3 px-4">Rank</th>
-                    <th className="text-left py-3 px-4">Item Name</th>
-                    <th className="text-right py-3 px-4">Quantity</th>
-                    <th className="text-right py-3 px-4">Revenue</th>
+                  <tr style={{ background: '#1c1c1c', borderBottom: '1px solid rgba(200,151,42,0.15)' }}>
+                    <th className="text-left py-3 px-4" style={{ color: '#a89070', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Rank</th>
+                    <th className="text-left py-3 px-4" style={{ color: '#a89070', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Item Name</th>
+                    <th className="text-right py-3 px-4" style={{ color: '#a89070', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Quantity</th>
+                    <th className="text-right py-3 px-4" style={{ color: '#a89070', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Revenue</th>
                   </tr>
                 </thead>
                 <tbody>
                   {stats.topSellingItems.map((item, index) => (
-                    <tr key={index} className="border-b border-slate-800 hover:bg-slate-800">
-                      <td className="py-3 px-4 text-slate-300">#{index + 1}</td>
-                      <td className="py-3 px-4 text-white font-medium">{item.name}</td>
-                      <td className="py-3 px-4 text-slate-300 text-right">{item.quantity}</td>
-                      <td className="py-3 px-4 text-orange-600 font-semibold text-right">{formatCurrency(item.revenue)}</td>
+                    <tr
+                      key={index}
+                      style={{ background: '#141414', borderBottom: '1px solid rgba(200,151,42,0.07)' }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = '#1c1c1c')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = '#141414')}
+                    >
+                      <td className="py-3 px-4" style={{ color: '#a89070' }}>#{index + 1}</td>
+                      <td className="py-3 px-4 font-medium" style={{ color: '#f8f4ed' }}>{item.name}</td>
+                      <td className="py-3 px-4 text-right" style={{ color: '#a89070' }}>{item.quantity}</td>
+                      <td className="py-3 px-4 font-semibold text-right" style={{ color: '#c8972a' }}>{formatCurrency(item.revenue)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -441,46 +539,63 @@ export default function RevenuePage() {
       )}
 
       {activeTab === 'customers' && customerStats && (
-        <div className="bg-slate-900 rounded-xl p-6">
+        <div
+          className="rounded-xl p-6"
+          style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.13)', borderRadius: '16px' }}
+        >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-slate-800 rounded-lg p-4">
-              <div className="text-slate-400 text-sm mb-1">Total Customers</div>
-              <div className="text-2xl font-bold text-white">{customerStats.totalCustomers}</div>
+            <div
+              className="rounded-lg p-4"
+              style={{ background: '#1c1c1c', border: '1px solid rgba(200,151,42,0.13)', borderRadius: '12px' }}
+            >
+              <div className="text-sm mb-1" style={{ color: '#a89070', textTransform: 'uppercase', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em' }}>Total Customers</div>
+              <div className="text-2xl font-bold" style={{ color: '#f0c060', fontWeight: 900 }}>{customerStats.totalCustomers}</div>
             </div>
-            <div className="bg-slate-800 rounded-lg p-4">
-              <div className="text-slate-400 text-sm mb-1">Total Spent</div>
-              <div className="text-2xl font-bold text-orange-600">{formatCurrency(customerStats.totalSpent)}</div>
+            <div
+              className="rounded-lg p-4"
+              style={{ background: '#1c1c1c', border: '1px solid rgba(200,151,42,0.13)', borderRadius: '12px' }}
+            >
+              <div className="text-sm mb-1" style={{ color: '#a89070', textTransform: 'uppercase', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em' }}>Total Spent</div>
+              <div className="text-2xl font-bold" style={{ color: '#f0c060', fontWeight: 900 }}>{formatCurrency(customerStats.totalSpent)}</div>
             </div>
-            <div className="bg-slate-800 rounded-lg p-4">
-              <div className="text-slate-400 text-sm mb-1">Avg per Customer</div>
-              <div className="text-2xl font-bold text-green-600">{formatCurrency(customerStats.avgSpentPerCustomer)}</div>
+            <div
+              className="rounded-lg p-4"
+              style={{ background: '#1c1c1c', border: '1px solid rgba(200,151,42,0.13)', borderRadius: '12px' }}
+            >
+              <div className="text-sm mb-1" style={{ color: '#a89070', textTransform: 'uppercase', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em' }}>Avg per Customer</div>
+              <div className="text-2xl font-bold" style={{ color: '#22c55e', fontWeight: 900 }}>{formatCurrency(customerStats.avgSpentPerCustomer)}</div>
             </div>
           </div>
 
-          <h2 className="text-lg font-semibold text-white mb-4">Top Customers</h2>
+          <h2 className="text-lg font-semibold mb-4" style={{ color: '#f8f4ed', fontWeight: 800 }}>Top Customers</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-slate-400 border-b border-slate-800">
-                  <th className="text-left py-3 px-4">Name</th>
-                  <th className="text-left py-3 px-4">Phone</th>
-                  <th className="text-left py-3 px-4">Email</th>
-                  <th className="text-right py-3 px-4">Orders</th>
-                  <th className="text-right py-3 px-4">Bills</th>
-                  <th className="text-right py-3 px-4">Total Spent</th>
-                  <th className="text-left py-3 px-4">Last Order</th>
+                <tr style={{ background: '#1c1c1c', borderBottom: '1px solid rgba(200,151,42,0.15)' }}>
+                  <th className="text-left py-3 px-4" style={{ color: '#a89070', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Name</th>
+                  <th className="text-left py-3 px-4" style={{ color: '#a89070', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Phone</th>
+                  <th className="text-left py-3 px-4" style={{ color: '#a89070', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Email</th>
+                  <th className="text-right py-3 px-4" style={{ color: '#a89070', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Orders</th>
+                  <th className="text-right py-3 px-4" style={{ color: '#a89070', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Bills</th>
+                  <th className="text-right py-3 px-4" style={{ color: '#a89070', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Total Spent</th>
+                  <th className="text-left py-3 px-4" style={{ color: '#a89070', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Last Order</th>
                 </tr>
               </thead>
               <tbody>
                 {customerStats.customers.map((customer, index) => (
-                  <tr key={index} className="border-b border-slate-800 hover:bg-slate-800">
-                    <td className="py-3 px-4 text-white font-medium">{customer.name}</td>
-                    <td className="py-3 px-4 text-slate-300">{customer.phone}</td>
-                    <td className="py-3 px-4 text-slate-300">{customer.email || '-'}</td>
-                    <td className="py-3 px-4 text-slate-300 text-right">{customer.totalOrders}</td>
-                    <td className="py-3 px-4 text-slate-300 text-right">{customer.totalBills}</td>
-                    <td className="py-3 px-4 text-orange-600 font-semibold text-right">{formatCurrency(customer.totalSpent)}</td>
-                    <td className="py-3 px-4 text-slate-400 text-sm">
+                  <tr
+                    key={index}
+                    style={{ background: '#141414', borderBottom: '1px solid rgba(200,151,42,0.07)' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = '#1c1c1c')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = '#141414')}
+                  >
+                    <td className="py-3 px-4 font-medium" style={{ color: '#f8f4ed' }}>{customer.name}</td>
+                    <td className="py-3 px-4" style={{ color: '#a89070' }}>{customer.phone}</td>
+                    <td className="py-3 px-4" style={{ color: '#a89070' }}>{customer.email || '-'}</td>
+                    <td className="py-3 px-4 text-right" style={{ color: '#a89070' }}>{customer.totalOrders}</td>
+                    <td className="py-3 px-4 text-right" style={{ color: '#a89070' }}>{customer.totalBills}</td>
+                    <td className="py-3 px-4 font-semibold text-right" style={{ color: '#c8972a' }}>{formatCurrency(customer.totalSpent)}</td>
+                    <td className="py-3 px-4 text-sm" style={{ color: '#6b5040' }}>
                       {customer.lastOrderDate
                         ? new Date(customer.lastOrderDate).toLocaleDateString('en-IN')
                         : '-'}
@@ -495,4 +610,3 @@ export default function RevenuePage() {
     </div>
   );
 }
-

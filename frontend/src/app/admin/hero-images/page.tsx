@@ -38,7 +38,7 @@ export default function HeroImagesPage() {
       const data = await api.get<HeroImage[]>('/hero-images/admin', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       // Ensure we have 5 slots, fill missing ones with empty placeholders
       const images: HeroImage[] = [];
       for (let i = 1; i <= 5; i++) {
@@ -102,7 +102,7 @@ export default function HeroImagesPage() {
     try {
       setUploadingImage(true);
       const token = localStorage.getItem('token');
-      
+
       // Upload image if a new file is selected
       let imageUrl = formData.imageUrl;
       if (imageFile) {
@@ -201,30 +201,35 @@ export default function HeroImagesPage() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6" style={{ background: '#080808', minHeight: '100vh' }}>
       <Toaster position="top-right" />
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-white">Hero Images</h1>
-          <p className="text-slate-400 mt-1">Manage 5 hero images for the homepage carousel</p>
+          <h1 className="text-3xl font-bold" style={{ color: '#f8f4ed' }}>Hero Images</h1>
+          <p className="mt-1" style={{ color: '#a89070' }}>Manage 5 hero images for the homepage carousel</p>
         </div>
       </div>
 
       {loading ? (
         <div className="text-center py-12">
-          <div className="text-slate-400">Loading hero images...</div>
+          <div style={{ color: '#a89070' }}>Loading hero images...</div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {heroImages.map((image, index) => (
             <motion.div
               key={image.order}
-              className="bg-slate-800 rounded-lg overflow-hidden border border-slate-700"
+              className="overflow-hidden"
+              style={{
+                background: '#141414',
+                borderRadius: '16px',
+                border: '1px solid rgba(200,151,42,0.13)',
+              }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <div className="relative h-48 bg-slate-700">
+              <div className="relative h-48" style={{ background: '#1c1c1c' }}>
                 {image.imageUrl ? (
                   <img
                     src={image.imageUrl.startsWith('http') ? image.imageUrl : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${image.imageUrl}`}
@@ -233,17 +238,27 @@ export default function HeroImagesPage() {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <Upload className="w-12 h-12 text-slate-600" />
+                    <Upload className="w-12 h-12" style={{ color: '#6b5040' }} />
                   </div>
                 )}
                 <div className="absolute top-2 right-2">
-                  <span className="bg-orange-600 text-white text-xs px-2 py-1 rounded">
+                  <span
+                    className="text-xs px-2 py-1 rounded"
+                    style={{
+                      background: 'linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)',
+                      color: '#080808',
+                      fontWeight: 700,
+                    }}
+                  >
                     #{image.order}
                   </span>
                 </div>
                 {!image.isActive && image.imageUrl && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                    <span className="bg-red-600 text-white px-3 py-1 rounded text-sm">
+                  <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.5)' }}>
+                    <span
+                      className="px-3 py-1 rounded text-sm"
+                      style={{ background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}
+                    >
                       Inactive
                     </span>
                   </div>
@@ -251,11 +266,14 @@ export default function HeroImagesPage() {
               </div>
               <div className="p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-slate-400 text-sm">Position: {image.order}</span>
+                  <span className="text-sm" style={{ color: '#a89070' }}>Position: {image.order}</span>
                   <span
-                    className={`text-xs px-2 py-1 rounded ${
-                      image.isActive ? 'bg-green-600' : 'bg-red-600'
-                    } text-white`}
+                    className="text-xs px-2 py-1 rounded"
+                    style={
+                      image.isActive
+                        ? { background: 'rgba(34,197,94,0.1)', color: '#22c55e' }
+                        : { background: 'rgba(239,68,68,0.1)', color: '#ef4444' }
+                    }
                   >
                     {image.isActive ? 'Active' : 'Inactive'}
                   </span>
@@ -263,7 +281,14 @@ export default function HeroImagesPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleOpenModal(image.order)}
-                    className="flex-1 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-2 text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+                    style={{
+                      background: 'linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)',
+                      color: '#080808',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontWeight: 700,
+                    }}
                   >
                     {image.imageUrl ? <Edit className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                     {image.imageUrl ? 'Edit' : 'Add Image'}
@@ -271,7 +296,13 @@ export default function HeroImagesPage() {
                   {image._id && (
                     <button
                       onClick={() => handleDelete(image._id!)}
-                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                      className="px-4 py-2 text-sm font-semibold transition-colors"
+                      style={{
+                        background: 'transparent',
+                        border: '1px solid rgba(239,68,68,0.3)',
+                        color: '#ef4444',
+                        borderRadius: '10px',
+                      }}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -286,16 +317,22 @@ export default function HeroImagesPage() {
       {/* Modal */}
       <AnimatePresence>
         {showModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
             <motion.div
-              className="bg-slate-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              className="max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              style={{
+                background: '#141414',
+                border: '1px solid rgba(200,151,42,0.2)',
+                borderRadius: '18px',
+                boxShadow: '0 24px 64px rgba(0,0,0,0.7)',
+              }}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
             >
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold text-white">
+                  <h2 className="text-2xl font-bold" style={{ color: '#f8f4ed' }}>
                     {editingImage ? 'Edit Hero Image' : 'Add Hero Image'}
                   </h2>
                   <button
@@ -303,7 +340,7 @@ export default function HeroImagesPage() {
                       setShowModal(false);
                       resetForm();
                     }}
-                    className="text-slate-400 hover:text-white"
+                    style={{ color: '#a89070', background: 'transparent', border: 'none', cursor: 'pointer' }}
                   >
                     <X className="w-6 h-6" />
                   </button>
@@ -311,7 +348,7 @@ export default function HeroImagesPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold mb-2 text-slate-300">
+                    <label className="block text-sm font-semibold mb-2" style={{ color: '#a89070' }}>
                       Position (1-5)
                     </label>
                     <input
@@ -322,13 +359,23 @@ export default function HeroImagesPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, order: parseInt(e.target.value) })
                       }
-                      className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-600"
+                      className="w-full"
+                      style={{
+                        background: '#1c1c1c',
+                        border: '1px solid rgba(200,151,42,0.2)',
+                        borderRadius: '10px',
+                        padding: '10px 14px',
+                        color: '#f8f4ed',
+                        outline: 'none',
+                      }}
+                      onFocus={(e) => (e.currentTarget.style.borderColor = '#c8972a')}
+                      onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(200,151,42,0.2)')}
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold mb-2 text-slate-300">
+                    <label className="block text-sm font-semibold mb-2" style={{ color: '#a89070' }}>
                       Image
                     </label>
                     {imagePreview && (
@@ -341,15 +388,30 @@ export default function HeroImagesPage() {
                       </div>
                     )}
                     <div className="relative">
-                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-700 border-dashed rounded-lg cursor-pointer bg-slate-700 hover:bg-slate-650 hover:border-orange-600 transition-colors">
+                      <label
+                        className="flex flex-col items-center justify-center w-full h-32 cursor-pointer transition-colors"
+                        style={{
+                          border: '2px dashed rgba(200,151,42,0.3)',
+                          borderRadius: '10px',
+                          background: '#1c1c1c',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = '#c8972a';
+                          e.currentTarget.style.background = '#242424';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = 'rgba(200,151,42,0.3)';
+                          e.currentTarget.style.background = '#1c1c1c';
+                        }}
+                      >
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                          <Upload className="w-10 h-10 mb-3 text-slate-400" />
-                          <p className="mb-2 text-sm text-slate-400">
-                            <span className="font-semibold text-orange-600">Click to upload</span> or
+                          <Upload className="w-10 h-10 mb-3" style={{ color: '#a89070' }} />
+                          <p className="mb-2 text-sm" style={{ color: '#a89070' }}>
+                            <span className="font-semibold" style={{ color: '#c8972a' }}>Click to upload</span> or
                             drag and drop
                           </p>
-                          <p className="text-xs text-slate-500">
-                            JPEG, PNG, GIF, WebP (MAX. 5MB)
+                          <p className="text-xs" style={{ color: '#6b5040' }}>
+                            All image formats (MAX. 20MB)
                           </p>
                         </div>
                         <input
@@ -360,7 +422,7 @@ export default function HeroImagesPage() {
                         />
                       </label>
                       {imageFile && (
-                        <p className="text-xs text-green-400 mt-2">
+                        <p className="text-xs mt-2" style={{ color: '#22c55e' }}>
                           Selected: {imageFile.name}
                         </p>
                       )}
@@ -375,9 +437,10 @@ export default function HeroImagesPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, isActive: e.target.checked })
                       }
-                      className="w-4 h-4 text-orange-600 bg-slate-700 border-slate-600 rounded focus:ring-orange-600"
+                      className="w-4 h-4"
+                      style={{ accentColor: '#c8972a' }}
                     />
-                    <label htmlFor="isActive" className="text-slate-300">
+                    <label htmlFor="isActive" style={{ color: '#a89070' }}>
                       Active (visible on homepage)
                     </label>
                   </div>
@@ -389,14 +452,31 @@ export default function HeroImagesPage() {
                         setShowModal(false);
                         resetForm();
                       }}
-                      className="flex-1 bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+                      className="flex-1 px-6 py-3 font-semibold transition-colors"
+                      style={{
+                        background: 'transparent',
+                        border: '1px solid rgba(200,151,42,0.3)',
+                        color: '#c8972a',
+                        borderRadius: '10px',
+                      }}
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={uploadingImage}
-                      className="flex-1 bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      className="flex-1 px-6 py-3 font-semibold transition-colors flex items-center justify-center gap-2"
+                      style={{
+                        background: uploadingImage
+                          ? 'rgba(200,151,42,0.4)'
+                          : 'linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)',
+                        color: '#080808',
+                        border: 'none',
+                        borderRadius: '10px',
+                        fontWeight: 700,
+                        opacity: uploadingImage ? 0.5 : 1,
+                        cursor: uploadingImage ? 'not-allowed' : 'pointer',
+                      }}
                     >
                       {uploadingImage ? (
                         <>Uploading...</>
@@ -417,4 +497,3 @@ export default function HeroImagesPage() {
     </div>
   );
 }
-

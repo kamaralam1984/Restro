@@ -174,7 +174,12 @@ export const getMenuItem = async (req: Request, res: Response) => {
 
 export const createMenuItem = async (req: Request, res: Response) => {
   try {
-    const menuItem = new Menu(req.body);
+    const user = (req as any).user;
+    const body = { ...req.body };
+    if (!body.restaurantId && user?.restaurantId) {
+      body.restaurantId = user.restaurantId;
+    }
+    const menuItem = new Menu(body);
     await menuItem.save();
     if (menuItem.restaurantId) {
       await cacheDel(cacheKeyMenuByRestaurant(String(menuItem.restaurantId)));

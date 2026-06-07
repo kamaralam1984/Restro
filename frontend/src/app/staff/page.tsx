@@ -60,32 +60,61 @@ export default function StaffDashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: '#f8f4ed' }}>
           Welcome, {userName}
         </h1>
-        <p className="text-slate-400 text-sm mt-1">Staff panel — use the sidebar to access allowed sections</p>
+        <p className="text-sm mt-1" style={{ color: '#a89070' }}>Staff panel — use the sidebar to access allowed sections</p>
       </div>
 
       {pendingCount !== null && permissions.includes('orders') && (
-        <div className="bg-orange-600/20 border border-orange-600/40 rounded-xl p-4 flex items-center justify-between">
-          <span className="text-orange-200 font-medium">{pendingCount} pending order(s)</span>
+        <div
+          className="rounded-xl p-4 flex items-center justify-between"
+          style={{ background: 'rgba(200,151,42,0.10)', border: '1px solid rgba(200,151,42,0.35)' }}
+        >
+          <span className="font-medium" style={{ color: '#f0c060' }}>{pendingCount} pending order(s)</span>
           <Link
             href="/staff/orders"
-            className="px-3 py-1.5 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700"
+            className="px-3 py-1.5 rounded-lg text-sm font-semibold"
+            style={{
+              background: 'linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)',
+              color: '#080808',
+              fontWeight: 700,
+            }}
           >
             View Orders
           </Link>
         </div>
       )}
 
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Quick access</h2>
+      <div
+        className="rounded-xl p-5"
+        style={{
+          background: '#141414',
+          border: '1px solid rgba(200,151,42,0.13)',
+          borderRadius: '16px',
+        }}
+      >
+        <h2
+          className="text-sm font-semibold uppercase tracking-wider mb-3"
+          style={{ color: '#a89070' }}
+        >
+          Quick access
+        </h2>
         <div className="flex flex-wrap gap-3">
           {allowedLinks.map((item) => (
             <Link
               key={item.key}
               href={item.href}
-              className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-orange-600/20 text-slate-300 hover:text-orange-300 rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
+              style={{ background: '#1c1c1c', color: '#a89070' }}
+              onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                (e.currentTarget as HTMLElement).style.background = 'rgba(200,151,42,0.08)';
+                (e.currentTarget as HTMLElement).style.color = '#f0c060';
+              }}
+              onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                (e.currentTarget as HTMLElement).style.background = '#1c1c1c';
+                (e.currentTarget as HTMLElement).style.color = '#a89070';
+              }}
             >
               <item.icon className="w-4 h-4" />
               {item.label}

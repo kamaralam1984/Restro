@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { IndianRupee, Save, Loader2, BadgePercent } from 'lucide-react';
+import { IndianRupee, Save, Loader2, BadgePercent, LayoutGrid } from 'lucide-react';
+import Link from 'next/link';
 import api from '@/services/api';
 import toast, { Toaster } from 'react-hot-toast';
 import { getHourlyRate } from '@/utils/booking.utils';
@@ -115,57 +116,153 @@ export default function TableRatesPage() {
   const defaultRate = (capacity: number) => getHourlyRate(capacity);
   const defaultThreshold = (capacity: number) => getDefaultThreshold(capacity);
 
+  /* ─── capacity section badge ─── */
+  const getSectionBadge = (capacity: number): React.CSSProperties => {
+    if (capacity >= 8)
+      return { background: 'rgba(200,151,42,0.15)', color: '#f0c060', border: '1px solid rgba(200,151,42,0.4)', borderRadius: '999px', padding: '2px 10px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase' as const };
+    if (capacity >= 4)
+      return { background: 'rgba(96,165,250,0.12)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.35)', borderRadius: '999px', padding: '2px 10px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase' as const };
+    return { background: 'rgba(34,197,94,0.12)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '999px', padding: '2px 10px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase' as const };
+  };
+
+  const getSectionLabel = (capacity: number) => {
+    if (capacity >= 8) return 'Large';
+    if (capacity >= 4) return 'Medium';
+    return 'Small';
+  };
+
+  const inputStyle: React.CSSProperties = {
+    background: '#1c1c1c',
+    border: '1px solid rgba(200,151,42,0.2)',
+    borderRadius: 10,
+    padding: '6px 10px',
+    color: '#f8f4ed',
+    outline: 'none',
+    width: '7rem',
+  };
+
   return (
-    <div className="p-6 max-w-5xl">
+    <div style={{ background: '#080808', minHeight: '100%', padding: '24px', maxWidth: '1100px' }}>
       <Toaster position="top-right" />
-      <div className="flex items-center gap-2 mb-6">
-        <IndianRupee className="w-8 h-8 text-orange-500" />
-        <div>
-          <h1 className="text-2xl font-bold text-white">Table rates & offers</h1>
-          <p className="text-sm text-gray-400">
-            Set hourly booking rate and discount offer per table. Leave blank to use default by capacity.
-          </p>
+
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <IndianRupee className="w-8 h-8" style={{ color: '#c8972a' }} />
+          <div>
+            <h1 className="text-2xl font-bold" style={{ color: '#f8f4ed', letterSpacing: '0.01em' }}>
+              Table Rates &amp; Offers
+            </h1>
+            <p className="text-sm mt-0.5" style={{ color: '#a89070' }}>
+              Set hourly booking rate and discount offer per table. Leave blank to use default by capacity.
+            </p>
+          </div>
         </div>
+        <Link
+          href="/admin/tables"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            background: 'rgba(200,151,42,0.08)',
+            border: '1px solid rgba(200,151,42,0.35)',
+            borderRadius: '10px',
+            padding: '8px 16px',
+            color: '#f0c060',
+            fontWeight: 600,
+            fontSize: 14,
+            textDecoration: 'none',
+            whiteSpace: 'nowrap',
+            transition: 'background 0.15s',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(200,151,42,0.16)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(200,151,42,0.08)')}
+        >
+          <LayoutGrid className="w-4 h-4" />
+          Manage Tables
+        </Link>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#c8972a' }} />
         </div>
       ) : tables.length === 0 ? (
-        <div className="bg-gray-800/80 border border-gray-600 rounded-lg p-8 text-center text-gray-400">
-          <p>No tables found. Create tables from the Bookings page first (Initialize tables).
+        <div
+          className="rounded-lg p-8 text-center"
+          style={{
+            background: '#141414',
+            border: '1px solid rgba(200,151,42,0.15)',
+            color: '#a89070',
+          }}
+        >
+          <p>
+            No tables found. Create tables from the Bookings page first (Initialize tables).
           </p>
         </div>
       ) : (
-        <div className="bg-gray-800/90 border border-gray-600 rounded-xl overflow-hidden">
+        <div
+          className="rounded-xl overflow-hidden"
+          style={{
+            background: '#141414',
+            border: '1px solid rgba(200,151,42,0.13)',
+          }}
+        >
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-gray-600 bg-gray-700/50">
-                  <th className="px-4 py-3 text-gray-300 font-semibold">Table</th>
-                  <th className="px-4 py-3 text-gray-300 font-semibold">Capacity</th>
-                  <th className="px-4 py-3 text-gray-300 font-semibold">
-                    Rate (₹/hour)
-                  </th>
-                  <th className="px-4 py-3 text-gray-300 font-semibold">
-                    Offer: order reaches (₹)
-                  </th>
-                  <th className="px-4 py-3 text-gray-300 font-semibold">
-                    Offer: discount (₹)
-                  </th>
-                  <th className="px-4 py-3 text-gray-300 font-semibold w-24">Save</th>
+                <tr
+                  style={{
+                    borderBottom: '1px solid rgba(200,151,42,0.22)',
+                    background: '#1c1c1c',
+                  }}
+                >
+                  {['Table', 'Capacity', 'Section', 'Rate (₹/hr)', 'Order Reaches (₹)', 'Discount (₹)', 'Save'].map((h) => (
+                    <th
+                      key={h}
+                      className="px-4 py-3 font-bold"
+                      style={{
+                        color: '#c8972a',
+                        fontSize: 11,
+                        letterSpacing: '0.09em',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {tables.map((t) => {
+                {tables.map((t, idx) => {
                   const e = getEdit(t);
                   const defR = defaultRate(t.capacity);
                   const defTh = defaultThreshold(t.capacity);
                   return (
-                    <tr key={t._id} className="border-b border-gray-700 hover:bg-gray-700/30">
-                      <td className="px-4 py-3 font-medium text-white">{t.tableNumber}</td>
-                      <td className="px-4 py-3 text-gray-300">{t.capacity}</td>
+                    <tr
+                      key={t._id}
+                      style={{
+                        background: idx % 2 === 0 ? '#141414' : '#181818',
+                        borderBottom: '1px solid rgba(200,151,42,0.07)',
+                        transition: 'background 0.12s',
+                      }}
+                      onMouseEnter={(ev) => (ev.currentTarget.style.background = '#1c1c1c')}
+                      onMouseLeave={(ev) => (ev.currentTarget.style.background = idx % 2 === 0 ? '#141414' : '#181818')}
+                    >
+                      <td
+                        className="px-4 py-3 font-semibold"
+                        style={{ color: '#f8f4ed' }}
+                      >
+                        {t.tableNumber}
+                      </td>
+                      <td className="px-4 py-3" style={{ color: '#a89070' }}>
+                        {t.capacity}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span style={getSectionBadge(t.capacity)}>
+                          {getSectionLabel(t.capacity)}
+                        </span>
+                      </td>
                       <td className="px-4 py-3">
                         <input
                           type="number"
@@ -174,7 +271,9 @@ export default function TableRatesPage() {
                           placeholder={`Default: ${defR}`}
                           value={e.hourlyRate}
                           onChange={(ev) => setEdit(t, 'hourlyRate', ev.target.value)}
-                          className="w-28 px-2 py-1.5 rounded bg-gray-700 border border-gray-600 text-white placeholder-gray-500 focus:ring-1 focus:ring-orange-500"
+                          style={inputStyle}
+                          onFocus={(ev) => (ev.currentTarget.style.borderColor = '#c8972a')}
+                          onBlur={(ev) => (ev.currentTarget.style.borderColor = 'rgba(200,151,42,0.2)')}
                         />
                       </td>
                       <td className="px-4 py-3">
@@ -185,7 +284,9 @@ export default function TableRatesPage() {
                           placeholder={`Default: ${defTh}`}
                           value={e.discountThreshold}
                           onChange={(ev) => setEdit(t, 'discountThreshold', ev.target.value)}
-                          className="w-28 px-2 py-1.5 rounded bg-gray-700 border border-gray-600 text-white placeholder-gray-500 focus:ring-1 focus:ring-orange-500"
+                          style={inputStyle}
+                          onFocus={(ev) => (ev.currentTarget.style.borderColor = '#c8972a')}
+                          onBlur={(ev) => (ev.currentTarget.style.borderColor = 'rgba(200,151,42,0.2)')}
                         />
                       </td>
                       <td className="px-4 py-3">
@@ -196,7 +297,9 @@ export default function TableRatesPage() {
                           placeholder={`Default: ${defR}`}
                           value={e.discountAmount}
                           onChange={(ev) => setEdit(t, 'discountAmount', ev.target.value)}
-                          className="w-28 px-2 py-1.5 rounded bg-gray-700 border border-gray-600 text-white placeholder-gray-500 focus:ring-1 focus:ring-orange-500"
+                          style={inputStyle}
+                          onFocus={(ev) => (ev.currentTarget.style.borderColor = '#c8972a')}
+                          onBlur={(ev) => (ev.currentTarget.style.borderColor = 'rgba(200,151,42,0.2)')}
                         />
                       </td>
                       <td className="px-4 py-3">
@@ -204,7 +307,21 @@ export default function TableRatesPage() {
                           type="button"
                           onClick={() => handleSave(t)}
                           disabled={savingId === t._id}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium disabled:opacity-50"
+                          style={{
+                            background: 'linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)',
+                            color: '#080808',
+                            border: 'none',
+                            borderRadius: 10,
+                            padding: '6px 14px',
+                            fontWeight: 700,
+                            fontSize: 13,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            cursor: savingId === t._id ? 'not-allowed' : 'pointer',
+                            opacity: savingId === t._id ? 0.6 : 1,
+                            transition: 'opacity 0.15s',
+                          }}
                         >
                           {savingId === t._id ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -220,8 +337,15 @@ export default function TableRatesPage() {
               </tbody>
             </table>
           </div>
-          <div className="px-4 py-3 bg-gray-700/30 border-t border-gray-600 flex items-center gap-2 text-sm text-gray-400">
-            <BadgePercent className="w-4 h-4" />
+          <div
+            className="px-4 py-3 flex items-center gap-2 text-sm"
+            style={{
+              background: 'rgba(200,151,42,0.04)',
+              borderTop: '1px solid rgba(200,151,42,0.13)',
+              color: '#a89070',
+            }}
+          >
+            <BadgePercent className="w-4 h-4" style={{ color: '#c8972a' }} />
             <span>
               Offer: when the customer&apos;s order total reaches the &quot;order reaches&quot; amount, they get the &quot;discount&quot; amount off (e.g. 1 hour free).
             </span>

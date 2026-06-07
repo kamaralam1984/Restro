@@ -1,8 +1,44 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import nodemailer from 'nodemailer';
 import { User } from '../models/User.model';
 import { Restaurant } from '../models/Restaurant.model';
+import { OtpStore } from '../models/OtpStore.model';
 import { generateToken } from '../utils/jwt';
+
+const sendOtpEmail = async (email: string, otp: string, name: string) => {
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASSWORD || process.env.SMTP_PASS;
+  if (!user || !pass) {
+    console.log(`[OTP] ${email} → ${otp} (email not configured, showing in console)`);
+    return;
+  }
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.SMTP_PORT || '587', 10),
+    secure: false,
+    auth: { user, pass },
+  });
+  await transporter.sendMail({
+    from: `"Restro OS" <${user}>`,
+    to: email,
+    subject: 'Your Restro OS Verification Code',
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;background:#141414;border-radius:16px;overflow:hidden">
+        <div style="background:linear-gradient(135deg,#8b5a00,#c8972a);padding:32px;text-align:center">
+          <h1 style="color:#fff8e8;margin:0;font-size:28px">Restro OS</h1>
+          <p style="color:rgba(255,248,232,0.8);margin:6px 0 0;font-size:13px">Premium Restaurant Platform</p>
+        </div>
+        <div style="padding:32px;text-align:center">
+          <p style="color:#a89070;font-size:15px;margin:0 0 8px">Hi <strong style="color:#f8f4ed">${name}</strong>, your verification code is:</p>
+          <div style="background:#1c1c1c;border:1px solid rgba(200,151,42,0.3);border-radius:12px;padding:24px;margin:24px 0">
+            <span style="color:#f0c060;font-size:40px;font-weight:900;letter-spacing:12px">${otp}</span>
+          </div>
+          <p style="color:#6b5040;font-size:13px;margin:0">Valid for 10 minutes. Do not share this code.</p>
+        </div>
+      </div>`,
+  });
+};
 
 // ─── Super Admin Login ────────────────────────────────────────────────────────
 
@@ -268,6 +304,255 @@ export const customerLogin = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Login failed' });
+  }
+};
+
+// ─── Unified Login (all roles) ───────────────────────────────────────────────
+
+// Unified login — works for ALL roles (customer, admin, staff, super_admin, master_admin, restaurant_owner)
+export const unifiedLogin = async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password)
+      return res.status(400).json({ error: 'Email and password are required' });
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+password');
+    if (!user || !user.password)
+      return res.status(401).json({ error: 'Invalid email or password' });
+
+    if (!user.isActive)
+      return res.status(403).json({ error: 'Account is deactivated. Contact support.' });
+
+    const valid = await bcrypt.compare(password.trim(), user.password);
+    if (!valid)
+      return res.status(401).json({ error: 'Invalid email or password' });
+
+    const token = generateToken({
+      userId: user._id.toString(),
+      email: user.email,
+      role: user.role,
+    });
+
+    // Determine redirect based on role
+    const redirectMap: Record<string, string> = {
+      super_admin: '/admin/super',
+      master_admin: '/admin/master',
+      admin: '/dashboard',
+      manager: '/dashboard',
+      staff: '/dashboard',
+      cashier: '/dashboard',
+      restaurant_owner: '/dashboard',
+      customer: '/',
+    };
+    const redirect = redirectMap[user.role] ?? '/';
+
+    res.json({
+      token,
+      redirect,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        restaurantId: user.restaurantId ?? null,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Login failed' });
+  }
+};
+
+// ─── Unified Signup (customers and restaurant owners) ────────────────────────
+
+// Unified signup — for customers and restaurant owners only
+export const unifiedSignup = async (req: Request, res: Response) => {
+  try {
+    const { name, email, password, role, restaurantName } = req.body;
+    if (!name || !email || !password)
+      return res.status(400).json({ error: 'Name, email and password are required' });
+
+    const allowedRoles = ['customer', 'restaurant_owner'];
+    const userRole = allowedRoles.includes(role) ? role : 'customer';
+
+    const existing = await User.findOne({ email: email.toLowerCase().trim() });
+    if (existing)
+      return res.status(409).json({ error: 'An account with this email already exists' });
+
+    if (password.length < 6)
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+
+    const hashedPassword = await bcrypt.hash(password.trim(), 12);
+
+    const userData: any = {
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      password: hashedPassword,
+      role: userRole,
+      isActive: true,
+      restaurantId: null,
+      phone: '',
+    };
+
+    if (userRole === 'restaurant_owner' && restaurantName) {
+      userData.restaurantName = restaurantName.trim();
+    }
+
+    const newUser = await User.create(userData);
+
+    const token = generateToken({
+      userId: newUser._id.toString(),
+      email: newUser.email,
+      role: newUser.role,
+    });
+
+    const redirect = userRole === 'restaurant_owner' ? '/dashboard' : '/';
+
+    res.status(201).json({
+      token,
+      redirect,
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Signup failed' });
+  }
+};
+
+// ─── Send Signup OTP ─────────────────────────────────────────────────────────
+
+export const sendSignupOtp = async (req: Request, res: Response) => {
+  try {
+    const { name, email, password } = req.body;
+    if (!name || !email || !password)
+      return res.status(400).json({ error: 'Name, email and password are required' });
+
+    if (password.length < 6)
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+
+    const existing = await User.findOne({ email: email.toLowerCase().trim() });
+    if (existing)
+      return res.status(409).json({ error: 'An account with this email already exists' });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const passwordHash = await bcrypt.hash(password.trim(), 12);
+
+    // Remove any previous OTP for this email
+    await OtpStore.deleteMany({ email: email.toLowerCase().trim() });
+
+    await OtpStore.create({
+      email: email.toLowerCase().trim(),
+      otp,
+      name: name.trim(),
+      passwordHash,
+    });
+
+    await sendOtpEmail(email.toLowerCase().trim(), otp, name.trim());
+
+    res.json({ message: 'OTP sent to your email' });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to send OTP' });
+  }
+};
+
+// ─── Verify Signup OTP & Create Account ──────────────────────────────────────
+
+export const verifySignupOtp = async (req: Request, res: Response) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp)
+      return res.status(400).json({ error: 'Email and OTP are required' });
+
+    const record = await OtpStore.findOne({ email: email.toLowerCase().trim() });
+    if (!record)
+      return res.status(400).json({ error: 'OTP expired or not found. Please request a new one.' });
+
+    if (record.otp !== otp.trim())
+      return res.status(400).json({ error: 'Invalid OTP. Please try again.' });
+
+    // Check again if user was created in the meantime
+    const existing = await User.findOne({ email: record.email });
+    if (existing)
+      return res.status(409).json({ error: 'An account with this email already exists' });
+
+    const newUser = await User.create({
+      name: record.name,
+      email: record.email,
+      password: record.passwordHash,
+      role: 'customer',
+      isActive: true,
+      restaurantId: null,
+      phone: '',
+    });
+
+    await OtpStore.deleteOne({ _id: record._id });
+
+    const token = generateToken({
+      userId: newUser._id.toString(),
+      email: newUser.email,
+      role: newUser.role,
+    });
+
+    res.status(201).json({
+      token,
+      redirect: '/',
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Verification failed' });
+  }
+};
+
+// GET /me — fetch own profile
+export const getMe = async (req: Request, res: Response) => {
+  try {
+    const user = await User.findById(req.user?.userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone || '',
+      role: user.role,
+      isActive: user.isActive,
+      createdAt: user.createdAt,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// PUT /me — update own profile (name, phone)
+export const updateMe = async (req: Request, res: Response) => {
+  try {
+    const { name, phone } = req.body;
+    const updates: Record<string, string> = {};
+    if (name?.trim()) updates.name = name.trim();
+    if (phone !== undefined) updates.phone = phone.trim();
+
+    const user = await User.findByIdAndUpdate(
+      req.user?.userId,
+      { $set: updates },
+      { new: true }
+    );
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone || '',
+      role: user.role,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
 };
 

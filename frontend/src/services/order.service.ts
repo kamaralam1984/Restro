@@ -19,6 +19,8 @@ export interface Order {
   tableNumber?: string;
   notes?: string;
   paymentMethod?: 'cash' | 'card' | 'online';
+  orderType?: 'delivery' | 'dinein' | 'takeaway';
+  deliveryAddress?: string;
   status?: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'completed' | 'cancelled';
   createdAt?: string;
 }

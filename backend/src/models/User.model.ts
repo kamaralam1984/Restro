@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export type UserRole = 'super_admin' | 'master_admin' | 'admin' | 'manager' | 'staff' | 'cashier' | 'customer';
+export type UserRole = 'super_admin' | 'master_admin' | 'admin' | 'manager' | 'staff' | 'cashier' | 'customer' | 'restaurant_owner';
 
 export interface IUser extends Document {
   name: string;
@@ -30,12 +30,13 @@ const UserSchema = new Schema<IUser>(
     },
     phone: {
       type: String,
-      required: true,
+      required: false,
+      default: '',
       trim: true,
     },
     role: {
       type: String,
-      enum: ['super_admin', 'master_admin', 'admin', 'manager', 'staff', 'cashier', 'customer'],
+      enum: ['super_admin', 'master_admin', 'admin', 'manager', 'staff', 'cashier', 'customer', 'restaurant_owner'],
       default: 'customer',
     },
     password: {

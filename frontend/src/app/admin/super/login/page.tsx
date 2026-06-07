@@ -52,54 +52,125 @@ export default function SuperAdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+    <div
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{ background: '#080808' }}
+    >
       <motion.div
-        className="bg-slate-900 rounded-xl p-8 w-full max-w-md shadow-2xl border border-purple-900/30"
+        className="rounded-xl p-8 w-full max-w-md shadow-2xl"
+        style={{
+          background: '#141414',
+          border: '1px solid rgba(200,151,42,0.2)',
+          borderRadius: 18,
+        }}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center">
+            <div
+              className="w-12 h-12 rounded-lg flex items-center justify-center"
+              style={{
+                background: 'linear-gradient(135deg, #8b5a00, #c8972a, #f0c060)',
+              }}
+            >
               <span className="text-2xl">🛡️</span>
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Super Admin Login</h1>
-          <p className="text-slate-400">Platform control panel</p>
+          <h1 className="text-3xl font-bold mb-2" style={{ color: '#f8f4ed' }}>
+            Super Admin Login
+          </h1>
+          <p style={{ color: '#a89070' }}>Platform control panel</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">
           {error && (
-            <div className="bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded text-sm">
+            <div
+              className="px-4 py-3 rounded text-sm"
+              style={{
+                background: 'rgba(239,68,68,0.1)',
+                border: '1px solid rgba(239,68,68,0.3)',
+                color: '#ef4444',
+              }}
+            >
               {error}
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
+            <label
+              className="block text-sm font-medium mb-2"
+              style={{ color: '#a89070' }}
+            >
+              Email
+            </label>
             <input
               type="email"
               required
               value={credentials.email}
               onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
-              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full"
               placeholder="superadmin@restroos.com"
+              style={{
+                background: '#1c1c1c',
+                border: '1px solid rgba(200,151,42,0.2)',
+                borderRadius: 10,
+                padding: '10px 14px',
+                color: '#f8f4ed',
+                outline: 'none',
+                width: '100%',
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.border = '1px solid rgba(200,151,42,0.5)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.border = '1px solid rgba(200,151,42,0.2)';
+              }}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
+            <label
+              className="block text-sm font-medium mb-2"
+              style={{ color: '#a89070' }}
+            >
+              Password
+            </label>
             <input
               type="password"
               required
               value={credentials.password}
               onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
-              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full"
               placeholder="Enter your password"
+              style={{
+                background: '#1c1c1c',
+                border: '1px solid rgba(200,151,42,0.2)',
+                borderRadius: 10,
+                padding: '10px 14px',
+                color: '#f8f4ed',
+                outline: 'none',
+                width: '100%',
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.border = '1px solid rgba(200,151,42,0.5)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.border = '1px solid rgba(200,151,42,0.2)';
+              }}
             />
           </div>
           <motion.button
             type="submit"
             disabled={loading}
-            className="w-full bg-purple-600 hover:bg-purple-500 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50"
+            className="w-full font-semibold py-3 rounded-lg transition-colors"
+            style={{
+              background: loading
+                ? 'rgba(200,151,42,0.4)'
+                : 'linear-gradient(135deg, #8b5a00, #c8972a, #f0c060)',
+              color: '#080808',
+              border: 'none',
+              opacity: loading ? 0.7 : 1,
+              cursor: loading ? 'not-allowed' : 'pointer',
+            }}
             whileHover={!loading ? { scale: 1.02 } : {}}
             whileTap={!loading ? { scale: 0.98 } : {}}
           >
@@ -107,10 +178,24 @@ export default function SuperAdminLoginPage() {
           </motion.button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-slate-500">
-          <Link href="/admin/login" className="text-slate-400 hover:text-white">Rental Admin login</Link>
+        <p className="mt-6 text-center text-sm" style={{ color: '#6b5040' }}>
+          <Link
+            href="/admin/login"
+            style={{ color: '#a89070' }}
+            onMouseOver={(e) => { e.currentTarget.style.color = '#f8f4ed'; }}
+            onMouseOut={(e) => { e.currentTarget.style.color = '#a89070'; }}
+          >
+            Rental Admin login
+          </Link>
           {' · '}
-          <Link href="/admin/master/login" className="text-slate-400 hover:text-white">Master Admin login</Link>
+          <Link
+            href="/admin/master/login"
+            style={{ color: '#a89070' }}
+            onMouseOver={(e) => { e.currentTarget.style.color = '#f8f4ed'; }}
+            onMouseOut={(e) => { e.currentTarget.style.color = '#a89070'; }}
+          >
+            Master Admin login
+          </Link>
         </p>
       </motion.div>
     </div>

@@ -38,9 +38,9 @@ export default function AdminLayout({
   }, [pathname, isLoginPage, isSuperPanel, isMasterPanel, router]);
 
   if (isLoginPage) return <>{children}</>;
-  if (isSuperPanel || isMasterPanel) return <>{children}</>;
   if (!checked) return null;
+  if (isSuperPanel) return <AdminLayoutComponent panelType="super">{children}</AdminLayoutComponent>;
+  if (isMasterPanel) return <AdminLayoutComponent panelType="master">{children}</AdminLayoutComponent>;
 
   return <AdminLayoutComponent panelType="rental">{children}</AdminLayoutComponent>;
 }
-

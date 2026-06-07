@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "@/styles/globals.css";
 import { CartProvider } from "@/context/CartContext";
 import { LanguageProvider } from "@/context/LanguageContext";
@@ -13,6 +13,10 @@ import ChatWidget from "@/components/ChatWidget";
 import { generateMetadata as generateSEOMetadata } from "@/utils/seo";
 import { generateRestaurantSchema } from "@/utils/schema";
 
+export const viewport: Viewport = {
+  themeColor: '#ea580c',
+};
+
 export const metadata: Metadata = {
   ...generateSEOMetadata({
     title: "Restro OS - Restaurant Management Platform",
@@ -20,7 +24,6 @@ export const metadata: Metadata = {
     keywords: ["restaurant management", "restro os", "pos", "restaurant software", "orders", "billing", "table booking", "analytics"],
   }),
   manifest: "/manifest.json",
-  themeColor: "#ea580c",
 };
 
 export default function RootLayout({

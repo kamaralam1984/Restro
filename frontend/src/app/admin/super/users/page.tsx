@@ -60,12 +60,17 @@ export default function SuperAdminUsersPage() {
   }, [search, roleFilter]);
 
   const roleBadge = (role: string) => {
+    const styles: React.CSSProperties =
+      role === 'super_admin'
+        ? { background: 'rgba(200,151,42,0.15)', color: '#f0c060' }
+        : role === 'master_admin'
+        ? { background: 'rgba(200,151,42,0.1)', color: '#c8972a' }
+        : { background: 'rgba(200,151,42,0.07)', color: '#a89070' };
     return (
-      <span className={`px-2 py-1 rounded text-xs font-medium ${
-        role === 'super_admin' ? 'bg-purple-600/30 text-purple-300' :
-        role === 'master_admin' ? 'bg-amber-600/30 text-amber-300' :
-        'bg-slate-600/30 text-slate-300'
-      }`}>
+      <span
+        className="px-2 py-1 rounded text-xs font-medium"
+        style={styles}
+      >
         {role.replace('_', ' ')}
       </span>
     );
@@ -106,28 +111,54 @@ export default function SuperAdminUsersPage() {
     }
   };
 
+  const inputStyle: React.CSSProperties = {
+    background: '#1c1c1c',
+    border: '1px solid rgba(200,151,42,0.2)',
+    borderRadius: 10,
+    padding: '10px 14px',
+    color: '#f8f4ed',
+    outline: 'none',
+    width: '100%',
+    fontSize: '0.875rem',
+  };
+
+  const selectStyle: React.CSSProperties = {
+    background: '#1c1c1c',
+    border: '1px solid rgba(200,151,42,0.2)',
+    borderRadius: 10,
+    padding: '10px 14px',
+    color: '#f8f4ed',
+    outline: 'none',
+  };
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">All Users</h1>
-        <p className="text-slate-400 text-sm mt-1">Super Admin — every user on the platform (super admin, master admin, restaurants, staff, customers)</p>
+        <h1 className="text-2xl font-bold" style={{ color: '#f8f4ed' }}>All Users</h1>
+        <p className="text-sm mt-1" style={{ color: '#a89070' }}>Super Admin — every user on the platform (super admin, master admin, restaurants, staff, customers)</p>
       </div>
 
       <div className="flex gap-4 flex-wrap">
         <div className="flex-1 min-w-[200px] relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#a89070' }} />
           <input
             type="text"
             placeholder="Search by name, email, phone..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-purple-500"
+            style={{
+              ...inputStyle,
+              paddingLeft: '2.5rem',
+              paddingRight: '1rem',
+              paddingTop: '0.5rem',
+              paddingBottom: '0.5rem',
+            }}
           />
         </div>
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
-          className="px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:ring-2 focus:ring-purple-500"
+          style={selectStyle}
         >
           <option value="all">All roles</option>
           <option value="super_admin">Super Admin</option>
@@ -142,50 +173,75 @@ export default function SuperAdminUsersPage() {
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-purple-600 border-t-transparent" />
+          <div
+            className="animate-spin rounded-full h-10 w-10 border-2"
+            style={{ borderColor: 'rgba(200,151,42,0.2)', borderTopColor: '#c8972a' }}
+          />
         </div>
       ) : (
-        <div className="bg-slate-900 rounded-xl overflow-hidden">
+        <div className="rounded-xl overflow-hidden" style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.15)' }}>
           <table className="w-full text-sm">
-            <thead className="bg-slate-800 text-left">
+            <thead className="text-left" style={{ background: '#1c1c1c' }}>
               <tr>
-                <th className="py-4 px-5 text-slate-300 font-semibold">User</th>
-                <th className="py-4 px-5 text-slate-300 font-semibold">Contact</th>
-                <th className="py-4 px-5 text-slate-300 font-semibold">Role</th>
-                <th className="py-4 px-5 text-slate-300 font-semibold">Context</th>
-                <th className="py-4 px-5 text-slate-300 font-semibold">Created</th>
-                <th className="py-4 px-5 text-slate-300 font-semibold text-right">Actions</th>
+                <th className="py-4 px-5 font-semibold" style={{ color: '#a89070' }}>User</th>
+                <th className="py-4 px-5 font-semibold" style={{ color: '#a89070' }}>Contact</th>
+                <th className="py-4 px-5 font-semibold" style={{ color: '#a89070' }}>Role</th>
+                <th className="py-4 px-5 font-semibold" style={{ color: '#a89070' }}>Context</th>
+                <th className="py-4 px-5 font-semibold" style={{ color: '#a89070' }}>Created</th>
+                <th className="py-4 px-5 font-semibold text-right" style={{ color: '#a89070' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {users.length === 0 ? (
-                <tr><td colSpan={6} className="py-12 text-center text-slate-400">No users found</td></tr>
-              ) : users.map((u) => (
-                <tr key={u._id} className="border-t border-slate-800 hover:bg-slate-800/50">
+                <tr>
+                  <td colSpan={6} className="py-12 text-center" style={{ color: '#a89070' }}>No users found</td>
+                </tr>
+              ) : users.map((u, idx) => (
+                <tr
+                  key={u._id}
+                  style={{
+                    background: idx % 2 === 0 ? '#141414' : '#1a1a1a',
+                    borderBottom: '1px solid rgba(200,151,42,0.08)',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(200,151,42,0.05)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = idx % 2 === 0 ? '#141414' : '#1a1a1a')}
+                >
                   <td className="py-4 px-5">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 bg-purple-600/20 rounded-full flex items-center justify-center text-purple-300 font-semibold">
+                      <div
+                        className="w-9 h-9 rounded-full flex items-center justify-center font-semibold"
+                        style={{ background: 'rgba(200,151,42,0.15)', color: '#c8972a' }}
+                      >
                         {u.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <div className="text-white font-medium">{u.name}</div>
-                        <div className="text-slate-500 text-xs">{u.email}</div>
+                        <div className="font-medium" style={{ color: '#f8f4ed' }}>{u.name}</div>
+                        <div className="text-xs" style={{ color: '#6b5040' }}>{u.email}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="py-4 px-5 text-slate-300">{u.phone}</td>
+                  <td className="py-4 px-5" style={{ color: '#a89070' }}>{u.phone}</td>
                   <td className="py-4 px-5">{roleBadge(u.role)}</td>
-                  <td className="py-4 px-5 text-slate-400 text-xs">
+                  <td className="py-4 px-5 text-xs" style={{ color: '#a89070' }}>
                     {u.restaurantId ? `Restaurant: ${u.restaurantId}` : 'Platform'}
                   </td>
-                  <td className="py-4 px-5 text-slate-400 text-xs">
+                  <td className="py-4 px-5 text-xs" style={{ color: '#a89070' }}>
                     {new Date(u.createdAt).toLocaleDateString('en-IN')}
                   </td>
                   <td className="py-4 px-5 text-right">
                     <button
                       type="button"
                       onClick={() => openEdit(u)}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 text-slate-100 text-xs hover:bg-purple-600/80 hover:text-white transition-colors"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs transition-colors"
+                      style={{ background: 'rgba(200,151,42,0.1)', color: '#c8972a', border: '1px solid rgba(200,151,42,0.2)' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)';
+                        e.currentTarget.style.color = '#080808';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(200,151,42,0.1)';
+                        e.currentTarget.style.color = '#c8972a';
+                      }}
                     >
                       <Edit2 className="w-3 h-3" />
                       Edit
@@ -198,46 +254,51 @@ export default function SuperAdminUsersPage() {
         </div>
       )}
       {editingUser && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-4" onClick={() => !saving && setEditingUser(null)}>
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.75)' }}
+          onClick={() => !saving && setEditingUser(null)}
+        >
           <div
-            className="bg-slate-900 rounded-xl border border-slate-700 w-full max-w-md p-6 shadow-2xl"
+            className="w-full max-w-md p-6 shadow-2xl"
+            style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.2)', borderRadius: 18 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-xl font-semibold text-white mb-4">Edit user</h2>
+            <h2 className="text-xl font-semibold mb-4" style={{ color: '#f8f4ed' }}>Edit user</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Name</label>
+                <label className="block text-xs mb-1" style={{ color: '#a89070' }}>Name</label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm"
+                  style={inputStyle}
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Email</label>
+                <label className="block text-xs mb-1" style={{ color: '#a89070' }}>Email</label>
                 <input
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm"
+                  style={inputStyle}
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Phone</label>
+                <label className="block text-xs mb-1" style={{ color: '#a89070' }}>Phone</label>
                 <input
                   type="text"
                   value={form.phone}
                   onChange={(e) => setForm((s) => ({ ...s, phone: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm"
+                  style={inputStyle}
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Role</label>
+                <label className="block text-xs mb-1" style={{ color: '#a89070' }}>Role</label>
                 <select
                   value={form.role}
                   onChange={(e) => setForm((s) => ({ ...s, role: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm"
+                  style={{ ...inputStyle }}
                 >
                   <option value="super_admin">Super Admin</option>
                   <option value="master_admin">Master Admin</option>
@@ -249,13 +310,13 @@ export default function SuperAdminUsersPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">New password (optional)</label>
+                <label className="block text-xs mb-1" style={{ color: '#a89070' }}>New password (optional)</label>
                 <input
                   type="password"
                   value={form.password}
                   onChange={(e) => setForm((s) => ({ ...s, password: e.target.value }))}
                   placeholder="Leave blank to keep current password"
-                  className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm"
+                  style={{ ...inputStyle }}
                 />
               </div>
             </div>
@@ -264,7 +325,10 @@ export default function SuperAdminUsersPage() {
                 type="button"
                 disabled={saving}
                 onClick={() => setEditingUser(null)}
-                className="px-4 py-2 rounded-lg bg-slate-800 text-slate-200 text-sm hover:bg-slate-700 disabled:opacity-50"
+                className="px-4 py-2 rounded-lg text-sm disabled:opacity-50"
+                style={{ border: '1px solid rgba(200,151,42,0.3)', color: '#c8972a', background: 'transparent' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(200,151,42,0.08)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
               >
                 Cancel
               </button>
@@ -272,7 +336,8 @@ export default function SuperAdminUsersPage() {
                 type="button"
                 disabled={saving}
                 onClick={handleSave}
-                className="px-4 py-2 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-500 disabled:opacity-50"
+                className="px-4 py-2 rounded-lg text-sm disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)', color: '#080808', border: 'none' }}
               >
                 {saving ? 'Saving...' : 'Save changes'}
               </button>

@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { Order } from '../models/Order.model';
 import { Menu } from '../models/Menu.model';
 import { Booking } from '../models/Booking.model';
+import { Table } from '../models/Table.model';
 import { orderService } from '../services/order.service';
 import { getBookingConfig, checkDiscountEligibility } from '../utils/booking.utils';
 import { createAuditLog } from '../utils/auditLog';
@@ -24,6 +25,10 @@ export const createOrder = async (req: Request, res: Response) => {
     for (const item of items) {
       if (!item.menuItemId) {
         return res.status(400).json({ error: 'menuItemId is required for each item' });
+      }
+
+      if (!mongoose.Types.ObjectId.isValid(String(item.menuItemId))) {
+        return res.status(400).json({ error: `Invalid menu item ID "${item.menuItemId}". Please order from a restaurant's menu page.` });
       }
 
       const menuItem = await Menu.findById(item.menuItemId);

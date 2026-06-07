@@ -24,6 +24,16 @@ import restaurantRoutes from './routes/restaurant.routes';
 import contactRoutes from './routes/contact.routes';
 import visitorRoutes from './routes/visitor.routes';
 import chatRoutes from './routes/chat.routes';
+import couponRoutes from './routes/coupon.routes';
+import inventoryRoutes from './routes/inventory.routes';
+import employeeRoutes from './routes/employee.routes';
+import crmRoutes from './routes/crm.routes';
+import walletRoutes from './routes/wallet.routes';
+import branchRoutes from './routes/branch.routes';
+import franchiseRoutes from './routes/franchise.routes';
+import abandonedCartRoutes from './routes/abandonedCart.routes';
+import affiliateRoutes from './routes/affiliate.routes';
+import whiteLabelRoutes from './routes/whiteLabel.routes';
 import v1Routes from './routes/v1.index';
 import { errorHandler, notFound } from './middleware/error.middleware';
 import { generalRateLimiter, apiRateLimiter, tenantApiRateLimiter } from './middleware/rateLimiter.middleware';
@@ -127,6 +137,16 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/super-admin', superAdminRoutes);   // Super admin panel
 app.use('/api/restaurants', restaurantRoutes);   // Restaurant info + admin settings
 app.use('/api/contact', contactRoutes);           // Website contact form → email to client
+app.use('/api/coupons', couponRoutes);            // Coupon & promotions engine
+app.use('/api/inventory', inventoryRoutes);     // Inventory management
+app.use('/api/employees', employeeRoutes);      // Employee management
+app.use('/api/crm', crmRoutes);                 // CRM + campaigns
+app.use('/api/wallet', walletRoutes);           // Wallet + referral
+app.use('/api/abandoned-cart', abandonedCartRoutes); // Abandoned cart recovery
+app.use('/api/affiliates', affiliateRoutes);    // Affiliate system
+app.use('/api/branches', branchRoutes);         // Multi-branch management
+app.use('/api/franchise', franchiseRoutes);     // Franchise management
+app.use('/api/white-label', whiteLabelRoutes);  // White label SaaS
 
 // API versioning: /api/v1/* (same routes as /api/* for backward compatibility)
 app.use('/api/v1', v1Routes);

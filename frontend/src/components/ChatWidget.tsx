@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { MessageCircle, X, Send, Mic } from 'lucide-react';
 import api from '@/services/api';
 
@@ -109,6 +110,9 @@ export default function ChatWidget() {
       void handleSend();
     }
   };
+
+  const pathname = usePathname();
+  if (pathname?.startsWith('/r/')) return null;
 
   return (
     <>

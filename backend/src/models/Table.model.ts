@@ -5,10 +5,11 @@ export interface ITable extends Document {
   tableNumber: string;
   capacity: number;
   status: 'available' | 'booked' | 'reserved' | 'maintenance';
+  isActive: boolean;
   location: {
     row: number;
     column: number;
-    section: string; // 'window', 'center', 'corner', 'outdoor'
+    section: string; // 'window', 'center', 'corner', 'outdoor', 'other'
   };
   /** Per-table booking rate (₹/hour). If set, overrides default-by-capacity. */
   hourlyRate?: number;
@@ -50,10 +51,11 @@ const TableSchema = new Schema<ITable>(
       column: { type: Number, required: true, min: 1, max: 20 },
       section: {
         type: String,
-        enum: ['window', 'center', 'corner', 'outdoor'],
+        enum: ['window', 'center', 'corner', 'outdoor', 'other'],
         default: 'center',
       },
     },
+    isActive: { type: Boolean, default: true },
     hourlyRate: { type: Number, min: 0 },
     discountThreshold: { type: Number, min: 0 },
     discountAmount: { type: Number, min: 0 },

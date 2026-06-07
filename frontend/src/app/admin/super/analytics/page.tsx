@@ -84,8 +84,8 @@ interface VisitorAnalytics {
 const ChartTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 shadow-xl text-xs">
-      <p className="text-slate-400 mb-1 font-medium">{label}</p>
+    <div className="rounded-xl px-4 py-3 shadow-xl text-xs" style={{ background: '#1c1c1c', border: '1px solid rgba(200,151,42,0.35)' }}>
+      <p className="mb-1 font-medium" style={{ color: '#a89070' }}>{label}</p>
       {payload.map((p: any, i: number) => (
         <p key={i} style={{ color: p.color }} className="font-semibold">
           {p.name}: {p.name.toLowerCase().includes('revenue') ? `₹${Number(p.value).toLocaleString('en-IN')}` : p.value}
@@ -95,25 +95,26 @@ const ChartTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-const PIE_COLORS = ['#7c3aed', '#ea580c', '#16a34a', '#0284c7', '#ca8a04'];
+const PIE_COLORS = ['#c8972a', '#f0c060', '#22c55e', '#8b5a00', '#a89070'];
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
 
-function StatCard({ icon: Icon, label, value, sub, color, delay }: {
-  icon: any; label: string; value: string | number; sub: string; color: string; delay: number;
+function StatCard({ icon: Icon, label, value, sub, iconBg, delay }: {
+  icon: any; label: string; value: string | number; sub: string; iconBg: string; delay: number;
 }) {
   return (
     <motion.div
-      className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex items-center gap-4"
+      className="rounded-xl p-5 flex items-center gap-4"
+      style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.15)' }}
       initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}
     >
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
-        <Icon className="w-6 h-6 text-white" />
+      <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: iconBg }}>
+        <Icon className="w-6 h-6" style={{ color: '#080808' }} />
       </div>
       <div>
-        <div className="text-slate-400 text-xs mb-0.5">{label}</div>
-        <div className="text-white text-2xl font-bold">{value}</div>
-        <div className="text-slate-500 text-xs mt-0.5">{sub}</div>
+        <div className="text-xs mb-0.5" style={{ color: '#a89070' }}>{label}</div>
+        <div className="text-2xl font-bold" style={{ color: '#f8f4ed' }}>{value}</div>
+        <div className="text-xs mt-0.5" style={{ color: '#6b5040' }}>{sub}</div>
       </div>
     </motion.div>
   );
@@ -224,30 +225,34 @@ export default function SuperAnalyticsPage() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-purple-400" />
+          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: '#f8f4ed' }}>
+            <BarChart3 className="w-6 h-6" style={{ color: '#c8972a' }} />
             Platform Analytics
           </h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-sm mt-1" style={{ color: '#a89070' }}>
             Business + traffic analytics for the whole platform.
           </p>
         </div>
         <div className="flex items-center gap-3">
           {/* Period selector */}
-          <div className="flex bg-slate-800 rounded-lg p-1 gap-1">
+          <div className="flex rounded-lg p-1 gap-1" style={{ background: '#1c1c1c' }}>
             {[7, 14, 30, 90].map(d => (
               <button key={d}
                 onClick={() => setPeriod(d)}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
-                  period === d ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'
-                }`}
+                className="px-3 py-1.5 rounded-md text-xs font-semibold transition-colors"
+                style={
+                  period === d
+                    ? { background: 'linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)', color: '#080808', border: 'none' }
+                    : { background: 'transparent', color: '#a89070', border: 'none' }
+                }
               >
                 {d}d
               </button>
             ))}
           </div>
           <button onClick={() => load(period)}
-            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition-colors">
+            className="p-2 rounded-lg transition-colors"
+            style={{ background: '#1c1c1c', color: '#a89070', border: '1px solid rgba(200,151,42,0.15)' }}>
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
@@ -261,7 +266,7 @@ export default function SuperAnalyticsPage() {
           delay={0}
           value={`₹${(totals?.totalRevenue || 0).toLocaleString('en-IN')}`}
           sub={`Last ${period} days`}
-          color="bg-purple-600"
+          iconBg="linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)"
         />
         <StatCard
           icon={IndianRupee}
@@ -269,7 +274,7 @@ export default function SuperAnalyticsPage() {
           delay={0.02}
           value={`₹${(data?.totalMRR ?? 0).toLocaleString('en-IN')}`}
           sub="Monthly recurring"
-          color="bg-indigo-600"
+          iconBg="linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)"
         />
         <StatCard
           icon={Wifi}
@@ -277,7 +282,7 @@ export default function SuperAnalyticsPage() {
           delay={0.05}
           value={`₹${(totals?.onlineRevenue || 0).toLocaleString('en-IN')}`}
           sub={`${onlinePct}% of total`}
-          color="bg-blue-600"
+          iconBg="linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)"
         />
         <StatCard
           icon={ShoppingBag}
@@ -285,7 +290,7 @@ export default function SuperAnalyticsPage() {
           delay={0.1}
           value={(totals?.totalOrders || 0).toLocaleString('en-IN')}
           sub={`${totals?.onlineOrders || 0} online`}
-          color="bg-orange-600"
+          iconBg="linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)"
         />
         <StatCard
           icon={Store}
@@ -293,7 +298,7 @@ export default function SuperAnalyticsPage() {
           delay={0.15}
           value={data?.activeRestaurants ?? data?.totalRestaurants ?? 0}
           sub="on platform"
-          color="bg-green-600"
+          iconBg="linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)"
         />
         <StatCard
           icon={Users}
@@ -301,22 +306,24 @@ export default function SuperAnalyticsPage() {
           delay={0.18}
           value={visitorData?.totalVisitors ?? 0}
           sub={`Avg session ${formatDuration(avgSessionDuration)}`}
-          color="bg-sky-600"
+          iconBg="linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)"
         />
       </div>
 
       {/* Revenue Trend Area Chart */}
-      <motion.div className="bg-slate-900 border border-slate-800 rounded-2xl p-6"
+      <motion.div
+        className="rounded-2xl p-6"
+        style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.15)' }}
         initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h2 className="text-white font-semibold">Revenue Trend</h2>
-            <p className="text-slate-400 text-xs mt-0.5">Daily total vs online revenue over {period} days</p>
+            <h2 className="font-semibold" style={{ color: '#f8f4ed' }}>Revenue Trend</h2>
+            <p className="text-xs mt-0.5" style={{ color: '#a89070' }}>Daily total vs online revenue over {period} days</p>
           </div>
-          <TrendingUp className="w-5 h-5 text-purple-400" />
+          <TrendingUp className="w-5 h-5" style={{ color: '#c8972a' }} />
         </div>
         {filledTrend.length === 0 || filledTrend.every(d => d.revenue === 0) ? (
-          <div className="flex items-center justify-center h-48 text-slate-500 text-sm">
+          <div className="flex items-center justify-center h-48 text-sm" style={{ color: '#6b5040' }}>
             No revenue data for this period
           </div>
         ) : (
@@ -324,24 +331,24 @@ export default function SuperAnalyticsPage() {
             <AreaChart data={filledTrend} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="gradTotal" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#c8972a" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#c8972a" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="gradOnline" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#2563eb" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#f0c060" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#f0c060" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-              <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} axisLine={false}
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(200,151,42,0.08)" />
+              <XAxis dataKey="date" tick={{ fill: '#6b5040', fontSize: 11 }} tickLine={false} axisLine={false}
                 interval={Math.floor(filledTrend.length / 6)} />
-              <YAxis tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} axisLine={false}
+              <YAxis tick={{ fill: '#6b5040', fontSize: 11 }} tickLine={false} axisLine={false}
                 tickFormatter={(v: number) => `₹${v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v}`} />
               <Tooltip content={<ChartTooltip />} />
-              <Legend wrapperStyle={{ color: '#94a3b8', fontSize: 12 }} />
-              <Area type="monotone" dataKey="revenue" name="Total Revenue" stroke="#7c3aed"
+              <Legend wrapperStyle={{ color: '#a89070', fontSize: 12 }} />
+              <Area type="monotone" dataKey="revenue" name="Total Revenue" stroke="#c8972a"
                 fill="url(#gradTotal)" strokeWidth={2} dot={false} />
-              <Area type="monotone" dataKey="onlineRevenue" name="Online Revenue" stroke="#2563eb"
+              <Area type="monotone" dataKey="onlineRevenue" name="Online Revenue" stroke="#f0c060"
                 fill="url(#gradOnline)" strokeWidth={2} dot={false} />
             </AreaChart>
           </ResponsiveContainer>
@@ -351,29 +358,31 @@ export default function SuperAnalyticsPage() {
       {/* Per-restaurant bar + pie row */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
         {/* Bar chart */}
-        <motion.div className="xl:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6"
+        <motion.div
+          className="xl:col-span-2 rounded-2xl p-6"
+          style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.15)' }}
           initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="text-white font-semibold">Revenue by Restaurant</h2>
-              <p className="text-slate-400 text-xs mt-0.5">Online vs Offline breakdown</p>
+              <h2 className="font-semibold" style={{ color: '#f8f4ed' }}>Revenue by Restaurant</h2>
+              <p className="text-xs mt-0.5" style={{ color: '#a89070' }}>Online vs Offline breakdown</p>
             </div>
           </div>
           {barData.length === 0 ? (
-            <div className="flex items-center justify-center h-48 text-slate-500 text-sm">
+            <div className="flex items-center justify-center h-48 text-sm" style={{ color: '#6b5040' }}>
               No order data yet
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={barData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 10 }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickLine={false} axisLine={false}
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(200,151,42,0.08)" />
+                <XAxis dataKey="name" tick={{ fill: '#6b5040', fontSize: 10 }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fill: '#6b5040', fontSize: 10 }} tickLine={false} axisLine={false}
                   tickFormatter={(v: number) => `₹${v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v}`} />
                 <Tooltip content={<ChartTooltip />} />
-                <Legend wrapperStyle={{ color: '#94a3b8', fontSize: 12 }} />
-                <Bar dataKey="Online Revenue" fill="#7c3aed" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Offline Revenue" fill="#ea580c" radius={[4, 4, 0, 0]} />
+                <Legend wrapperStyle={{ color: '#a89070', fontSize: 12 }} />
+                <Bar dataKey="Online Revenue" fill="#c8972a" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Offline Revenue" fill="#8b5a00" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -381,14 +390,15 @@ export default function SuperAnalyticsPage() {
 
         {/* Pie charts */}
         <motion.div
-          className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col gap-6"
+          className="rounded-2xl p-6 flex flex-col gap-6"
+          style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.15)' }}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
           <div>
-            <h2 className="text-white font-semibold mb-1">Revenue Split</h2>
-            <p className="text-slate-400 text-xs">Online vs Offline</p>
+            <h2 className="font-semibold mb-1" style={{ color: '#f8f4ed' }}>Revenue Split</h2>
+            <p className="text-xs" style={{ color: '#a89070' }}>Online vs Offline</p>
           </div>
           <ResponsiveContainer width="100%" height={150}>
             <PieChart>
@@ -406,13 +416,13 @@ export default function SuperAnalyticsPage() {
                 ))}
               </Pie>
               <Tooltip formatter={(v: any) => `₹${Number(v).toLocaleString('en-IN')}`} />
-              <Legend wrapperStyle={{ color: '#94a3b8', fontSize: 11 }} />
+              <Legend wrapperStyle={{ color: '#a89070', fontSize: 11 }} />
             </PieChart>
           </ResponsiveContainer>
 
-          <div className="border-t border-slate-800 pt-4 space-y-4">
+          <div className="pt-4 space-y-4" style={{ borderTop: '1px solid rgba(200,151,42,0.15)' }}>
             <div>
-              <p className="text-slate-400 text-xs mb-3">Orders Split</p>
+              <p className="text-xs mb-3" style={{ color: '#a89070' }}>Orders Split</p>
               <ResponsiveContainer width="100%" height={120}>
                 <PieChart>
                   <Pie
@@ -425,19 +435,19 @@ export default function SuperAnalyticsPage() {
                     dataKey="value"
                   >
                     {orderPieData.map((_, i) => (
-                      <Cell key={i} fill={i === 0 ? '#0284c7' : '#ea580c'} />
+                      <Cell key={i} fill={i === 0 ? '#c8972a' : '#8b5a00'} />
                     ))}
                   </Pie>
                   <Tooltip />
-                  <Legend wrapperStyle={{ color: '#94a3b8', fontSize: 11 }} />
+                  <Legend wrapperStyle={{ color: '#a89070', fontSize: 11 }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
 
-            <div className="border-t border-slate-800 pt-3">
-              <p className="text-slate-400 text-xs mb-2">Traffic Sources</p>
+            <div className="pt-3" style={{ borderTop: '1px solid rgba(200,151,42,0.15)' }}>
+              <p className="text-xs mb-2" style={{ color: '#a89070' }}>Traffic Sources</p>
               {trafficSourceData.length === 0 ? (
-                <div className="text-slate-600 text-xs h-16 flex items-center">
+                <div className="text-xs h-16 flex items-center" style={{ color: '#6b5040' }}>
                   No visitor source data yet.
                 </div>
               ) : (
@@ -457,7 +467,7 @@ export default function SuperAnalyticsPage() {
                       ))}
                     </Pie>
                     <Tooltip />
-                    <Legend wrapperStyle={{ color: '#94a3b8', fontSize: 10 }} />
+                    <Legend wrapperStyle={{ color: '#a89070', fontSize: 10 }} />
                   </PieChart>
                 </ResponsiveContainer>
               )}
@@ -468,56 +478,58 @@ export default function SuperAnalyticsPage() {
 
       {/* Visitor analytics + restaurant leaderboard */}
       <motion.div
-        className="bg-slate-900 border border-slate-800 rounded-2xl p-6"
+        className="rounded-2xl p-6"
+        style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.15)' }}
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.35 }}
       >
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <div>
-            <h2 className="text-white font-semibold mb-3">Top pages by time spent</h2>
+            <h2 className="font-semibold mb-3" style={{ color: '#f8f4ed' }}>Top pages by time spent</h2>
             {visitorData?.topPages?.length ? (
               <div className="space-y-2 text-xs">
                 {visitorData.topPages.map((p) => (
                   <div key={p.path} className="flex items-center justify-between">
                     <span
-                      className="text-slate-300 truncate max-w-[220px]"
+                      className="truncate max-w-[220px]"
+                      style={{ color: '#f8f4ed' }}
                       title={p.path}
                     >
                       {p.path}
                     </span>
-                    <span className="text-slate-400">
+                    <span style={{ color: '#a89070' }}>
                       {formatDuration(p.totalDurationSec)} • {p.visits} visits
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="flex items-center justify-center h-32 text-slate-500 text-xs">
+              <div className="flex items-center justify-center h-32 text-xs" style={{ color: '#6b5040' }}>
                 No page analytics yet.
               </div>
             )}
           </div>
 
           <div>
-            <h2 className="text-white font-semibold mb-3">Restaurant Sales Leaderboard</h2>
+            <h2 className="font-semibold mb-3" style={{ color: '#f8f4ed' }}>Restaurant Sales Leaderboard</h2>
             {data?.perRestaurant.length === 0 ? (
-              <div className="text-center py-10 text-slate-500 text-sm">
+              <div className="text-center py-10 text-sm" style={{ color: '#6b5040' }}>
                 No sales data for this period. Once orders are placed, rankings will appear here.
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-slate-400 border-b border-slate-800 text-left">
-                      <th className="pb-3 px-2">#</th>
-                      <th className="pb-3 px-2">Restaurant</th>
-                      <th className="pb-3 px-2">City</th>
-                      <th className="pb-3 px-2 text-right">Total Orders</th>
-                      <th className="pb-3 px-2 text-right">Online Orders</th>
-                      <th className="pb-3 px-2 text-right">Total Revenue</th>
-                      <th className="pb-3 px-2 text-right">Online Revenue</th>
-                      <th className="pb-3 px-2 text-right">Online%</th>
+                    <tr className="text-left" style={{ borderBottom: '1px solid rgba(200,151,42,0.15)' }}>
+                      <th className="pb-3 px-2" style={{ color: '#a89070' }}>#</th>
+                      <th className="pb-3 px-2" style={{ color: '#a89070' }}>Restaurant</th>
+                      <th className="pb-3 px-2" style={{ color: '#a89070' }}>City</th>
+                      <th className="pb-3 px-2 text-right" style={{ color: '#a89070' }}>Total Orders</th>
+                      <th className="pb-3 px-2 text-right" style={{ color: '#a89070' }}>Online Orders</th>
+                      <th className="pb-3 px-2 text-right" style={{ color: '#a89070' }}>Total Revenue</th>
+                      <th className="pb-3 px-2 text-right" style={{ color: '#a89070' }}>Online Revenue</th>
+                      <th className="pb-3 px-2 text-right" style={{ color: '#a89070' }}>Online%</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -528,57 +540,60 @@ export default function SuperAnalyticsPage() {
                       return (
                         <tr
                           key={r._id}
-                          className="border-b border-slate-800/60 hover:bg-slate-800/40 transition-colors"
+                          className="transition-colors"
+                          style={{ borderBottom: '1px solid rgba(200,151,42,0.08)' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(200,151,42,0.06)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                         >
                           <td className="py-3 px-2">
                             <span
-                              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                              className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
+                              style={
                                 idx === 0
-                                  ? 'bg-yellow-500 text-black'
+                                  ? { background: '#f0c060', color: '#080808' }
                                   : idx === 1
-                                  ? 'bg-slate-400 text-black'
+                                  ? { background: '#a89070', color: '#080808' }
                                   : idx === 2
-                                  ? 'bg-amber-700 text-white'
-                                  : 'bg-slate-800 text-slate-400'
-                              }`}
+                                  ? { background: '#8b5a00', color: '#f8f4ed' }
+                                  : { background: '#1c1c1c', color: '#6b5040' }
+                              }
                             >
                               {idx + 1}
                             </span>
                           </td>
                           <td className="py-3 px-2">
-                            <div className="text-white font-medium">{r.name}</div>
+                            <div className="font-medium" style={{ color: '#f8f4ed' }}>{r.name}</div>
                             <div
-                              className={`text-xs mt-0.5 ${
-                                r.status === 'active' ? 'text-green-400' : 'text-red-400'
-                              }`}
+                              className="text-xs mt-0.5"
+                              style={r.status === 'active' ? { color: '#22c55e' } : { color: '#ef4444' }}
                             >
                               {r.status}
                             </div>
                           </td>
-                          <td className="py-3 px-2 text-slate-400">{r.city || '—'}</td>
-                          <td className="py-3 px-2 text-right text-white font-medium">
+                          <td className="py-3 px-2" style={{ color: '#a89070' }}>{r.city || '—'}</td>
+                          <td className="py-3 px-2 text-right font-medium" style={{ color: '#f8f4ed' }}>
                             {r.totalOrders}
                           </td>
                           <td className="py-3 px-2 text-right">
-                            <span className="flex items-center justify-end gap-1 text-blue-400">
+                            <span className="flex items-center justify-end gap-1" style={{ color: '#c8972a' }}>
                               <Wifi className="w-3 h-3" /> {r.onlineOrders}
                             </span>
                           </td>
-                          <td className="py-3 px-2 text-right text-green-400 font-semibold">
+                          <td className="py-3 px-2 text-right font-semibold" style={{ color: '#22c55e' }}>
                             ₹{r.totalRevenue.toLocaleString('en-IN')}
                           </td>
-                          <td className="py-3 px-2 text-right text-purple-400 font-semibold">
+                          <td className="py-3 px-2 text-right font-semibold" style={{ color: '#f0c060' }}>
                             ₹{r.onlineRevenue.toLocaleString('en-IN')}
                           </td>
                           <td className="py-3 px-2 text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <div className="w-12 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                              <div className="w-12 h-1.5 rounded-full overflow-hidden" style={{ background: '#1c1c1c' }}>
                                 <div
-                                  className="h-full bg-purple-500 rounded-full"
-                                  style={{ width: `${pct}%` }}
+                                  className="h-full rounded-full"
+                                  style={{ width: `${pct}%`, background: 'linear-gradient(90deg,#8b5a00,#c8972a,#f0c060)' }}
                                 />
                               </div>
-                              <span className="text-slate-400 text-xs">{pct}%</span>
+                              <span className="text-xs" style={{ color: '#a89070' }}>{pct}%</span>
                             </div>
                           </td>
                         </tr>

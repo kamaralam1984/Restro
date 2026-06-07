@@ -35,7 +35,7 @@ async function createSuperAdmin() {
     existing.phone = phone;
     existing.role = 'super_admin';
     existing.password = hashedPassword;
-    existing.restaurantId = null;
+    existing.restaurantId = undefined;
     existing.isActive = true;
     await existing.save();
 

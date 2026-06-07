@@ -40,9 +40,17 @@ export default function MasterAdminUsersPage() {
   }, [search, roleFilter]);
 
   const roleBadge = (role: string) => (
-    <span className={`px-2 py-1 rounded text-xs font-medium ${
-      role === 'master_admin' ? 'bg-amber-600/30 text-amber-300' : 'bg-slate-600/30 text-slate-300'
-    }`}>
+    <span style={{
+      padding: '3px 10px',
+      borderRadius: 6,
+      fontSize: 11,
+      fontWeight: 600,
+      background: role === 'master_admin' ? 'rgba(200,151,42,0.15)' : 'rgba(168,144,112,0.12)',
+      color: role === 'master_admin' ? '#f0c060' : '#a89070',
+      border: role === 'master_admin' ? '1px solid rgba(200,151,42,0.3)' : '1px solid rgba(168,144,112,0.2)',
+      letterSpacing: '0.03em',
+      textTransform: 'capitalize' as const,
+    }}>
       {role.replace('_', ' ')}
     </span>
   );
@@ -50,25 +58,50 @@ export default function MasterAdminUsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Users</h1>
-        <p className="text-slate-400 text-sm mt-1">Master Admin — all users except Super Admin (master admins, restaurants, staff, customers)</p>
+        <h1 className="text-2xl font-bold" style={{ color: '#f8f4ed' }}>Users</h1>
+        <p className="text-sm mt-1" style={{ color: '#a89070' }}>Master Admin — all users except Super Admin (master admins, restaurants, staff, customers)</p>
       </div>
 
       <div className="flex gap-4 flex-wrap">
         <div className="flex-1 min-w-[200px] relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#a89070' }} />
           <input
             type="text"
             placeholder="Search by name, email, phone..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:ring-2 focus:ring-amber-500"
+            className="w-full"
+            style={{
+              paddingLeft: 40,
+              paddingRight: 16,
+              paddingTop: 10,
+              paddingBottom: 10,
+              background: '#1c1c1c',
+              border: '1px solid rgba(200,151,42,0.2)',
+              borderRadius: 10,
+              color: '#f8f4ed',
+              outline: 'none',
+              fontSize: 14,
+            }}
+            onFocus={e => (e.currentTarget.style.borderColor = '#c8972a')}
+            onBlur={e => (e.currentTarget.style.borderColor = 'rgba(200,151,42,0.2)')}
           />
         </div>
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
-          className="px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:ring-2 focus:ring-amber-500"
+          style={{
+            padding: '10px 16px',
+            background: '#1c1c1c',
+            border: '1px solid rgba(200,151,42,0.2)',
+            borderRadius: 10,
+            color: '#f8f4ed',
+            outline: 'none',
+            fontSize: 14,
+            cursor: 'pointer',
+          }}
+          onFocus={e => (e.currentTarget.style.borderColor = '#c8972a')}
+          onBlur={e => (e.currentTarget.style.borderColor = 'rgba(200,151,42,0.2)')}
         >
           <option value="all">All roles</option>
           <option value="master_admin">Master Admin</option>
@@ -82,42 +115,54 @@ export default function MasterAdminUsersPage() {
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-amber-600 border-t-transparent" />
+          <div style={{
+            width: 40,
+            height: 40,
+            borderRadius: '50%',
+            border: '3px solid rgba(200,151,42,0.2)',
+            borderTopColor: '#c8972a',
+            animation: 'spin 0.8s linear infinite',
+          }} />
         </div>
       ) : (
-        <div className="bg-slate-900 rounded-xl overflow-hidden">
+        <div style={{ background: '#141414', borderRadius: 14, overflow: 'hidden', border: '1px solid rgba(200,151,42,0.13)' }}>
           <table className="w-full text-sm">
-            <thead className="bg-slate-800 text-left">
+            <thead style={{ background: '#1c1c1c' }} className="text-left">
               <tr>
-                <th className="py-4 px-5 text-slate-300 font-semibold">User</th>
-                <th className="py-4 px-5 text-slate-300 font-semibold">Contact</th>
-                <th className="py-4 px-5 text-slate-300 font-semibold">Role</th>
-                <th className="py-4 px-5 text-slate-300 font-semibold">Context</th>
-                <th className="py-4 px-5 text-slate-300 font-semibold">Created</th>
+                <th className="py-4 px-5" style={{ color: '#a89070', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>User</th>
+                <th className="py-4 px-5" style={{ color: '#a89070', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Contact</th>
+                <th className="py-4 px-5" style={{ color: '#a89070', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Role</th>
+                <th className="py-4 px-5" style={{ color: '#a89070', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Context</th>
+                <th className="py-4 px-5" style={{ color: '#a89070', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Created</th>
               </tr>
             </thead>
             <tbody>
               {users.length === 0 ? (
-                <tr><td colSpan={5} className="py-12 text-center text-slate-400">No users found</td></tr>
+                <tr><td colSpan={5} className="py-12 text-center" style={{ color: '#a89070' }}>No users found</td></tr>
               ) : users.map((u) => (
-                <tr key={u._id} className="border-t border-slate-800 hover:bg-slate-800/50">
+                <tr
+                  key={u._id}
+                  style={{ background: '#141414', borderBottom: '1px solid rgba(200,151,42,0.07)' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#1c1c1c')}
+                  onMouseLeave={e => (e.currentTarget.style.background = '#141414')}
+                >
                   <td className="py-4 px-5">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 bg-amber-600/20 rounded-full flex items-center justify-center text-amber-300 font-semibold">
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center font-semibold" style={{ background: 'rgba(200,151,42,0.15)', color: '#f0c060' }}>
                         {u.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <div className="text-white font-medium">{u.name}</div>
-                        <div className="text-slate-500 text-xs">{u.email}</div>
+                        <div className="font-medium" style={{ color: '#f8f4ed' }}>{u.name}</div>
+                        <div className="text-xs" style={{ color: '#6b5040' }}>{u.email}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="py-4 px-5 text-slate-300">{u.phone}</td>
+                  <td className="py-4 px-5" style={{ color: '#a89070' }}>{u.phone}</td>
                   <td className="py-4 px-5">{roleBadge(u.role)}</td>
-                  <td className="py-4 px-5 text-slate-400 text-xs">
+                  <td className="py-4 px-5 text-xs" style={{ color: '#6b5040' }}>
                     {u.restaurantId ? `Restaurant: ${u.restaurantId}` : 'Platform'}
                   </td>
-                  <td className="py-4 px-5 text-slate-400 text-xs">
+                  <td className="py-4 px-5 text-xs" style={{ color: '#6b5040' }}>
                     {new Date(u.createdAt).toLocaleDateString('en-IN')}
                   </td>
                 </tr>

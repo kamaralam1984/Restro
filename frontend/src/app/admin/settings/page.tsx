@@ -51,6 +51,16 @@ const DEFAULT_SETTINGS: RestaurantSettings = {
   enableWhatsApp: false,
 };
 
+const inputStyle: React.CSSProperties = {
+  background: '#1c1c1c',
+  border: '1px solid rgba(200,151,42,0.2)',
+  borderRadius: 10,
+  padding: '10px 14px',
+  color: '#f8f4ed',
+  outline: 'none',
+  width: '100%',
+};
+
 export default function SettingsPage() {
   const [settings, setSettings] = useState<RestaurantSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
@@ -185,22 +195,32 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[300px]">
-        <div className="animate-spin rounded-full h-10 w-10 border-2 border-orange-500 border-t-transparent" />
+        <div
+          className="animate-spin rounded-full h-10 w-10"
+          style={{ border: '3px solid rgba(200,151,42,0.2)', borderTopColor: '#c8972a' }}
+        />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ background: '#080808', minHeight: '100%' }}>
       <Toaster position="top-right" />
-      
+
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-white">Settings</h1>
+        <h1 className="text-2xl font-bold" style={{ color: '#f8f4ed' }}>Settings</h1>
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+          style={{
+            background: 'linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)',
+            color: '#080808',
+            border: 'none',
+            borderRadius: 10,
+            fontWeight: 700,
+          }}
         >
           <Save className="w-5 h-5" />
           {saving ? 'Saving...' : 'Save Changes'}
@@ -208,18 +228,32 @@ export default function SettingsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="bg-slate-900 rounded-xl p-2 flex gap-2">
+      <div
+        className="rounded-xl p-2 flex gap-2 flex-wrap"
+        style={{ background: '#0d0d0d', border: '1px solid rgba(200,151,42,0.13)' }}
+      >
         {tabs.map((tab) => {
           const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                activeTab === tab.id
-                  ? 'bg-orange-600 text-white'
-                  : 'text-slate-300 hover:bg-slate-800'
-              }`}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
+              style={
+                isActive
+                  ? {
+                      background: 'linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)',
+                      color: '#080808',
+                      fontWeight: 700,
+                      borderRadius: 10,
+                    }
+                  : {
+                      color: '#a89070',
+                      background: 'transparent',
+                      borderRadius: 10,
+                    }
+              }
             >
               <Icon className="w-4 h-4" />
               {tab.label}
@@ -231,45 +265,52 @@ export default function SettingsPage() {
       {/* General Settings */}
       {activeTab === 'general' && (
         <motion.div
-          className="bg-slate-900 rounded-xl p-6 space-y-6"
+          className="rounded-xl p-6 space-y-6"
+          style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.13)', borderRadius: 16 }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h2 className="text-xl font-semibold text-white mb-4">General Settings</h2>
-          
+          <h2 className="text-xl font-semibold mb-4" style={{ color: '#f8f4ed', fontWeight: 800 }}>General Settings</h2>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: '#a89070' }}>
                 Restaurant Name
               </label>
               <input
                 type="text"
                 value={settings.name}
                 onChange={(e) => setSettings({ ...settings, name: e.target.value })}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                style={inputStyle}
+                onFocus={(e) => (e.target.style.borderColor = '#c8972a')}
+                onBlur={(e) => (e.target.style.borderColor = 'rgba(200,151,42,0.2)')}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: '#a89070' }}>
                 Phone
               </label>
               <input
                 type="tel"
                 value={settings.phone}
                 onChange={(e) => setSettings({ ...settings, phone: e.target.value })}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                style={inputStyle}
+                onFocus={(e) => (e.target.style.borderColor = '#c8972a')}
+                onBlur={(e) => (e.target.style.borderColor = 'rgba(200,151,42,0.2)')}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: '#a89070' }}>
                 Currency
               </label>
               <select
                 value={settings.currency}
                 onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                style={inputStyle}
+                onFocus={(e) => (e.target.style.borderColor = '#c8972a')}
+                onBlur={(e) => (e.target.style.borderColor = 'rgba(200,151,42,0.2)')}
               >
                 <option value="INR">INR (₹)</option>
                 <option value="USD">USD ($)</option>
@@ -278,7 +319,7 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: '#a89070' }}>
                 Tax Rate (%)
               </label>
               <input
@@ -287,12 +328,14 @@ export default function SettingsPage() {
                 max="100"
                 value={settings.taxRate}
                 onChange={(e) => setSettings({ ...settings, taxRate: parseFloat(e.target.value) })}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                style={inputStyle}
+                onFocus={(e) => (e.target.style.borderColor = '#c8972a')}
+                onBlur={(e) => (e.target.style.borderColor = 'rgba(200,151,42,0.2)')}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: '#a89070' }}>
                 Service Charge (%)
               </label>
               <input
@@ -301,35 +344,45 @@ export default function SettingsPage() {
                 max="100"
                 value={settings.serviceCharge}
                 onChange={(e) => setSettings({ ...settings, serviceCharge: parseFloat(e.target.value) })}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                style={inputStyle}
+                onFocus={(e) => (e.target.style.borderColor = '#c8972a')}
+                onBlur={(e) => (e.target.style.borderColor = 'rgba(200,151,42,0.2)')}
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: '#a89070' }}>
                 Address
               </label>
               <textarea
                 value={settings.address}
                 onChange={(e) => setSettings({ ...settings, address: e.target.value })}
                 rows={3}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                style={{ ...inputStyle, resize: 'vertical' }}
+                onFocus={(e) => (e.target.style.borderColor = '#c8972a')}
+                onBlur={(e) => (e.target.style.borderColor = 'rgba(200,151,42,0.2)')}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">City</label>
+              <label className="block text-sm font-medium mb-2" style={{ color: '#a89070' }}>City</label>
               <input type="text" value={settings.city} onChange={(e) => setSettings({ ...settings, city: e.target.value })}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                style={inputStyle}
+                onFocus={(e) => (e.target.style.borderColor = '#c8972a')}
+                onBlur={(e) => (e.target.style.borderColor = 'rgba(200,151,42,0.2)')} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">State</label>
+              <label className="block text-sm font-medium mb-2" style={{ color: '#a89070' }}>State</label>
               <input type="text" value={settings.state} onChange={(e) => setSettings({ ...settings, state: e.target.value })}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                style={inputStyle}
+                onFocus={(e) => (e.target.style.borderColor = '#c8972a')}
+                onBlur={(e) => (e.target.style.borderColor = 'rgba(200,151,42,0.2)')} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Pincode</label>
+              <label className="block text-sm font-medium mb-2" style={{ color: '#a89070' }}>Pincode</label>
               <input type="text" value={settings.pincode} onChange={(e) => setSettings({ ...settings, pincode: e.target.value })}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                style={inputStyle}
+                onFocus={(e) => (e.target.style.borderColor = '#c8972a')}
+                onBlur={(e) => (e.target.style.borderColor = 'rgba(200,151,42,0.2)')} />
             </div>
           </div>
         </motion.div>
@@ -338,19 +391,20 @@ export default function SettingsPage() {
       {/* Website / Front page design */}
       {activeTab === 'website' && (
         <motion.div
-          className="bg-slate-900 rounded-xl p-6 space-y-6"
+          className="rounded-xl p-6 space-y-6"
+          style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.13)', borderRadius: 16 }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-            <Palette className="w-5 h-5 text-orange-400" />
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2" style={{ color: '#f8f4ed', fontWeight: 800 }}>
+            <Palette className="w-5 h-5" style={{ color: '#c8972a' }} />
             Website &amp; Front Page Design
           </h2>
-          <p className="text-slate-400 text-sm">Customize how your storefront and homepage look to customers.</p>
+          <p className="text-sm" style={{ color: '#a89070' }}>Customize how your storefront and homepage look to customers.</p>
 
           {/* 15 Theme selection */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-3">Choose a theme (15 options)</label>
+            <label className="block text-sm font-medium mb-3" style={{ color: '#a89070' }}>Choose a theme (15 options)</label>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
               {WEBSITE_THEMES.map((theme) => {
                 const isSelected = settings.theme === theme.id;
@@ -359,72 +413,83 @@ export default function SettingsPage() {
                     key={theme.id}
                     type="button"
                     onClick={() => setSettings({ ...settings, theme: theme.id, primaryColor: theme.primary })}
-                    className={`relative rounded-xl border-2 p-3 text-left transition-all hover:scale-[1.02] ${
-                      isSelected
-                        ? 'border-orange-500 bg-slate-800 ring-2 ring-orange-500/50'
-                        : 'border-slate-700 bg-slate-800/60 hover:border-slate-600'
-                    }`}
+                    className="relative rounded-xl p-3 text-left transition-all hover:scale-[1.02]"
+                    style={{
+                      border: isSelected ? '2px solid #c8972a' : '2px solid rgba(200,151,42,0.15)',
+                      background: isSelected ? '#1c1c1c' : 'rgba(20,20,20,0.8)',
+                      boxShadow: isSelected ? '0 0 0 2px rgba(200,151,42,0.3)' : 'none',
+                    }}
                   >
                     {isSelected && (
-                      <span className="absolute top-2 right-2 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                        <Check className="w-3 h-3 text-white" />
+                      <span
+                        className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
+                        style={{ background: '#c8972a' }}
+                      >
+                        <Check className="w-3 h-3" style={{ color: '#080808' }} />
                       </span>
                     )}
                     <div className="flex gap-1 mb-2">
                       {theme.preview.map((color, i) => (
                         <div
                           key={i}
-                          className="flex-1 h-6 rounded-md border border-slate-600"
-                          style={{ backgroundColor: color }}
+                          className="flex-1 h-6 rounded-md"
+                          style={{ backgroundColor: color, border: '1px solid rgba(200,151,42,0.15)' }}
                         />
                       ))}
                     </div>
-                    <p className="text-white text-xs font-medium truncate">{theme.name}</p>
+                    <p className="text-xs font-medium truncate" style={{ color: '#f8f4ed' }}>{theme.name}</p>
                   </button>
                 );
               })}
             </div>
-            <p className="text-slate-500 text-xs mt-2">Selected: {getThemeById(settings.theme)?.name ?? 'Classic Orange'}</p>
+            <p className="text-xs mt-2" style={{ color: '#6b5040' }}>Selected: {getThemeById(settings.theme)?.name ?? 'Classic Orange'}</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Primary / Brand Color</label>
+              <label className="block text-sm font-medium mb-2" style={{ color: '#a89070' }}>Primary / Brand Color</label>
               <div className="flex gap-3 items-center">
                 <input
                   type="color"
                   value={settings.primaryColor}
                   onChange={(e) => setSettings({ ...settings, primaryColor: e.target.value })}
-                  className="w-12 h-12 rounded-lg cursor-pointer border border-slate-600 bg-slate-800"
+                  className="w-12 h-12 rounded-lg cursor-pointer"
+                  style={{ border: '1px solid rgba(200,151,42,0.2)', background: '#1c1c1c' }}
                 />
                 <input
                   type="text"
                   value={settings.primaryColor}
                   onChange={(e) => setSettings({ ...settings, primaryColor: e.target.value })}
-                  className="flex-1 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  style={{ ...inputStyle, fontFamily: 'monospace', fontSize: 14 }}
+                  onFocus={(e) => (e.target.style.borderColor = '#c8972a')}
+                  onBlur={(e) => (e.target.style.borderColor = 'rgba(200,151,42,0.2)')}
                 />
               </div>
-              <p className="text-slate-500 text-xs mt-1">Overrides theme color if you need a custom shade</p>
+              <p className="text-xs mt-1" style={{ color: '#6b5040' }}>Overrides theme color if you need a custom shade</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Logo URL</label>
+              <label className="block text-sm font-medium mb-2" style={{ color: '#a89070' }}>Logo URL</label>
               <input
                 type="url"
                 value={settings.logo}
                 onChange={(e) => setSettings({ ...settings, logo: e.target.value })}
                 placeholder="https://..."
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                style={inputStyle}
+                onFocus={(e) => (e.target.style.borderColor = '#c8972a')}
+                onBlur={(e) => (e.target.style.borderColor = 'rgba(200,151,42,0.2)')}
               />
-              <p className="text-slate-500 text-xs mt-1">Image URL for your restaurant logo</p>
+              <p className="text-xs mt-1" style={{ color: '#6b5040' }}>Image URL for your restaurant logo</p>
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-300 mb-2">Description / Tagline</label>
+              <label className="block text-sm font-medium mb-2" style={{ color: '#a89070' }}>Description / Tagline</label>
               <textarea
                 value={settings.description}
                 onChange={(e) => setSettings({ ...settings, description: e.target.value })}
                 rows={3}
                 placeholder="Short description or tagline for your homepage / hero section"
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                style={{ ...inputStyle, resize: 'vertical' }}
+                onFocus={(e) => (e.target.style.borderColor = '#c8972a')}
+                onBlur={(e) => (e.target.style.borderColor = 'rgba(200,151,42,0.2)')}
               />
             </div>
           </div>
@@ -434,36 +499,41 @@ export default function SettingsPage() {
       {/* Payment Settings */}
       {activeTab === 'payment' && (
         <motion.div
-          className="bg-slate-900 rounded-xl p-6 space-y-6"
+          className="rounded-xl p-6 space-y-6"
+          style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.13)', borderRadius: 16 }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h2 className="text-xl font-semibold text-white mb-4">Payment Settings</h2>
-          
+          <h2 className="text-xl font-semibold mb-4" style={{ color: '#f8f4ed', fontWeight: 800 }}>Payment Settings</h2>
+
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: '#a89070' }}>
                 Razorpay Key ID
               </label>
               <input
                 type="text"
                 value={settings.razorpayKeyId}
                 onChange={(e) => setSettings({ ...settings, razorpayKeyId: e.target.value })}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                style={inputStyle}
                 placeholder="rzp_test_..."
+                onFocus={(e) => (e.target.style.borderColor = '#c8972a')}
+                onBlur={(e) => (e.target.style.borderColor = 'rgba(200,151,42,0.2)')}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: '#a89070' }}>
                 Razorpay Key Secret
               </label>
               <input
                 type="password"
                 value={settings.razorpayKeySecret}
                 onChange={(e) => setSettings({ ...settings, razorpayKeySecret: e.target.value })}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                style={inputStyle}
                 placeholder="••••••••"
+                onFocus={(e) => (e.target.style.borderColor = '#c8972a')}
+                onBlur={(e) => (e.target.style.borderColor = 'rgba(200,151,42,0.2)')}
               />
             </div>
           </div>
@@ -473,28 +543,33 @@ export default function SettingsPage() {
       {/* Notifications Settings */}
       {activeTab === 'notifications' && (
         <motion.div
-          className="bg-slate-900 rounded-xl p-6 space-y-6"
+          className="rounded-xl p-6 space-y-6"
+          style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.13)', borderRadius: 16 }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h2 className="text-xl font-semibold text-white mb-4">Notification Settings</h2>
-          
+          <h2 className="text-xl font-semibold mb-4" style={{ color: '#f8f4ed', fontWeight: 800 }}>Notification Settings</h2>
+
           <div className="space-y-4">
-            <div className="p-4 bg-slate-800 rounded-lg space-y-3">
+            <div
+              className="p-4 rounded-lg space-y-3"
+              style={{ background: '#1c1c1c', border: '1px solid rgba(200,151,42,0.13)' }}
+            >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-white font-medium">Email Notifications</p>
-                  <p className="text-sm text-slate-400">Receive email alerts for new orders & bills</p>
+                  <p className="font-medium" style={{ color: '#f8f4ed' }}>Email Notifications</p>
+                  <p className="text-sm" style={{ color: '#a89070' }}>Receive email alerts for new orders &amp; bills</p>
                 </div>
                 <input
                   type="checkbox"
                   checked={settings.enableNotifications}
                   onChange={(e) => setSettings({ ...settings, enableNotifications: e.target.checked })}
                   className="w-5 h-5 rounded"
+                  style={{ accentColor: '#c8972a' }}
                 />
               </div>
               <div className="mt-2">
-                <label className="block text-xs font-medium text-slate-400 mb-1">
+                <label className="block text-xs font-medium mb-1" style={{ color: '#a89070', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   Notification email (restaurant)
                 </label>
                 <input
@@ -502,13 +577,15 @@ export default function SettingsPage() {
                   value={settings.notificationEmail}
                   onChange={(e) => setSettings({ ...settings, notificationEmail: e.target.value })}
                   placeholder="owner@yourrestaurant.com"
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  style={{ ...inputStyle, fontSize: 14 }}
+                  onFocus={(e) => (e.target.style.borderColor = '#c8972a')}
+                  onBlur={(e) => (e.target.style.borderColor = 'rgba(200,151,42,0.2)')}
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: '#a89070' }}>
                 WhatsApp Number
               </label>
               <input
@@ -516,9 +593,11 @@ export default function SettingsPage() {
                 value={settings.whatsappNumber}
                 onChange={(e) => setSettings({ ...settings, whatsappNumber: e.target.value })}
                 placeholder="+919876543210"
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                style={inputStyle}
+                onFocus={(e) => (e.target.style.borderColor = '#c8972a')}
+                onBlur={(e) => (e.target.style.borderColor = 'rgba(200,151,42,0.2)')}
               />
-              <p className="text-slate-500 text-xs mt-1">For order/booking notifications</p>
+              <p className="text-xs mt-1" style={{ color: '#6b5040' }}>For order/booking notifications</p>
             </div>
           </div>
         </motion.div>
@@ -527,22 +606,23 @@ export default function SettingsPage() {
       {/* Staff role access — which sections each role can see in Staff Panel */}
       {activeTab === 'staffRoles' && (
         <motion.div
-          className="bg-slate-900 rounded-xl p-6 space-y-6"
+          className="rounded-xl p-6 space-y-6"
+          style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.13)', borderRadius: 16 }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h2 className="text-xl font-semibold text-white mb-2">Staff role access</h2>
-          <p className="text-slate-400 text-sm mb-4">
+          <h2 className="text-xl font-semibold mb-2" style={{ color: '#f8f4ed', fontWeight: 800 }}>Staff role access</h2>
+          <p className="text-sm mb-4" style={{ color: '#a89070' }}>
             Choose which sections each staff role can see in the Staff Panel. Staff, Manager, and Cashier log in to the Staff Panel (not the full Admin Panel). Admin always has full access.
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-slate-400 border-b border-slate-700">
-                  <th className="text-left py-3 px-2 font-medium">Section</th>
-                  <th className="text-left py-3 px-2 font-medium">Staff</th>
-                  <th className="text-left py-3 px-2 font-medium">Manager</th>
-                  <th className="text-left py-3 px-2 font-medium">Cashier</th>
+                <tr style={{ background: '#1c1c1c', borderBottom: '1px solid rgba(200,151,42,0.15)' }}>
+                  <th className="text-left py-3 px-2 font-medium" style={{ color: '#a89070', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Section</th>
+                  <th className="text-left py-3 px-2 font-medium" style={{ color: '#a89070', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Staff</th>
+                  <th className="text-left py-3 px-2 font-medium" style={{ color: '#a89070', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Manager</th>
+                  <th className="text-left py-3 px-2 font-medium" style={{ color: '#a89070', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Cashier</th>
                 </tr>
               </thead>
               <tbody>
@@ -559,8 +639,13 @@ export default function SettingsPage() {
                   { key: 'reviews', label: 'Reviews' },
                   { key: 'analytics', label: 'Analytics' },
                 ].map(({ key, label }) => (
-                  <tr key={key} className="border-b border-slate-800 hover:bg-slate-800/50">
-                    <td className="py-3 px-2 text-white">{label}</td>
+                  <tr
+                    key={key}
+                    style={{ background: '#141414', borderBottom: '1px solid rgba(200,151,42,0.07)' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = '#1c1c1c')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = '#141414')}
+                  >
+                    <td className="py-3 px-2" style={{ color: '#f8f4ed' }}>{label}</td>
                     {(['staff', 'manager', 'cashier'] as const).map((role) => (
                       <td key={role} className="py-3 px-2">
                         <input
@@ -573,7 +658,8 @@ export default function SettingsPage() {
                               : perms.filter((p) => p !== key);
                             setRolePermissions({ ...rolePermissions, [role]: next });
                           }}
-                          className="w-4 h-4 rounded border-slate-600 text-orange-600 focus:ring-orange-500"
+                          className="w-4 h-4 rounded"
+                          style={{ accentColor: '#c8972a' }}
                         />
                       </td>
                     ))}
@@ -597,7 +683,14 @@ export default function SettingsPage() {
               }
             }}
             disabled={savingRolePerms}
-            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+            className="px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
+            style={{
+              background: 'linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)',
+              color: '#080808',
+              border: 'none',
+              borderRadius: 10,
+              fontWeight: 700,
+            }}
           >
             {savingRolePerms ? 'Saving...' : 'Save role access'}
           </button>
@@ -607,69 +700,89 @@ export default function SettingsPage() {
       {/* Security Settings — Rental Admin: change own login password */}
       {activeTab === 'security' && (
         <motion.div
-          className="bg-slate-900 rounded-xl p-6 space-y-6"
+          className="rounded-xl p-6 space-y-6"
+          style={{ background: '#141414', border: '1px solid rgba(200,151,42,0.13)', borderRadius: 16 }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h2 className="text-xl font-semibold text-white mb-4">Security Settings</h2>
-          <p className="text-slate-400 text-sm mb-4">
+          <h2 className="text-xl font-semibold mb-4" style={{ color: '#f8f4ed', fontWeight: 800 }}>Security Settings</h2>
+          <p className="text-sm mb-4" style={{ color: '#a89070' }}>
             Change your rental admin panel login password here. Your login ID (email) is set by the platform; only the password can be updated from this panel.
           </p>
 
           <div className="space-y-4 max-w-md">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Current password</label>
+              <label className="block text-sm font-medium mb-2" style={{ color: '#a89070' }}>Current password</label>
               <div className="relative">
                 <input
                   type={showCurrentPw ? 'text' : 'password'}
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   placeholder="Enter current password"
-                  className="w-full px-4 py-2 pr-10 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  style={{ ...inputStyle, paddingRight: 40 }}
+                  onFocus={(e) => (e.target.style.borderColor = '#c8972a')}
+                  onBlur={(e) => (e.target.style.borderColor = 'rgba(200,151,42,0.2)')}
                 />
                 <button
                   type="button"
                   onClick={() => setShowCurrentPw(!showCurrentPw)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 transition-colors"
+                  style={{ color: '#6b5040' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#f8f4ed')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = '#6b5040')}
                 >
                   {showCurrentPw ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">New password</label>
+              <label className="block text-sm font-medium mb-2" style={{ color: '#a89070' }}>New password</label>
               <div className="relative">
                 <input
                   type={showNewPw ? 'text' : 'password'}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="At least 8 characters"
-                  className="w-full px-4 py-2 pr-10 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  style={{ ...inputStyle, paddingRight: 40 }}
+                  onFocus={(e) => (e.target.style.borderColor = '#c8972a')}
+                  onBlur={(e) => (e.target.style.borderColor = 'rgba(200,151,42,0.2)')}
                 />
                 <button
                   type="button"
                   onClick={() => setShowNewPw(!showNewPw)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 transition-colors"
+                  style={{ color: '#6b5040' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#f8f4ed')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = '#6b5040')}
                 >
                   {showNewPw ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Confirm new password</label>
+              <label className="block text-sm font-medium mb-2" style={{ color: '#a89070' }}>Confirm new password</label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Re-enter new password"
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                style={inputStyle}
+                onFocus={(e) => (e.target.style.borderColor = '#c8972a')}
+                onBlur={(e) => (e.target.style.borderColor = 'rgba(200,151,42,0.2)')}
               />
             </div>
             <button
               type="button"
               onClick={handleChangePassword}
               disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
-              className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                background: 'linear-gradient(135deg,#8b5a00,#c8972a,#f0c060)',
+                color: '#080808',
+                border: 'none',
+                borderRadius: 10,
+                fontWeight: 700,
+              }}
             >
               {changingPassword ? (
                 <span className="animate-pulse">Updating…</span>

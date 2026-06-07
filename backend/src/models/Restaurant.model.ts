@@ -80,6 +80,8 @@ export interface IRestaurant extends Document {
 
   /** Which sections each staff role can access in the staff panel (admin has full access) */
   rolePermissions?: IRolePermissions;
+  onboardingStep?: string;
+  onboardingCompletedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

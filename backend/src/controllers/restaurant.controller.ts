@@ -237,8 +237,6 @@ export const getRestaurantById = async (req: Request, res: Response) => {
 // ─── Super Admin: Create restaurant + admin user ──────────────────────────────
 
 export const createRestaurant = async (req: Request, res: Response) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
   try {
     const {
       name, slug, phone, address, city, state, country, pincode,
@@ -252,18 +250,16 @@ export const createRestaurant = async (req: Request, res: Response) => {
     } = req.body;
 
     // Validate slug uniqueness
-    const existing = await Restaurant.findOne({ slug }).session(session);
+    const existing = await Restaurant.findOne({ slug });
     if (existing) {
-      await session.abortTransaction();
       return res.status(409).json({ error: 'Restaurant slug already exists' });
     }
 
     // Validate plan
     let plan = null;
     if (planId) {
-      plan = await RentalPlan.findById(planId).session(session);
+      plan = await RentalPlan.findById(planId);
       if (!plan) {
-        await session.abortTransaction();
         return res.status(404).json({ error: 'Rental plan not found' });
       }
     }
@@ -273,46 +269,35 @@ export const createRestaurant = async (req: Request, res: Response) => {
     trialEnd.setDate(trialEnd.getDate() + (trialDays ?? plan?.trialDays ?? 14));
 
     // Create restaurant
-    const [restaurant] = await Restaurant.create(
-      [
-        {
-          name, slug, phone, address, city, state,
-          country: country || 'India', pincode,
-          description, primaryColor, currency,
-          taxRate: taxRate ?? 5,
-          serviceCharge: serviceCharge ?? 0,
-          subscriptionStatus: 'trial',
-          trialEndsAt: trialEnd,
-          currentPlanId: planId || undefined,
-          status: 'active',
-        },
-      ],
-      { session }
-    );
+    const restaurant = new Restaurant({
+      name, slug, phone, address, city, state,
+      country: country || 'India', pincode,
+      description, primaryColor, currency,
+      taxRate: taxRate ?? 5,
+      serviceCharge: serviceCharge ?? 0,
+      subscriptionStatus: 'trial',
+      trialEndsAt: trialEnd,
+      currentPlanId: planId || undefined,
+      status: 'active',
+    });
+    await restaurant.save();
 
-    // Check if admin email already used for this restaurant (shouldn't exist yet)
+    // Create admin user
     const hashedPassword = await bcrypt.hash(adminPassword || 'Admin@123', 12);
-    const [adminUser] = await User.create(
-      [
-        {
-          name: adminName || name,
-          email: adminEmail,
-          phone: adminPhone || phone,
-          role: 'admin',
-          password: hashedPassword,
-          restaurantId: restaurant._id,
-          isActive: true,
-        },
-      ],
-      { session }
-    );
+    const adminUser = new User({
+      name: adminName || name,
+      email: adminEmail,
+      phone: adminPhone || phone,
+      role: 'admin',
+      password: hashedPassword,
+      restaurantId: restaurant._id,
+      isActive: true,
+    });
+    await adminUser.save();
 
     // Set owner
     restaurant.ownerId = adminUser._id as any;
-    await restaurant.save({ session });
-
-    await session.commitTransaction();
-    session.endSession();
+    await restaurant.save();
 
     // Seed default menu items for this restaurant (non-blocking for response)
     seedDefaultMenuForRestaurant(restaurant._id).catch((err) => {
@@ -338,8 +323,6 @@ export const createRestaurant = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    await session.abortTransaction();
-    session.endSession();
     res.status(500).json({ error: error.message });
   }
 };
@@ -637,42 +620,35 @@ function planToRestaurantFeatures(plan: IRentalPlan | null) {
 
 // ─── Public: Restaurant onboarding signup (no auth) ───────────────────────────
 export const restaurantSignup = async (req: Request, res: Response) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
   try {
     const { name, slug, email, planId, adminName, adminPassword, adminPhone } = req.body;
 
     if (!name || !slug || !email) {
-      await session.abortTransaction();
       return res.status(400).json({ error: 'Restaurant name, slug, and admin email are required' });
     }
     if (!adminPassword || String(adminPassword).length < 8) {
-      await session.abortTransaction();
       return res.status(400).json({ error: 'Password is required and must be at least 8 characters' });
     }
 
     const trimmedSlug = String(slug).toLowerCase().trim().replace(/\s+/g, '-');
     if (!/^[a-z0-9-]+$/.test(trimmedSlug)) {
-      await session.abortTransaction();
       return res.status(400).json({ error: 'Slug can only contain lowercase letters, numbers, and hyphens' });
     }
 
-    const existing = await Restaurant.findOne({ slug: trimmedSlug }).session(session);
+    const existing = await Restaurant.findOne({ slug: trimmedSlug });
     if (existing) {
-      await session.abortTransaction();
       return res.status(409).json({ error: 'This restaurant URL is already taken. Please choose another slug.' });
     }
 
     // Plan required for subscription; default to first active plan if not provided
     let plan = null;
     if (planId) {
-      plan = await RentalPlan.findById(planId).session(session);
+      plan = await RentalPlan.findById(planId);
     }
     if (!plan) {
-      plan = await RentalPlan.findOne({ isActive: true }).sort({ sortOrder: 1 }).session(session);
+      plan = await RentalPlan.findOne({ isActive: true }).sort({ sortOrder: 1 });
     }
     if (!plan) {
-      await session.abortTransaction();
       return res.status(400).json({ error: 'No plan available. Please contact support.' });
     }
 
@@ -684,63 +660,47 @@ export const restaurantSignup = async (req: Request, res: Response) => {
     const password = await bcrypt.hash(String(adminPassword), 12);
     const features = planToRestaurantFeatures(plan);
 
-    const [restaurant] = await Restaurant.create(
-      [
-        {
-          name: String(name).trim(),
-          slug: trimmedSlug,
-          phone: (adminPhone && String(adminPhone).trim()) || '0000000000',
-          address: 'To be updated',
-          country: 'India',
-          subscriptionStatus: 'trial',
-          trialEndsAt: trialEnd,
-          currentPlanId: plan._id,
-          status: 'active',
-          features,
-        },
-      ],
-      { session }
-    );
+    const restaurant = new Restaurant({
+      name: String(name).trim(),
+      slug: trimmedSlug,
+      phone: (adminPhone && String(adminPhone).trim()) || '0000000000',
+      address: 'To be updated',
+      country: 'India',
+      subscriptionStatus: 'trial',
+      trialEndsAt: trialEnd,
+      currentPlanId: plan._id,
+      status: 'active',
+      features,
+    });
+    await restaurant.save();
 
-    // Subscription record: trial period (start date + end date = trial expiry)
-    await Subscription.create(
-      [
-        {
-          restaurantId: restaurant._id,
-          planId: plan._id,
-          billingCycle: 'monthly',
-          status: 'active',
-          amount: 0,
-          currency: 'INR',
-          startDate,
-          endDate: trialEnd,
-          paymentMethod: 'cash',
-          autoRenew: false,
-        },
-      ],
-      { session }
-    );
+    // Subscription record
+    await Subscription.create({
+      restaurantId: restaurant._id,
+      planId: plan._id,
+      billingCycle: 'monthly',
+      status: 'active',
+      amount: 0,
+      currency: 'INR',
+      startDate,
+      endDate: trialEnd,
+      paymentMethod: 'cash',
+      autoRenew: false,
+    });
 
-    const [adminUser] = await User.create(
-      [
-        {
-          name: (adminName && String(adminName).trim()) || String(name).trim(),
-          email: String(email).toLowerCase().trim(),
-          phone: (adminPhone && String(adminPhone).trim()) || '0000000000',
-          role: 'admin',
-          password,
-          restaurantId: restaurant._id,
-          isActive: true,
-        },
-      ],
-      { session }
-    );
+    const adminUser = new User({
+      name: (adminName && String(adminName).trim()) || String(name).trim(),
+      email: String(email).toLowerCase().trim(),
+      phone: (adminPhone && String(adminPhone).trim()) || '0000000000',
+      role: 'admin',
+      password,
+      restaurantId: restaurant._id,
+      isActive: true,
+    });
+    await adminUser.save();
 
     restaurant.ownerId = adminUser._id as any;
-    await restaurant.save({ session });
-
-    await session.commitTransaction();
-    session.endSession();
+    await restaurant.save();
 
     // Seed default menu and tables for this restaurant (non-blocking)
     seedDefaultMenuForRestaurant(restaurant._id).catch((err) => {
@@ -769,8 +729,6 @@ export const restaurantSignup = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    await session.abortTransaction();
-    session.endSession();
     res.status(500).json({ error: error.message || 'Signup failed' });
   }
 };
@@ -878,7 +836,7 @@ export const restaurantSignupVerifyOtp = async (req: Request, res: Response) => 
         const startDate = new Date();
         const trialEnd = new Date();
         trialEnd.setDate(trialEnd.getDate() + trialDays);
-        const features = planToRestaurantFeatures(plan);
+        const features = planToRestaurantFeatures(plan as unknown as import('../models/RentalPlan.model').IRentalPlan);
 
         const [restaurant] = await Restaurant.create(
           [
