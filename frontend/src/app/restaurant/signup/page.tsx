@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -20,6 +20,14 @@ interface Plan {
 type Step = 'form' | 'otp';
 
 export default function RestaurantSignupPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div></div>}>
+      <RestaurantSignupContent />
+    </Suspense>
+  );
+}
+
+function RestaurantSignupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlPlanId = searchParams.get('plan') || '';
